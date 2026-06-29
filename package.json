@@ -3,20 +3,34 @@
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
-    "expo": "~56.0.12",
-    "expo-status-bar": "~56.0.4",
-    "react": "19.2.3",
-    "react-native": "0.85.3"
+    "@expo/metro-runtime": "~6.1.2",
+    "expo": "~54.0.35",
+    "expo-status-bar": "~3.0.9",
+    "lucide-react-native": "^1.21.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-svg": "15.12.1",
+    "react-native-web": "^0.21.2"
   },
   "devDependencies": {
-    "@types/react": "~19.2.2",
-    "typescript": "~6.0.3"
+    "@types/react": "~19.1.17",
+    "typescript": "~5.9.2"
   },
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
+    "doctor": "npx expo-doctor",
+    "publish:check": "node scripts/verify-publish-env.js",
+    "build:android:preview": "npm run publish:check && npx eas build --platform android --profile preview",
+    "build:ios:preview": "npm run publish:check && npx eas build --platform ios --profile preview",
+    "build:android:production": "npm run publish:check && npx eas build --platform android --profile production",
+    "build:ios:production": "npm run publish:check && npx eas build --platform ios --profile production",
+    "submit:android": "npx eas submit --platform android --profile production",
+    "submit:ios": "npx eas submit --platform ios --profile production"
   },
   "private": true
 }

@@ -1,0 +1,33 @@
+databases:
+  - name: campusconnect-postgres
+    databaseName: campusconnect
+    user: campusconnect
+    ipAllowList: []
+
+services:
+  - type: web
+    name: campusconnect-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    preDeployCommand: alembic upgrade head
+    healthCheckPath: /health
+    envVars:
+      - key: UNIVERSITY_PORTAL_APP_NAME
+        value: CampusConnect API
+      - key: UNIVERSITY_PORTAL_API_V1_PREFIX
+        value: /api/v1
+      - key: UNIVERSITY_PORTAL_DATABASE_URL
+        fromDatabase:
+          name: campusconnect-postgres
+          property: connectionString
+      - key: UNIVERSITY_PORTAL_ENVIRONMENT
+        value: production
+      - key: UNIVERSITY_PORTAL_SECRET_KEY
+        generateValue: true
+      - key: UNIVERSITY_PORTAL_ALGORITHM
+        value: HS256
+      - key: UNIVERSITY_PORTAL_ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 60
+      - key: UNIVERSITY_PORTAL_CORS_ORIGINS
+        sync: false
