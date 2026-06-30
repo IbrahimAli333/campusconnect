@@ -63,11 +63,12 @@ Preflight risks to keep visible:
 - `UNIVERSITY_PORTAL_CORS_ORIGINS` is entered manually during Blueprint import.
   Leave it blank for mobile-only preview or use exact trusted `https://`
   browser origins. Do not enter `*`, local, emulator, or private LAN origins.
-- The example URL `https://campusconnect-api.onrender.com` is only a URL-shape
-  placeholder until Render confirms the actual service URL and hosted smoke
-  tests pass.
-- Hosted smoke tests, release test account provisioning, and role-flow testing
-  require Render account access and are still blocked outside this local pass.
+- The final Render API URL is
+  `https://campusconnect-api-u7tq.onrender.com`.
+- Hosted health smoke has passed against the final Render API URL:
+  `/health`, `/api/v1/health`, and `/api/v1/health/db` returned `200 OK`.
+- Hosted role smoke is blocked until the safe release-test provisioning script
+  is deployed and run in Render Shell.
 - A previous free-tier attempt failed because Render free web services do not
   support `preDeployCommand`; keeping automatic Alembic migrations requires a
   paid web service plan.
@@ -204,21 +205,21 @@ After the first successful Render deploy:
 4. Save it as `BASE_URL` for smoke testing:
 
 ```bash
-BASE_URL=https://<actual-campusconnect-api-host>.onrender.com
+BASE_URL=https://campusconnect-api-u7tq.onrender.com
 ```
 
 5. Use that exact URL for all smoke tests and for
-   `EXPO_PUBLIC_API_URL=<final-render-url> npm run publish:check`.
+   `EXPO_PUBLIC_API_URL=https://campusconnect-api-u7tq.onrender.com npm run publish:check`.
 
 Do not claim hosted smoke has passed until the copied URL responds successfully
 to `/health`, `/api/v1/health`, and `/api/v1/health/db`.
 
 ## Smoke Test Curl Commands
 
-Replace `<final-render-url>` with the full actual HTTPS URL copied from Render:
+Use the final HTTPS URL copied from Render:
 
 ```bash
-BASE_URL=<final-render-url>
+BASE_URL=https://campusconnect-api-u7tq.onrender.com
 ```
 
 Health checks:
@@ -246,7 +247,7 @@ EXPO_PUBLIC_API_URL="$BASE_URL" npm run publish:check
 Expected publish-check output:
 
 ```text
-Publish check passed: <final-render-url>
+Publish check passed: https://campusconnect-api-u7tq.onrender.com
 ```
 
 Role login checks after release test accounts exist:
@@ -280,25 +281,25 @@ MEMBER_POST_STATUS=$(curl -sS -o /tmp/member-post-response.json -w "%{http_code}
   -X POST "$BASE_URL/api/v1/network/opportunities" \
   -H "Authorization: Bearer $MEMBER_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"type":"project","title":"Member forbidden post smoke","description":"Member should not be allowed to post.","required_skills":[],"status":"open"}')
+  -d '{"type":"project","title":"Community Collaboration Board","description":"Member should not be allowed to post opportunities.","required_skills":[],"status":"open"}')
 test "$MEMBER_POST_STATUS" = "403"
 
 STUDENT_OPPORTUNITY_ID=$(curl -fsS -X POST "$BASE_URL/api/v1/network/opportunities" \
   -H "Authorization: Bearer $STUDENT_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"type":"project","title":"Student preview project smoke","description":"Preview smoke project created by the student role.","required_skills":["React Native"],"status":"open"}' | jq -r .id)
+  -d '{"type":"project","title":"Student Capstone Collaboration Board","description":"Project post created by the student role for hosted role verification.","required_skills":["React Native"],"status":"open"}' | jq -r .id)
 
 STUDENT_RESEARCH_STATUS=$(curl -sS -o /tmp/student-research-response.json -w "%{http_code}" \
   -X POST "$BASE_URL/api/v1/network/opportunities" \
   -H "Authorization: Bearer $STUDENT_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"type":"research","title":"Student forbidden research smoke","description":"Student should not be allowed to post research.","required_skills":[],"status":"open"}')
+  -d '{"type":"research","title":"Student Research Methods Cohort","description":"Student should not be allowed to post research opportunities.","required_skills":[],"status":"open"}')
 test "$STUDENT_RESEARCH_STATUS" = "403"
 
 TEACHER_OPPORTUNITY_ID=$(curl -fsS -X POST "$BASE_URL/api/v1/network/opportunities" \
   -H "Authorization: Bearer $TEACHER_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"type":"research","title":"Teacher preview research smoke","description":"Preview smoke research created by the teacher role.","required_skills":["Data Analysis"],"status":"open"}' | jq -r .id)
+  -d '{"type":"research","title":"Learning Analytics Research Cohort","description":"Research post created by the teacher role for hosted role verification.","required_skills":["Data Analysis"],"status":"open"}' | jq -r .id)
 
 curl -fsS -X POST "$BASE_URL/api/v1/network/opportunities/$TEACHER_OPPORTUNITY_ID/apply" \
   -H "Authorization: Bearer $MEMBER_TOKEN" \
@@ -335,8 +336,7 @@ Preferred production-safe process:
 1. Confirm migrations have completed.
 2. Confirm `UNIVERSITY_PORTAL_ENVIRONMENT=production` on the Render service.
 3. Use Render Shell for `campusconnect-api`.
-4. Run an approved, reviewed one-off provisioning script that creates only the
-   three release test users and their basic network profiles.
+4. Run the approved, reviewed provisioning script with both safeguards.
 5. Record the provisioning command, timestamp, operator, and resulting user IDs
    in the coordinator handoff.
 
@@ -344,95 +344,27 @@ The current API has `/api/v1/auth/bootstrap-admin`, but it only creates the
 first admin user when the database has no users. It does not provision the
 Member, Student, and Teacher release accounts.
 
-An approved one-off provisioning command can use the app ORM and password
-hashing without importing or calling `seed_dev`:
+Run this exact command in Render Shell for `campusconnect-api`:
 
 ```bash
-python - <<'PY'
-from sqlalchemy import select
-
-from app.core.security import hash_password
-from app.db.session import SessionLocal
-from app.models.user import User
-from app.models.user_profile import UserProfile
-
-ACCOUNTS = [
-    {
-        "email": "member@example.edu",
-        "password": "member-password",
-        "full_name": "Preview Member",
-        "role": "member",
-        "headline": "CampusConnect preview member",
-    },
-    {
-        "email": "student@example.edu",
-        "password": "student-password",
-        "full_name": "Preview Student",
-        "role": "student",
-        "headline": "CampusConnect preview student",
-    },
-    {
-        "email": "teacher@example.edu",
-        "password": "teacher-password",
-        "full_name": "Preview Teacher",
-        "role": "teacher",
-        "headline": "CampusConnect preview teacher",
-    },
-]
-
-with SessionLocal() as db:
-    for account in ACCOUNTS:
-        user = db.scalar(select(User).where(User.email == account["email"]))
-        if user is None:
-            user = User(
-                email=account["email"],
-                hashed_password=hash_password(account["password"]),
-                full_name=account["full_name"],
-                role=account["role"],
-                is_active=True,
-            )
-            db.add(user)
-            db.flush()
-        else:
-            user.hashed_password = hash_password(account["password"])
-            user.full_name = account["full_name"]
-            user.role = account["role"]
-            user.is_active = True
-
-        profile = db.scalar(
-            select(UserProfile).where(UserProfile.user_id == user.id)
-        )
-        if profile is None:
-            profile = UserProfile(
-                user_id=user.id,
-                role=account["role"],
-                headline=account["headline"],
-                university="CampusConnect Preview University",
-                faculty="Preview Faculty",
-                location="Preview",
-                visibility="public",
-            )
-            db.add(profile)
-        else:
-            profile.role = account["role"]
-            profile.headline = account["headline"]
-            profile.university = "CampusConnect Preview University"
-            profile.faculty = "Preview Faculty"
-            profile.location = "Preview"
-            profile.visibility = "public"
-
-    db.commit()
-
-    for account in ACCOUNTS:
-        user = db.scalar(select(User).where(User.email == account["email"]))
-        print(f"{account['role']}: user_id={user.id} email={user.email}")
-PY
+UNIVERSITY_PORTAL_ALLOW_RELEASE_TEST_PROVISIONING=true \
+python -m app.scripts.provision_release_preview --confirm-render-preview
 ```
 
-This is release-account provisioning, not dev seeding. It does not create the
-full local seed dataset, courses, grade records, opportunities, skills,
-resume entries, or QA clutter. After provisioning, use the smoke commands above
-to create temporary smoke-test opportunities through the API.
+The script refuses to run unless the command-scoped
+`UNIVERSITY_PORTAL_ALLOW_RELEASE_TEST_PROVISIONING=true` environment variable
+and the `--confirm-render-preview` flag are both present. It does not print
+passwords or database secrets.
+
+This is release-account provisioning, not dev seeding. It creates or updates
+only the three release accounts, basic academic records required by the
+Student/Teacher roles, public network profiles, minimal skills and resume
+entries for Discover, one Student-owned Startup opportunity, one Teacher-owned
+Research opportunity, and one Student application for Teacher applicant-review.
+It does not create the full local seed dataset, courses, grade records,
+announcements, or QA clutter. After provisioning, use the smoke commands above
+to verify login, Discover, apply, save, connect, posting permissions, and
+Teacher applicant review against the hosted API.
 
 ## Rollback Notes
 

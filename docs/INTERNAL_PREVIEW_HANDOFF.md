@@ -22,9 +22,9 @@ Render Blueprint, EAS preview profile, publish URL guard, SDK 54 dependency
 baseline, and backend test coverage. The Render Blueprint uses paid
 preview-compatible plans for the current automatic migration path:
 `campusconnect-api` has `plan: starter` and `campusconnect-postgres` has
-`plan: basic-256mb`. The placeholder URL
-`https://campusconnect-api.onrender.com` is valid only for HTTPS URL-shape
-validation unless Render confirms it as the final service URL.
+`plan: basic-256mb`. The final hosted Render API URL is
+`https://campusconnect-api-u7tq.onrender.com`, and hosted health smoke has
+passed for `/health`, `/api/v1/health`, and `/api/v1/health/db`.
 
 Expo SDK 54 is acceptable for internal preview after the hosted-backend and EAS
 preview gates pass. SDK 56 review and upgrade work is deferred to the
@@ -33,11 +33,11 @@ Node, iOS, Android, and Xcode baselines.
 
 ## Remaining External Blockers
 
-- Final Render HTTPS API URL is not confirmed.
-- Render's paid preview cost estimate has not been reviewed and approved.
-- Render hosted health and database smoke tests have not run.
 - Release test accounts have not been provisioned on the hosted backend.
-- Hosted Member, Student, and Teacher role smoke tests have not passed.
+- Hosted login smoke currently returns `401` for
+  `member@example.edu` / `member-password` until provisioning runs.
+- Hosted Member, Student, and Teacher role smoke tests are blocked until the
+  guarded Render preview provisioning script runs.
 - EAS project/account ownership and project ID have not been confirmed.
 - EAS `preview` environment does not yet have a confirmed final
   `EXPO_PUBLIC_API_URL`.
@@ -62,13 +62,14 @@ Do not run Android or iOS EAS preview builds until all of these are true:
 
 - Render deploy is complete from the approved branch or commit.
 - The final public HTTPS API URL is copied from the Render service overview.
-- `BASE_URL=<final-render-url>` has no trailing slash.
+- `BASE_URL=https://campusconnect-api-u7tq.onrender.com` has no trailing slash.
 - `curl -fsS "$BASE_URL/health"` passes.
 - `curl -fsS "$BASE_URL/api/v1/health"` passes.
 - `curl -fsS "$BASE_URL/api/v1/health/db"` passes.
 - `EXPO_PUBLIC_API_URL="$BASE_URL" npm run publish:check` passes.
 - Release test accounts exist on the hosted backend through an approved
   production-safe process, not the dev seed.
+- The Render Shell provisioning command has been recorded in the handoff.
 - Hosted Member, Student, and Teacher smoke tests pass.
 - EAS project ownership and project ID are confirmed.
 - EAS `preview` environment uses the exact same final Render URL.
@@ -97,14 +98,17 @@ Do not run Android or iOS EAS preview builds until all of these are true:
 11. Wait for database provisioning, Docker image build, `alembic upgrade head`,
     and API deploy completion.
 12. Copy the final public HTTPS service URL from the Render service overview.
-13. Run the hosted smoke commands below before any EAS setup or builds proceed.
+13. Run the hosted health and publish-check commands below.
+14. Run the guarded release-test provisioning command in Render Shell.
+15. Run hosted Member, Student, and Teacher role smoke before any EAS setup or
+    builds proceed.
 
 ## Render Smoke Test Commands
 
-Replace `<final-render-url>` with the exact HTTPS URL copied from Render:
+Use the exact HTTPS URL copied from Render:
 
 ```bash
-BASE_URL=<final-render-url>
+BASE_URL=https://campusconnect-api-u7tq.onrender.com
 curl -fsS "$BASE_URL/health"
 curl -fsS "$BASE_URL/api/v1/health"
 curl -fsS "$BASE_URL/api/v1/health/db"
@@ -122,8 +126,17 @@ Expected health output:
 Expected publish-check output:
 
 ```text
-Publish check passed: <final-render-url>
+Publish check passed: https://campusconnect-api-u7tq.onrender.com
 ```
+
+Before hosted role smoke, open Render Shell for `campusconnect-api` and run:
+
+```bash
+UNIVERSITY_PORTAL_ALLOW_RELEASE_TEST_PROVISIONING=true \
+python -m app.scripts.provision_release_preview --confirm-render-preview
+```
+
+Do not run `python3 -m app.scripts.seed_dev` against Render production.
 
 After release test accounts exist, run login/profile API checks:
 
