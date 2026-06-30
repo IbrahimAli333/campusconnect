@@ -3,8 +3,9 @@
 Last audited: 2026-06-30
 
 Scope: hosted Render preview status after API health smoke, release-test
-provisioning, and hosted role smoke. No EAS build, store submission, app
-identifier change, demo credential change, or Expo SDK upgrade was performed.
+provisioning, hosted role smoke, and EAS project linking. No EAS build, store
+submission, app identifier change, demo credential change, or Expo SDK upgrade
+was performed.
 
 Operational runbooks:
 
@@ -23,13 +24,12 @@ console, page, React, deprecated-style, or API failures.
 
 ### Internal Preview
 
-No-go until the EAS project/account setup is completed, the EAS preview
-environment is confirmed with the final Render API URL, and explicit
-preview-build approval is given. The backend is deployed at
+No-go until the EAS preview environment is confirmed with the final Render API
+URL and explicit preview-build approval is given. The backend is deployed at
 `https://campusconnect-api-u7tq.onrender.com`; hosted health, release-test
-account authentication, role smoke, and `publish:check` have passed. SDK 54
-remains acceptable for internal preview after the EAS preview environment and
-build-approval gates pass.
+account authentication, role smoke, `publish:check`, and EAS project linkage
+have passed. SDK 54 remains acceptable for internal preview after the EAS
+preview environment and build-approval gates pass.
 
 ### Production Store
 
@@ -72,25 +72,20 @@ python -m app.scripts.provision_release_preview --confirm-render-preview
 
 ## EAS Preview Environment Status
 
-- Local `npx eas ...` does not resolve to the EAS CLI in this repo because
-  `eas-cli` is not installed locally; the official `eas-cli` package was checked
-  with `npx --yes eas-cli@latest`.
-- EAS CLI checked: `eas-cli/20.5.0 darwin-arm64 node-v25.6.0`.
-- EAS account status: not logged in. `npx --yes eas-cli@latest whoami` returned
-  `Not logged in`.
-- EAS project status: not confirmed. `project:info` requires an authenticated
-  Expo account, and the repo does not currently contain local EAS project-link
-  evidence such as `.eas/` or `extra.eas.projectId`.
+- EAS account status: logged in as `ibeahim`.
+- EAS project status: linked. `npx --yes eas-cli@latest project:info` resolved
+  `@ibeahim/campusconnect` with project ID
+  `c351705a-ec41-4b43-9a35-bac8a0e80a26`.
+- Local Expo public config emits `extra.eas.projectId` with
+  `c351705a-ec41-4b43-9a35-bac8a0e80a26` while preserving
+  `extra.productName`, `extra.apiUrlConfigured`, and `extra.buildProfile`.
 - EAS preview `EXPO_PUBLIC_API_URL` status: not confirmed or set by this
-  executor because no existing authenticated EAS session was available.
-- Do not force login or create builds from automation. An authorized operator
-  must complete the manual EAS setup from the repo root:
+  executor. Configure the project-scoped preview variable before requesting
+  preview builds.
+- Do not create builds from automation. An authorized operator must complete the
+  preview environment setup from the repo root:
 
 ```bash
-npx eas login
-npx eas init
-npx eas whoami
-npx eas project:info
 npx eas env:get preview --variable-name EXPO_PUBLIC_API_URL --variable-environment preview --format long
 ```
 
@@ -123,10 +118,10 @@ plaintext value `https://campusconnect-api-u7tq.onrender.com`.
 
 ## Remaining EAS Preview Checklist
 
-- Remaining internal-preview blockers are EAS account/project confirmation, EAS
-  preview environment confirmation, and explicit preview-build approval.
-- Confirm the EAS project is initialized and accessible from the correct Expo
-  account.
+- EAS project linkage is complete:
+  `@ibeahim/campusconnect` / `c351705a-ec41-4b43-9a35-bac8a0e80a26`.
+- Remaining internal-preview blockers are EAS preview environment confirmation
+  and explicit preview-build approval.
 - Confirm `EXPO_PUBLIC_API_URL` in the EAS preview environment is set to
   `https://campusconnect-api-u7tq.onrender.com`.
 - After explicit approval, create Android preview APK and iOS internal/TestFlight
@@ -200,6 +195,8 @@ Completed:
 - `EXPO_PUBLIC_API_URL=https://campusconnect-api-u7tq.onrender.com npm run publish:check`
   passes with the exact final URL.
 - Member, Student, and Teacher smoke tests pass against the hosted backend.
+- EAS project is linked to `@ibeahim/campusconnect` with project ID
+  `c351705a-ec41-4b43-9a35-bac8a0e80a26`.
 
 Remaining:
 

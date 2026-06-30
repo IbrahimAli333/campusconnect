@@ -35,6 +35,9 @@ const baseConfig = {
   },
   extra: {
     productName: "CampusConnect",
+    eas: {
+      projectId: "c351705a-ec41-4b43-9a35-bac8a0e80a26",
+    },
   },
 };
 
