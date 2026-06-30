@@ -23,8 +23,9 @@ console, page, React, deprecated-style, or API failures.
 
 ### Internal Preview
 
-No-go only until the EAS preview environment is confirmed with the final Render
-API URL and explicit preview-build approval is given. The backend is deployed at
+No-go until the EAS project/account setup is completed, the EAS preview
+environment is confirmed with the final Render API URL, and explicit
+preview-build approval is given. The backend is deployed at
 `https://campusconnect-api-u7tq.onrender.com`; hosted health, release-test
 account authentication, role smoke, and `publish:check` have passed. SDK 54
 remains acceptable for internal preview after the EAS preview environment and
@@ -69,10 +70,61 @@ UNIVERSITY_PORTAL_ALLOW_RELEASE_TEST_PROVISIONING=true \
 python -m app.scripts.provision_release_preview --confirm-render-preview
 ```
 
+## EAS Preview Environment Status
+
+- Local `npx eas ...` does not resolve to the EAS CLI in this repo because
+  `eas-cli` is not installed locally; the official `eas-cli` package was checked
+  with `npx --yes eas-cli@latest`.
+- EAS CLI checked: `eas-cli/20.5.0 darwin-arm64 node-v25.6.0`.
+- EAS account status: not logged in. `npx --yes eas-cli@latest whoami` returned
+  `Not logged in`.
+- EAS project status: not confirmed. `project:info` requires an authenticated
+  Expo account, and the repo does not currently contain local EAS project-link
+  evidence such as `.eas/` or `extra.eas.projectId`.
+- EAS preview `EXPO_PUBLIC_API_URL` status: not confirmed or set by this
+  executor because no existing authenticated EAS session was available.
+- Do not force login or create builds from automation. An authorized operator
+  must complete the manual EAS setup from the repo root:
+
+```bash
+npx eas login
+npx eas init
+npx eas whoami
+npx eas project:info
+npx eas env:get preview --variable-name EXPO_PUBLIC_API_URL --variable-environment preview --format long
+```
+
+If the preview variable is missing, create it as a plaintext project variable:
+
+```bash
+npx eas env:create preview \
+  --name EXPO_PUBLIC_API_URL \
+  --value https://campusconnect-api-u7tq.onrender.com \
+  --visibility plaintext \
+  --scope project \
+  --non-interactive
+```
+
+If the preview variable already exists with a different value, update it:
+
+```bash
+npx eas env:update preview \
+  --variable-name EXPO_PUBLIC_API_URL \
+  --variable-environment preview \
+  --value https://campusconnect-api-u7tq.onrender.com \
+  --visibility plaintext \
+  --scope project \
+  --non-interactive
+```
+
+Dashboard alternative: Expo dashboard for the initialized CampusConnect project,
+then **Environment variables** -> **preview** -> `EXPO_PUBLIC_API_URL` ->
+plaintext value `https://campusconnect-api-u7tq.onrender.com`.
+
 ## Remaining EAS Preview Checklist
 
-- Only remaining internal-preview blockers are EAS preview environment
-  confirmation and explicit preview-build approval.
+- Remaining internal-preview blockers are EAS account/project confirmation, EAS
+  preview environment confirmation, and explicit preview-build approval.
 - Confirm the EAS project is initialized and accessible from the correct Expo
   account.
 - Confirm `EXPO_PUBLIC_API_URL` in the EAS preview environment is set to
