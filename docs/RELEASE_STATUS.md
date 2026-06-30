@@ -3,9 +3,9 @@
 Last audited: 2026-06-30
 
 Scope: hosted Render preview status after API health smoke, release-test
-provisioning, hosted role smoke, and EAS project linking. No EAS build, store
-submission, app identifier change, demo credential change, or Expo SDK upgrade
-was performed.
+provisioning, hosted role smoke, EAS project linking, and EAS preview
+environment configuration. No EAS build, store submission, app identifier
+change, demo credential change, or Expo SDK upgrade was performed.
 
 Operational runbooks:
 
@@ -24,12 +24,11 @@ console, page, React, deprecated-style, or API failures.
 
 ### Internal Preview
 
-No-go until the EAS preview environment is confirmed with the final Render API
-URL and explicit preview-build approval is given. The backend is deployed at
+No-go until explicit preview-build approval is given. The backend is deployed at
 `https://campusconnect-api-u7tq.onrender.com`; hosted health, release-test
-account authentication, role smoke, `publish:check`, and EAS project linkage
-have passed. SDK 54 remains acceptable for internal preview after the EAS
-preview environment and build-approval gates pass.
+account authentication, role smoke, `publish:check`, EAS project linkage, and
+EAS preview environment configuration have passed. SDK 54 remains acceptable for
+internal preview after the build-approval gate passes.
 
 ### Production Store
 
@@ -79,51 +78,31 @@ python -m app.scripts.provision_release_preview --confirm-render-preview
 - Local Expo public config emits `extra.eas.projectId` with
   `c351705a-ec41-4b43-9a35-bac8a0e80a26` while preserving
   `extra.productName`, `extra.apiUrlConfigured`, and `extra.buildProfile`.
-- EAS preview `EXPO_PUBLIC_API_URL` status: not confirmed or set by this
-  executor. Configure the project-scoped preview variable before requesting
-  preview builds.
-- Do not create builds from automation. An authorized operator must complete the
-  preview environment setup from the repo root:
+- EAS preview `EXPO_PUBLIC_API_URL` status: configured and confirmed as a
+  project-scoped public/plaintext string variable in the `preview` environment
+  with value `https://campusconnect-api-u7tq.onrender.com`.
+- Configuration command used:
 
 ```bash
-npx eas env:get preview --variable-name EXPO_PUBLIC_API_URL --variable-environment preview --format long
+npx --yes eas-cli@latest env:create preview --name EXPO_PUBLIC_API_URL --value https://campusconnect-api-u7tq.onrender.com --type string --visibility plaintext --scope project --non-interactive
 ```
 
-If the preview variable is missing, create it as a plaintext project variable:
+- Confirmation command used:
 
 ```bash
-npx eas env:create preview \
-  --name EXPO_PUBLIC_API_URL \
-  --value https://campusconnect-api-u7tq.onrender.com \
-  --visibility plaintext \
-  --scope project \
-  --non-interactive
+npx --yes eas-cli@latest env:get preview --variable-name EXPO_PUBLIC_API_URL --format long --scope project --non-interactive
 ```
 
-If the preview variable already exists with a different value, update it:
-
-```bash
-npx eas env:update preview \
-  --variable-name EXPO_PUBLIC_API_URL \
-  --variable-environment preview \
-  --value https://campusconnect-api-u7tq.onrender.com \
-  --visibility plaintext \
-  --scope project \
-  --non-interactive
-```
-
-Dashboard alternative: Expo dashboard for the initialized CampusConnect project,
-then **Environment variables** -> **preview** -> `EXPO_PUBLIC_API_URL` ->
-plaintext value `https://campusconnect-api-u7tq.onrender.com`.
+Do not create builds from automation. An authorized operator must explicitly
+approve preview builds before any Android APK or iOS internal/TestFlight build
+is started.
 
 ## Remaining EAS Preview Checklist
 
 - EAS project linkage is complete:
   `@ibeahim/campusconnect` / `c351705a-ec41-4b43-9a35-bac8a0e80a26`.
-- Remaining internal-preview blockers are EAS preview environment confirmation
-  and explicit preview-build approval.
-- Confirm `EXPO_PUBLIC_API_URL` in the EAS preview environment is set to
-  `https://campusconnect-api-u7tq.onrender.com`.
+- The only remaining internal-preview blocker is explicit preview-build
+  approval.
 - After explicit approval, create Android preview APK and iOS internal/TestFlight
   preview builds.
 - Install preview builds and repeat role, opportunity, posting, applicant review,
@@ -170,6 +149,9 @@ Latest screenshot set:
 - `cd backend && .venv/bin/python -m pytest`: passed, 105/105 tests.
 - `EXPO_PUBLIC_API_URL=https://campusconnect-api-u7tq.onrender.com npm run publish:check`:
   passed.
+- `EXPO_PUBLIC_API_URL=https://campusconnect-api-u7tq.onrender.com npx expo config --type public --json`:
+  passed and emitted `extra.apiUrlConfigured: true` plus EAS project ID
+  `c351705a-ec41-4b43-9a35-bac8a0e80a26`.
 - Hosted Render role smoke: passed for Member, Student, and Teacher release-test
   accounts against `https://campusconnect-api-u7tq.onrender.com`.
 - Browser-console check: passed locally with installed Google Chrome controlled
@@ -197,8 +179,9 @@ Completed:
 - Member, Student, and Teacher smoke tests pass against the hosted backend.
 - EAS project is linked to `@ibeahim/campusconnect` with project ID
   `c351705a-ec41-4b43-9a35-bac8a0e80a26`.
+- EAS preview environment uses the exact final Render URL:
+  `https://campusconnect-api-u7tq.onrender.com`.
 
 Remaining:
 
-- EAS preview environment uses the exact final Render URL.
 - Explicit approval is given to run EAS preview builds.
