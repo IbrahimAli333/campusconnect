@@ -2,9 +2,9 @@
 
 Last audited: 2026-06-30
 
-Scope: hosted Render preview status after API health smoke and release-test
-provisioning preparation. No EAS build, store submission, app identifier
-change, demo credential change, or Expo SDK upgrade was performed.
+Scope: hosted Render preview status after API health smoke, release-test
+provisioning, and hosted role smoke. No EAS build, store submission, app
+identifier change, demo credential change, or Expo SDK upgrade was performed.
 
 Operational runbooks:
 
@@ -23,14 +23,12 @@ console, page, React, deprecated-style, or API failures.
 
 ### Internal Preview
 
-No-go until provisioning and hosted role smoke pass. The backend is deployed at
-`https://campusconnect-api-u7tq.onrender.com`, and hosted health has passed for
-`/health`, `/api/v1/health`, and `/api/v1/health/db`. Login smoke is still
-blocked because the hosted database does not yet have the release test accounts;
-`member@example.edu` / `member-password` currently returns `401` until the
-guarded release-test provisioning script runs. SDK 54 remains acceptable for
-internal preview after provisioning, role smoke, `publish:check`, and EAS
-preview environment gates pass.
+No-go only until the EAS preview environment is confirmed with the final Render
+API URL and explicit preview-build approval is given. The backend is deployed at
+`https://campusconnect-api-u7tq.onrender.com`; hosted health, release-test
+account authentication, role smoke, and `publish:check` have passed. SDK 54
+remains acceptable for internal preview after the EAS preview environment and
+build-approval gates pass.
 
 ### Production Store
 
@@ -46,13 +44,21 @@ smoke testing, and a planned SDK 56 upgrade review.
   - `GET /health`: `200 OK`
   - `GET /api/v1/health`: `200 OK`
   - `GET /api/v1/health/db`: `200 OK`
-- Hosted login smoke is blocked until provisioning runs:
-  `member@example.edu` / `member-password` returns `401`.
-- Release test accounts must be provisioned through
+- Release test accounts were provisioned through
   `backend/app/scripts/provision_release_preview.py`; do not run
   `backend/app/scripts/seed_dev.py` against Render production.
-- After provisioning, repeat Member, Student, and Teacher role smoke tests
-  against the hosted API.
+- Hosted login smoke passed for Member, Student, and Teacher release-test
+  accounts.
+- Hosted role smoke passed:
+  - Member can read `network/me` as `member`, list profiles, list recommended
+    profiles, list opportunities, save/apply/connect where applicable, and gets
+    `403` for opportunity creation and applicant review.
+  - Student can read `network/me` as `student`, list profiles/opportunities,
+    create a Project opportunity, gets `403` for Research creation, and sees the
+    owned post in My Posts.
+  - Teacher can read `network/me` as `teacher`, create Research, gets `403` for
+    Startup/Project creation, lists applicants for a Teacher-owned Research
+    opportunity, and updates applicant review status.
 - Treat the paid Render deployment as internal preview only, separate from
   production store submission.
 
@@ -65,12 +71,12 @@ python -m app.scripts.provision_release_preview --confirm-render-preview
 
 ## Remaining EAS Preview Checklist
 
+- Only remaining internal-preview blockers are EAS preview environment
+  confirmation and explicit preview-build approval.
 - Confirm the EAS project is initialized and accessible from the correct Expo
   account.
-- Set `EXPO_PUBLIC_API_URL` in the EAS preview environment to
+- Confirm `EXPO_PUBLIC_API_URL` in the EAS preview environment is set to
   `https://campusconnect-api-u7tq.onrender.com`.
-- Run
-  `EXPO_PUBLIC_API_URL=https://campusconnect-api-u7tq.onrender.com npm run publish:check`.
 - After explicit approval, create Android preview APK and iOS internal/TestFlight
   preview builds.
 - Install preview builds and repeat role, opportunity, posting, applicant review,
@@ -117,6 +123,8 @@ Latest screenshot set:
 - `cd backend && .venv/bin/python -m pytest`: passed, 105/105 tests.
 - `EXPO_PUBLIC_API_URL=https://campusconnect-api-u7tq.onrender.com npm run publish:check`:
   passed.
+- Hosted Render role smoke: passed for Member, Student, and Teacher release-test
+  accounts against `https://campusconnect-api-u7tq.onrender.com`.
 - Browser-console check: passed locally with installed Google Chrome controlled
   through the Chrome DevTools Protocol. The in-app browser runtime still returned
   no available browser targets, so CDP was used as the non-invasive local browser
@@ -130,6 +138,8 @@ Latest screenshot set:
 Do not create an Android preview APK or iOS internal/TestFlight build until all
 of these are true:
 
+Completed:
+
 - Final Render HTTPS backend URL is confirmed:
   `https://campusconnect-api-u7tq.onrender.com`.
 - Render `/health`, `/api/v1/health`, and `/api/v1/health/db` have passed
@@ -138,5 +148,8 @@ of these are true:
 - `EXPO_PUBLIC_API_URL=https://campusconnect-api-u7tq.onrender.com npm run publish:check`
   passes with the exact final URL.
 - Member, Student, and Teacher smoke tests pass against the hosted backend.
+
+Remaining:
+
 - EAS preview environment uses the exact final Render URL.
 - Explicit approval is given to run EAS preview builds.
