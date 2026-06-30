@@ -23,12 +23,13 @@ console, page, React, deprecated-style, or API failures.
 
 ### Internal Preview
 
-No-go. The Render Blueprint is set to free plans for internal preview, and SDK
-54 is acceptable for this path after the final Render HTTPS API URL is
-confirmed, reachable, database-backed, and role-smoke-tested; `publish:check`
-must pass with that exact URL, EAS preview environment variables must be
-configured, and hosted role smoke tests must pass before creating preview
-builds.
+No-go. The Render Blueprint is set to paid preview-compatible plans so the
+backend can use Render's pre-deploy command for automatic Alembic migrations.
+SDK 54 is acceptable for this path after Render's cost estimate is reviewed and
+approved, the final Render HTTPS API URL is confirmed, reachable,
+database-backed, and role-smoke-tested; `publish:check` must pass with that
+exact URL, EAS preview environment variables must be configured, and hosted role
+smoke tests must pass before creating preview builds.
 
 ### Production Store
 
@@ -40,8 +41,10 @@ smoke testing, and a planned SDK 56 upgrade review.
 ## Remaining Render Checklist
 
 - Create/import the Render Blueprint from `render.yaml`.
-- Confirm Render shows `campusconnect-api` on the free web service plan and
-  `campusconnect-postgres` on the free PostgreSQL plan.
+- Confirm Render shows `campusconnect-api` on the paid `starter` web service
+  plan and `campusconnect-postgres` on the paid `basic-256mb` PostgreSQL plan.
+- Review Render's estimated cost and get explicit user approval before creating
+  the Blueprint.
 - Confirm the final public HTTPS API URL. The current
   `https://campusconnect-api.onrender.com` value has only been used as an
   HTTPS URL-shape/publish-guard check in this pass.
@@ -55,10 +58,11 @@ smoke testing, and a planned SDK 56 upgrade review.
 - Repeat Member, Student, and Teacher role smoke tests against the hosted API.
 - Do not claim Render smoke passed until the confirmed hosted URL is reachable
   and tested.
-- Expect free web service sleep/wake latency during internal preview.
-- Treat free Render Postgres as preview-only because it has limits, no
-  production guarantees, no backups, and can expire. Move to paid Render plans
-  later for stable demos or production-like preview.
+- Keep the automatic migration path on a paid web service plan because Render
+  free web services do not support `preDeployCommand`; the previous free-tier
+  attempt failed on this limitation.
+- Treat the paid Render deployment as internal preview only, separate from
+  production store submission.
 
 ## Remaining EAS Preview Checklist
 

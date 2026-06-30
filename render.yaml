@@ -1,6 +1,6 @@
 databases:
   - name: campusconnect-postgres
-    plan: free
+    plan: basic-256mb
     databaseName: campusconnect
     user: campusconnect
     ipAllowList: []
@@ -8,7 +8,7 @@ databases:
 services:
   - type: web
     name: campusconnect-api
-    plan: free
+    plan: starter
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend

@@ -19,9 +19,10 @@ Related runbooks:
 
 Local QA is ready for the internal preview path. The repo has the expected
 Render Blueprint, EAS preview profile, publish URL guard, SDK 54 dependency
-baseline, and backend test coverage. The Render Blueprint intentionally uses
-free Render plans for the current internal preview: `campusconnect-api` has
-`plan: free` and `campusconnect-postgres` has `plan: free`. The placeholder URL
+baseline, and backend test coverage. The Render Blueprint uses paid
+preview-compatible plans for the current automatic migration path:
+`campusconnect-api` has `plan: starter` and `campusconnect-postgres` has
+`plan: basic-256mb`. The placeholder URL
 `https://campusconnect-api.onrender.com` is valid only for HTTPS URL-shape
 validation unless Render confirms it as the final service URL.
 
@@ -33,6 +34,7 @@ Node, iOS, Android, and Xcode baselines.
 ## Remaining External Blockers
 
 - Final Render HTTPS API URL is not confirmed.
+- Render's paid preview cost estimate has not been reviewed and approved.
 - Render hosted health and database smoke tests have not run.
 - Release test accounts have not been provisioned on the hosted backend.
 - Hosted Member, Student, and Teacher role smoke tests have not passed.
@@ -43,16 +45,16 @@ Node, iOS, Android, and Xcode baselines.
   before they are started.
 - Production store submission remains out of scope.
 
-## Free Render Plan Caveats
+## Paid Render Plan Gate
 
-The internal preview path uses Render free plans for now. The free web service
-can sleep after idle traffic, so the first request after a quiet period can take
-about a minute to wake.
+The internal preview path now uses paid Render plans because
+`preDeployCommand: alembic upgrade head` is required for automatic database
+migrations and Render free web services do not support `preDeployCommand`. The
+previous free-tier attempt failed at this constraint.
 
-Free Render Postgres is preview-only. It has capacity limits, no production
-guarantees, no backups, and can expire, so do not rely on it for production data
-or long-lived demo data. Paid plans can be selected later for stable demos or a
-production-like preview.
+Render is expected to show an estimated cost before the Blueprint is created.
+Review that estimate and get explicit user approval before deployment. These
+paid preview resources are still separate from production store submission.
 
 ## Do Not Proceed Until
 
@@ -81,18 +83,21 @@ Do not run Android or iOS EAS preview builds until all of these are true:
 4. Select the CampusConnect repo and approved preview branch or commit.
 5. Confirm Render detects `render.yaml` at the repository root.
 6. Review generated resources before creating them:
-   - Web service: `campusconnect-api` on the free plan
-   - PostgreSQL database: `campusconnect-postgres` on the free plan
-7. When prompted, set `UNIVERSITY_PORTAL_CORS_ORIGINS` to blank for mobile-only
+   - Web service: `campusconnect-api` on the paid `starter` plan
+   - PostgreSQL database: `campusconnect-postgres` on the paid `basic-256mb`
+     plan
+7. Review Render's estimated cost and get explicit user approval before
+   creating the Blueprint.
+8. When prompted, set `UNIVERSITY_PORTAL_CORS_ORIGINS` to blank for mobile-only
    preview or a comma-separated list of exact trusted HTTPS browser origins.
-8. Confirm `UNIVERSITY_PORTAL_DATABASE_URL` comes from
+9. Confirm `UNIVERSITY_PORTAL_DATABASE_URL` comes from
    `campusconnect-postgres`, `UNIVERSITY_PORTAL_ENVIRONMENT=production`, and
    `UNIVERSITY_PORTAL_SECRET_KEY` is generated or strong.
-9. Create the Blueprint.
-10. Wait for database provisioning, Docker image build, `alembic upgrade head`,
+10. Create the Blueprint.
+11. Wait for database provisioning, Docker image build, `alembic upgrade head`,
     and API deploy completion.
-11. Copy the final public HTTPS service URL from the Render service overview.
-12. Run the hosted smoke commands below before any EAS setup or builds proceed.
+12. Copy the final public HTTPS service URL from the Render service overview.
+13. Run the hosted smoke commands below before any EAS setup or builds proceed.
 
 ## Render Smoke Test Commands
 

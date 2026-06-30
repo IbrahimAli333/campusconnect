@@ -30,9 +30,11 @@ Local readiness findings:
 - `render.yaml` defines one managed PostgreSQL database named
   `campusconnect-postgres` and one Docker web service named
   `campusconnect-api`.
-- The internal preview Blueprint intentionally uses free Render plans for now:
-  `campusconnect-api` has `plan: free` and `campusconnect-postgres` has
-  `plan: free`.
+- The internal preview Blueprint uses paid preview-compatible Render plans
+  because the current automatic migration path depends on
+  `preDeployCommand`, which is unsupported on free Render web services:
+  `campusconnect-api` has `plan: starter` and `campusconnect-postgres` has
+  `plan: basic-256mb`.
 - The Blueprint schema validates against Render's public
   `https://render.com/schema/render.yaml.json` schema.
 - The web service builds from `backend/Dockerfile` with `backend/` as Docker
@@ -66,13 +68,13 @@ Preflight risks to keep visible:
   tests pass.
 - Hosted smoke tests, release test account provisioning, and role-flow testing
   require Render account access and are still blocked outside this local pass.
-- Free Render plans are for internal preview only. The free web service can
-  sleep after idle traffic and the first wake request can be slow.
-- Free Render Postgres is preview-only: it has limited capacity, no production
-  guarantees, no backups, and can expire. Do not use it for production or any
-  data that must be retained.
-- Paid Render plans can be selected later for stable demos or a
-  production-like preview.
+- A previous free-tier attempt failed because Render free web services do not
+  support `preDeployCommand`; keeping automatic Alembic migrations requires a
+  paid web service plan.
+- Render is expected to show an estimated cost before the Blueprint is created.
+  Review the estimate and get explicit user approval before deploying.
+- The paid preview plans are for internal preview and stable demos only. They
+  do not make this a production-store release.
 
 ## Required Render Blueprint Import Steps
 
@@ -89,22 +91,25 @@ Perform these steps only after explicit deployment approval:
 8. Confirm Render detects the Blueprint file at repository root:
    `render.yaml`.
 9. Review the generated resources before creating them:
-   - Web service: `campusconnect-api` on the free plan
-   - PostgreSQL database: `campusconnect-postgres` on the free plan
-10. When Render prompts for unsynced environment variables, enter
+   - Web service: `campusconnect-api` on the paid `starter` plan
+   - PostgreSQL database: `campusconnect-postgres` on the paid `basic-256mb`
+     plan
+10. Review Render's estimated cost. Create the Blueprint only after the user
+    explicitly approves the paid preview estimate.
+11. When Render prompts for unsynced environment variables, enter
     `UNIVERSITY_PORTAL_CORS_ORIGINS`.
-11. For mobile-only preview, leave `UNIVERSITY_PORTAL_CORS_ORIGINS` blank.
-12. For a web preview, enter a comma-separated list of exact HTTPS browser
+12. For mobile-only preview, leave `UNIVERSITY_PORTAL_CORS_ORIGINS` blank.
+13. For a web preview, enter a comma-separated list of exact HTTPS browser
     origins, for example:
 
 ```text
 https://preview.campusconnect.example
 ```
 
-13. Create the Blueprint only after the generated services, environment
+14. Create the Blueprint only after the generated services, cost estimate,
     variables, and branch are correct.
-14. Wait for the database to provision and the API deploy to complete.
-15. Do not start EAS preview builds at this stage.
+15. Wait for the database to provision and the API deploy to complete.
+16. Do not start EAS preview builds at this stage.
 
 ## Required Environment Variables
 
@@ -137,14 +142,14 @@ Render should create:
 ```text
 Database
   name: campusconnect-postgres
-  plan: free
+  plan: basic-256mb
   databaseName: campusconnect
   user: campusconnect
   public IP allow list: empty
 
 Web service
   name: campusconnect-api
-  plan: free
+  plan: starter
   runtime: docker
   dockerfilePath: ./backend/Dockerfile
   dockerContext: ./backend
