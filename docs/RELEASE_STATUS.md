@@ -1,6 +1,6 @@
 # CampusConnect Release Status
 
-Last audited: 2026-06-29
+Last audited: 2026-06-30
 
 Scope: final local verification after mobile preview polish. No deployment, EAS
 build, store submission, app identifier change, demo credential change, or Expo
@@ -23,11 +23,12 @@ console, page, React, deprecated-style, or API failures.
 
 ### Internal Preview
 
-No-go. SDK 54 is acceptable for an internal preview path after the final Render
-HTTPS API URL is confirmed, reachable, database-backed, and role-smoke-tested;
-`publish:check` must pass with that exact URL, EAS preview environment variables
-must be configured, and hosted role smoke tests must pass before creating
-preview builds.
+No-go. The Render Blueprint is set to free plans for internal preview, and SDK
+54 is acceptable for this path after the final Render HTTPS API URL is
+confirmed, reachable, database-backed, and role-smoke-tested; `publish:check`
+must pass with that exact URL, EAS preview environment variables must be
+configured, and hosted role smoke tests must pass before creating preview
+builds.
 
 ### Production Store
 
@@ -39,6 +40,8 @@ smoke testing, and a planned SDK 56 upgrade review.
 ## Remaining Render Checklist
 
 - Create/import the Render Blueprint from `render.yaml`.
+- Confirm Render shows `campusconnect-api` on the free web service plan and
+  `campusconnect-postgres` on the free PostgreSQL plan.
 - Confirm the final public HTTPS API URL. The current
   `https://campusconnect-api.onrender.com` value has only been used as an
   HTTPS URL-shape/publish-guard check in this pass.
@@ -52,6 +55,10 @@ smoke testing, and a planned SDK 56 upgrade review.
 - Repeat Member, Student, and Teacher role smoke tests against the hosted API.
 - Do not claim Render smoke passed until the confirmed hosted URL is reachable
   and tested.
+- Expect free web service sleep/wake latency during internal preview.
+- Treat free Render Postgres as preview-only because it has limits, no
+  production guarantees, no backups, and can expire. Move to paid Render plans
+  later for stable demos or production-like preview.
 
 ## Remaining EAS Preview Checklist
 

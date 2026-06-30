@@ -1,6 +1,6 @@
 # CampusConnect Render Preview Deployment Checklist
 
-Last prepared: 2026-06-29
+Last prepared: 2026-06-30
 
 Scope: Render preview deployment preparation only. Do not deploy from this
 checklist unless the coordinator explicitly approves deployment. Do not run EAS
@@ -30,6 +30,9 @@ Local readiness findings:
 - `render.yaml` defines one managed PostgreSQL database named
   `campusconnect-postgres` and one Docker web service named
   `campusconnect-api`.
+- The internal preview Blueprint intentionally uses free Render plans for now:
+  `campusconnect-api` has `plan: free` and `campusconnect-postgres` has
+  `plan: free`.
 - The Blueprint schema validates against Render's public
   `https://render.com/schema/render.yaml.json` schema.
 - The web service builds from `backend/Dockerfile` with `backend/` as Docker
@@ -63,6 +66,13 @@ Preflight risks to keep visible:
   tests pass.
 - Hosted smoke tests, release test account provisioning, and role-flow testing
   require Render account access and are still blocked outside this local pass.
+- Free Render plans are for internal preview only. The free web service can
+  sleep after idle traffic and the first wake request can be slow.
+- Free Render Postgres is preview-only: it has limited capacity, no production
+  guarantees, no backups, and can expire. Do not use it for production or any
+  data that must be retained.
+- Paid Render plans can be selected later for stable demos or a
+  production-like preview.
 
 ## Required Render Blueprint Import Steps
 
@@ -79,8 +89,8 @@ Perform these steps only after explicit deployment approval:
 8. Confirm Render detects the Blueprint file at repository root:
    `render.yaml`.
 9. Review the generated resources before creating them:
-   - Web service: `campusconnect-api`
-   - PostgreSQL database: `campusconnect-postgres`
+   - Web service: `campusconnect-api` on the free plan
+   - PostgreSQL database: `campusconnect-postgres` on the free plan
 10. When Render prompts for unsynced environment variables, enter
     `UNIVERSITY_PORTAL_CORS_ORIGINS`.
 11. For mobile-only preview, leave `UNIVERSITY_PORTAL_CORS_ORIGINS` blank.
@@ -127,12 +137,14 @@ Render should create:
 ```text
 Database
   name: campusconnect-postgres
+  plan: free
   databaseName: campusconnect
   user: campusconnect
   public IP allow list: empty
 
 Web service
   name: campusconnect-api
+  plan: free
   runtime: docker
   dockerfilePath: ./backend/Dockerfile
   dockerContext: ./backend

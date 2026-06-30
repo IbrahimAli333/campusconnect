@@ -30,7 +30,9 @@ identifier. After release, changing them creates a different app in the stores.
 ## 2. Deploy The Backend
 
 Use the Render Blueprint in `render.yaml` to create a managed PostgreSQL
-database and hosted HTTPS API service.
+database and hosted HTTPS API service. For internal preview, the Blueprint
+intentionally selects Render free plans for both the API and database. These
+plans avoid preview spend for now, but they are not production-grade.
 
 Backend production requirements:
 
@@ -46,9 +48,9 @@ Render setup:
 1. Push the repository, including `render.yaml`, to GitHub.
 2. In Render, choose **New** -> **Blueprint** and connect/import this repo.
 3. Review the generated resources:
-   - `campusconnect-api` web service
-   - `campusconnect-postgres` managed PostgreSQL database with public
-     connections disabled
+   - `campusconnect-api` web service on the free plan
+   - `campusconnect-postgres` managed PostgreSQL database on the free plan with
+     public connections disabled
 4. During Blueprint creation, enter `UNIVERSITY_PORTAL_CORS_ORIGINS` when
    prompted. Use a comma-separated list of browser origins that may call the
    API, such as `https://your-campusconnect-web-domain.com`. Native mobile
@@ -72,6 +74,15 @@ The Docker image is built from `backend/Dockerfile` with `backend/` as the
 Docker build context. The container starts Uvicorn on `0.0.0.0` using Render's
 `PORT` environment variable, with local Docker defaulting to port `8000`.
 The API connects to PostgreSQL over Render's private network.
+
+Free-plan caveats for internal preview:
+
+- The free web service can sleep after idle traffic, so first requests after a
+  quiet period can wake slowly.
+- Free Render Postgres is preview-only. It has capacity limits, no production
+  guarantees, no backups, and can expire.
+- Select paid Render plans later for stable demos, production-like preview, or
+  production.
 
 Run database migrations on the production database:
 

@@ -1,6 +1,6 @@
 # CampusConnect Internal Preview Handoff
 
-Last prepared: 2026-06-29
+Last prepared: 2026-06-30
 
 Scope: final internal preview handoff only. Do not deploy Render, run EAS
 builds, submit to stores, use external credentials, change app identifiers,
@@ -19,7 +19,9 @@ Related runbooks:
 
 Local QA is ready for the internal preview path. The repo has the expected
 Render Blueprint, EAS preview profile, publish URL guard, SDK 54 dependency
-baseline, and backend test coverage. The placeholder URL
+baseline, and backend test coverage. The Render Blueprint intentionally uses
+free Render plans for the current internal preview: `campusconnect-api` has
+`plan: free` and `campusconnect-postgres` has `plan: free`. The placeholder URL
 `https://campusconnect-api.onrender.com` is valid only for HTTPS URL-shape
 validation unless Render confirms it as the final service URL.
 
@@ -40,6 +42,17 @@ Node, iOS, Android, and Xcode baselines.
 - Android preview APK and iOS internal preview builds need explicit approval
   before they are started.
 - Production store submission remains out of scope.
+
+## Free Render Plan Caveats
+
+The internal preview path uses Render free plans for now. The free web service
+can sleep after idle traffic, so the first request after a quiet period can take
+about a minute to wake.
+
+Free Render Postgres is preview-only. It has capacity limits, no production
+guarantees, no backups, and can expire, so do not rely on it for production data
+or long-lived demo data. Paid plans can be selected later for stable demos or a
+production-like preview.
 
 ## Do Not Proceed Until
 
@@ -68,8 +81,8 @@ Do not run Android or iOS EAS preview builds until all of these are true:
 4. Select the CampusConnect repo and approved preview branch or commit.
 5. Confirm Render detects `render.yaml` at the repository root.
 6. Review generated resources before creating them:
-   - Web service: `campusconnect-api`
-   - PostgreSQL database: `campusconnect-postgres`
+   - Web service: `campusconnect-api` on the free plan
+   - PostgreSQL database: `campusconnect-postgres` on the free plan
 7. When prompted, set `UNIVERSITY_PORTAL_CORS_ORIGINS` to blank for mobile-only
    preview or a comma-separated list of exact trusted HTTPS browser origins.
 8. Confirm `UNIVERSITY_PORTAL_DATABASE_URL` comes from
