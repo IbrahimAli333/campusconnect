@@ -3,10 +3,16 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_active_user
+from app.core.login_rate_limit import login_rate_limiter
 from app.core.security import create_access_token, hash_password, verify_password
 from app.db.session import get_db
 from app.models.user import User, UserRole
-from app.schemas.auth import BootstrapAdminRequest, LoginRequest, TokenResponse
+from app.schemas.auth import (
+    BootstrapAdminRequest,
+    ChangePasswordRequest,
+    LoginRequest,
+    TokenResponse,
+)
 from app.schemas.user import UserRead
 
 
@@ -47,8 +53,16 @@ def login(
     request: LoginRequest,
     db: Session = Depends(get_db),
 ) -> TokenResponse:
+    if login_rate_limiter.is_blocked(request.email):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many failed login attempts. Try again later.",
+            headers={"Retry-After": str(login_rate_limiter.window_seconds)},
+        )
+
     user = db.scalar(select(User).where(User.email == request.email))
     if user is None or not verify_password(request.password, user.hashed_password):
+        login_rate_limiter.record_failure(request.email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
@@ -62,8 +76,25 @@ def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    login_rate_limiter.record_success(request.email)
     access_token = create_access_token(user.id, user.role)
     return TokenResponse(access_token=access_token, user=UserRead.model_validate(user))
+
+
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+def change_password(
+    request: ChangePasswordRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> None:
+    if not verify_password(request.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect",
+        )
+
+    current_user.hashed_password = hash_password(request.new_password)
+    db.commit()
 
 
 @router.get("/me", response_model=UserRead)

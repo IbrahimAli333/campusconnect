@@ -205,3 +205,95 @@ def test_password_hashes_do_not_equal_raw_password(
         user = db.query(User).filter(User.email == ADMIN_PAYLOAD["email"]).one()
 
     assert user.hashed_password != ADMIN_PAYLOAD["password"]
+
+
+def _seed_and_login_payload() -> dict[str, str]:
+    return {"email": ADMIN_PAYLOAD["email"], "password": ADMIN_PAYLOAD["password"]}
+
+
+def test_login_is_rate_limited_after_repeated_failures(
+    client_and_sessionmaker: tuple[TestClient, "sessionmaker[Session]"],
+) -> None:
+    client, _ = client_and_sessionmaker
+    client.post("/api/v1/auth/bootstrap-admin", json=ADMIN_PAYLOAD)
+
+    for _ in range(5):
+        response = client.post(
+            "/api/v1/auth/login",
+            json={"email": ADMIN_PAYLOAD["email"], "password": "wrong-password"},
+        )
+        assert response.status_code == 401
+
+    blocked_response = client.post(
+        "/api/v1/auth/login",
+        json={"email": ADMIN_PAYLOAD["email"], "password": "wrong-password"},
+    )
+    blocked_valid_response = client.post(
+        "/api/v1/auth/login",
+        json=_seed_and_login_payload(),
+    )
+
+    assert blocked_response.status_code == 429
+    assert "Retry-After" in blocked_response.headers
+    assert blocked_valid_response.status_code == 429
+
+
+def test_successful_login_resets_failure_count(
+    client_and_sessionmaker: tuple[TestClient, "sessionmaker[Session]"],
+) -> None:
+    client, _ = client_and_sessionmaker
+    client.post("/api/v1/auth/bootstrap-admin", json=ADMIN_PAYLOAD)
+
+    for _ in range(4):
+        client.post(
+            "/api/v1/auth/login",
+            json={"email": ADMIN_PAYLOAD["email"], "password": "wrong-password"},
+        )
+
+    success_response = client.post("/api/v1/auth/login", json=_seed_and_login_payload())
+    for _ in range(4):
+        client.post(
+            "/api/v1/auth/login",
+            json={"email": ADMIN_PAYLOAD["email"], "password": "wrong-password"},
+        )
+    after_reset_response = client.post(
+        "/api/v1/auth/login",
+        json=_seed_and_login_payload(),
+    )
+
+    assert success_response.status_code == 200
+    assert after_reset_response.status_code == 200
+
+
+def test_user_can_change_password(
+    client_and_sessionmaker: tuple[TestClient, "sessionmaker[Session]"],
+) -> None:
+    client, _ = client_and_sessionmaker
+    client.post("/api/v1/auth/bootstrap-admin", json=ADMIN_PAYLOAD)
+    token = client.post("/api/v1/auth/login", json=_seed_and_login_payload()).json()[
+        "access_token"
+    ]
+
+    wrong_current_response = client.post(
+        "/api/v1/auth/change-password",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"current_password": "not-the-password", "new_password": "new-secret-password"},
+    )
+    change_response = client.post(
+        "/api/v1/auth/change-password",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "current_password": ADMIN_PAYLOAD["password"],
+            "new_password": "new-secret-password",
+        },
+    )
+    old_password_login = client.post("/api/v1/auth/login", json=_seed_and_login_payload())
+    new_password_login = client.post(
+        "/api/v1/auth/login",
+        json={"email": ADMIN_PAYLOAD["email"], "password": "new-secret-password"},
+    )
+
+    assert wrong_current_response.status_code == 400
+    assert change_response.status_code == 204
+    assert old_password_login.status_code == 401
+    assert new_password_login.status_code == 200

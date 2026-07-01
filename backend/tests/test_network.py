@@ -1389,3 +1389,94 @@ def test_applicant_cannot_withdraw_reviewed_application(
     )
 
     assert withdraw_response.status_code == 400
+
+
+def test_reverse_direction_connection_request_is_rejected(
+    seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+) -> None:
+    client, testing_session_local = seeded_client_and_sessionmaker
+    student_token = _login(client, "student")
+    teacher_token = _login(client, "teacher")
+    student_profile_id = _profile_id_for_email(
+        testing_session_local,
+        DEV_CREDENTIALS["student"]["email"],
+    )
+    teacher_profile_id = _profile_id_for_email(
+        testing_session_local,
+        DEV_CREDENTIALS["teacher"]["email"],
+    )
+
+    first_response = client.post(
+        f"/api/v1/network/connections/{teacher_profile_id}/request",
+        headers=_auth_headers(student_token),
+        json={"message": "Hello."},
+    )
+    reverse_response = client.post(
+        f"/api/v1/network/connections/{student_profile_id}/request",
+        headers=_auth_headers(teacher_token),
+        json={"message": "Hello back."},
+    )
+
+    assert first_response.status_code == 201
+    assert reverse_response.status_code == 409
+
+
+def test_declined_request_allows_new_reverse_request(
+    seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+) -> None:
+    client, testing_session_local = seeded_client_and_sessionmaker
+    student_token = _login(client, "student")
+    teacher_token = _login(client, "teacher")
+    student_profile_id = _profile_id_for_email(
+        testing_session_local,
+        DEV_CREDENTIALS["student"]["email"],
+    )
+    teacher_profile_id = _profile_id_for_email(
+        testing_session_local,
+        DEV_CREDENTIALS["teacher"]["email"],
+    )
+    request_response = client.post(
+        f"/api/v1/network/connections/{teacher_profile_id}/request",
+        headers=_auth_headers(student_token),
+        json={"message": "Hello."},
+    )
+    connection_id = request_response.json()["id"]
+    client.patch(
+        f"/api/v1/network/connections/{connection_id}",
+        headers=_auth_headers(teacher_token),
+        json={"status": "declined"},
+    )
+
+    reverse_response = client.post(
+        f"/api/v1/network/connections/{student_profile_id}/request",
+        headers=_auth_headers(teacher_token),
+        json={"message": "Changed my mind."},
+    )
+
+    assert reverse_response.status_code == 201
+
+
+def test_profiles_list_returns_full_profiles_and_respects_pagination(
+    seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+) -> None:
+    client, _ = seeded_client_and_sessionmaker
+    student_token = _login(client, "student")
+
+    full_response = client.get(
+        "/api/v1/network/profiles",
+        headers=_auth_headers(student_token),
+    )
+    paged_response = client.get(
+        "/api/v1/network/profiles?limit=1&offset=1",
+        headers=_auth_headers(student_token),
+    )
+
+    assert full_response.status_code == 200
+    profiles = full_response.json()
+    assert len(profiles) >= 2
+    assert "skills" in profiles[0]
+    assert "resume_entries" in profiles[0]
+    assert paged_response.status_code == 200
+    paged = paged_response.json()
+    assert len(paged) == 1
+    assert paged[0]["id"] == profiles[1]["id"]

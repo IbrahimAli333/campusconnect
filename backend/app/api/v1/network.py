@@ -4,7 +4,7 @@ import re
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
@@ -886,11 +886,13 @@ def delete_my_resume_entry(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.get("/profiles", response_model=list[ProfileSummary])
+@router.get("/profiles", response_model=list[ProfileRead])
 def list_network_profiles(
+    limit: int = Query(default=100, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
-) -> list[ProfileSummary]:
+) -> list[ProfileRead]:
     viewer_profile = _get_or_create_profile(db, current_user)
     visibility_filters = [
         UserProfile.id == viewer_profile.id,
@@ -907,11 +909,13 @@ def list_network_profiles(
     profiles = db.scalars(
         select(UserProfile)
         .join(UserProfile.user)
-        .options(joinedload(UserProfile.user))
+        .options(*_profile_load_options())
         .where(or_(*visibility_filters))
         .order_by(User.full_name, UserProfile.id)
+        .limit(limit)
+        .offset(offset)
     ).all()
-    return [_profile_summary(profile) for profile in profiles]
+    return [_profile_response(profile) for profile in profiles]
 
 
 @router.get("/recommendations/profiles", response_model=list[ProfileRecommendationRead])
@@ -1000,6 +1004,8 @@ def read_network_profile(
 
 @router.get("/applications/me", response_model=list[MyOpportunityApplicationRead])
 def list_my_applications(
+    limit: int = Query(default=100, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ) -> list[MyOpportunityApplicationRead]:
@@ -1016,6 +1022,8 @@ def list_my_applications(
             OpportunityApplication.created_at.desc(),
             OpportunityApplication.id.desc(),
         )
+        .limit(limit)
+        .offset(offset)
     ).all()
     return [_my_application_response(application) for application in applications]
 
@@ -1145,6 +1153,8 @@ def withdraw_my_application(
 
 @router.get("/opportunities", response_model=list[OpportunityRead])
 def list_opportunities(
+    limit: int = Query(default=100, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ) -> list[OpportunityRead]:
@@ -1159,12 +1169,16 @@ def list_opportunities(
             )
         )
         .order_by(Opportunity.created_at.desc(), Opportunity.id.desc())
+        .limit(limit)
+        .offset(offset)
     ).all()
     return [_opportunity_response(opportunity) for opportunity in opportunities]
 
 
 @router.get("/opportunities/mine", response_model=list[OpportunityRead])
 def list_my_owned_opportunities(
+    limit: int = Query(default=100, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ) -> list[OpportunityRead]:
@@ -1174,6 +1188,8 @@ def list_my_owned_opportunities(
         .options(*_opportunity_load_options())
         .where(Opportunity.owner_profile_id == profile.id)
         .order_by(Opportunity.created_at.desc(), Opportunity.id.desc())
+        .limit(limit)
+        .offset(offset)
     ).all()
     return [_opportunity_response(opportunity) for opportunity in opportunities]
 
@@ -1397,8 +1413,17 @@ def request_connection(
 
     existing_request = db.scalar(
         select(ConnectionRequest).where(
-            ConnectionRequest.requester_profile_id == requester_profile.id,
-            ConnectionRequest.receiver_profile_id == receiver_profile.id,
+            or_(
+                and_(
+                    ConnectionRequest.requester_profile_id == requester_profile.id,
+                    ConnectionRequest.receiver_profile_id == receiver_profile.id,
+                ),
+                and_(
+                    ConnectionRequest.requester_profile_id == receiver_profile.id,
+                    ConnectionRequest.receiver_profile_id == requester_profile.id,
+                    ConnectionRequest.status.in_(("pending", "accepted")),
+                ),
+            )
         )
     )
     if existing_request is not None:

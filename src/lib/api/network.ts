@@ -15,7 +15,6 @@ import type {
   OpportunityUpdatePayload,
   ProfileRead,
   ProfileRecommendationRead,
-  ProfileSummary,
   ProfileUpdatePayload,
   ResumeEntryCreatePayload,
   ResumeEntryRead,
@@ -200,9 +199,8 @@ export function deleteResumeEntry(token: string, resumeEntryId: number): Promise
   });
 }
 
-export async function listProfiles(token: string): Promise<ProfileRead[]> {
-  const profiles = await requestNetworkJson<ProfileSummary[]>("/api/v1/network/profiles", token);
-  return Promise.all(profiles.map((profile) => getProfileDetail(token, profile.id)));
+export function listProfiles(token: string): Promise<ProfileRead[]> {
+  return requestNetworkJson<ProfileRead[]>("/api/v1/network/profiles", token);
 }
 
 export function getRecommendedProfiles(token: string): Promise<ProfileRecommendationRead[]> {

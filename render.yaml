@@ -30,6 +30,6 @@ services:
       - key: UNIVERSITY_PORTAL_ALGORITHM
         value: HS256
       - key: UNIVERSITY_PORTAL_ACCESS_TOKEN_EXPIRE_MINUTES
-        value: 60
+        value: 10080
       - key: UNIVERSITY_PORTAL_CORS_ORIGINS
         sync: false
