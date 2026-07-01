@@ -72,7 +72,7 @@ htmlcov/
 
 # QA artifacts
 screenshots/
-campusconnect-preview-fixed.apk
+*.apk
 
 # generated native folders
 /ios
