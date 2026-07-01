@@ -2,9 +2,10 @@ import { Text, View, useWindowDimensions } from "react-native";
 import { Bell, GraduationCap, LogOut, Users } from "lucide-react-native";
 
 import { palette, styles } from "../../styles/theme";
-import type { UserRole } from "../../types/portal";
 import { IconButton } from "./IconButton";
 import { RoleButton } from "./RoleButton";
+
+type UserRole = "member" | "student" | "teacher";
 
 export function PortalHeader({
   onRoleChange,

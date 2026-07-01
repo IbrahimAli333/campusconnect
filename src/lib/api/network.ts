@@ -1,6 +1,7 @@
 import { API_BASE_URL } from "./config";
 import { fetchWithTimeout } from "./request";
 import type {
+  ConnectionRequestDecision,
   ConnectionRequestRead,
   MyConnectionsRead,
   MyOpportunityApplicationRead,
@@ -11,6 +12,7 @@ import type {
   OpportunityDetailRead,
   OpportunityRecommendationRead,
   OpportunityRead,
+  OpportunityUpdatePayload,
   ProfileRead,
   ProfileRecommendationRead,
   ProfileSummary,
@@ -36,6 +38,12 @@ export class NetworkApiError extends Error {
     this.name = "NetworkApiError";
     this.status = status;
   }
+}
+
+let unauthorizedHandler: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  unauthorizedHandler = handler;
 }
 
 async function getErrorMessage(response: Response): Promise<string> {
@@ -81,6 +89,9 @@ async function requestNetworkJson<TResponse>(
   }
 
   if (!response.ok) {
+    if (response.status === 401) {
+      unauthorizedHandler?.();
+    }
     throw new NetworkApiError(await getErrorMessage(response), response.status);
   }
 
@@ -110,6 +121,9 @@ async function requestNetworkNoContent(
   }
 
   if (!response.ok) {
+    if (response.status === 401) {
+      unauthorizedHandler?.();
+    }
     throw new NetworkApiError(await getErrorMessage(response), response.status);
   }
 }
@@ -262,5 +276,39 @@ export function getMyConnections(token: string): Promise<MyConnectionsRead> {
 export function saveOpportunity(token: string, opportunityId: number): Promise<SavedOpportunityRead> {
   return requestNetworkJson<SavedOpportunityRead>(`/api/v1/network/opportunities/${opportunityId}/save`, token, {
     method: "POST",
+  });
+}
+
+export function unsaveOpportunity(token: string, opportunityId: number): Promise<void> {
+  return requestNetworkNoContent(`/api/v1/network/opportunities/${opportunityId}/save`, token, {
+    method: "DELETE",
+  });
+}
+
+export function updateOpportunity(
+  token: string,
+  opportunityId: number,
+  payload: OpportunityUpdatePayload,
+): Promise<OpportunityRead> {
+  return requestNetworkJson<OpportunityRead>(`/api/v1/network/opportunities/${opportunityId}`, token, {
+    method: "PATCH",
+    ...jsonRequest(payload),
+  });
+}
+
+export function withdrawApplication(token: string, applicationId: number): Promise<void> {
+  return requestNetworkNoContent(`/api/v1/network/applications/${applicationId}`, token, {
+    method: "DELETE",
+  });
+}
+
+export function updateConnectionStatus(
+  token: string,
+  connectionId: number,
+  status: ConnectionRequestDecision,
+): Promise<ConnectionRequestRead> {
+  return requestNetworkJson<ConnectionRequestRead>(`/api/v1/network/connections/${connectionId}`, token, {
+    method: "PATCH",
+    ...jsonRequest({ status }),
   });
 }

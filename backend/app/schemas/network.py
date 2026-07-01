@@ -259,6 +259,13 @@ class ConnectionRequestUpdate(BaseModel):
     message: Optional[str] = None
 
 
+ConnectionRequestDecision = Literal["accepted", "declined", "canceled"]
+
+
+class ConnectionRequestStatusUpdate(BaseModel):
+    status: ConnectionRequestDecision
+
+
 class ConnectionRequestRead(ReadSchema):
     id: int
     requester_profile: ProfileSummary

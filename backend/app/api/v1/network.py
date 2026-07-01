@@ -22,6 +22,7 @@ from app.models.user_skill import UserSkill
 from app.schemas.network import (
     ConnectionRequestCreate,
     ConnectionRequestRead,
+    ConnectionRequestStatusUpdate,
     MyConnectionsRead,
     MyOpportunityApplicationRead,
     NetworkUserSummary,
@@ -30,6 +31,7 @@ from app.schemas.network import (
     OpportunityApplicationStatusUpdate,
     OpportunityCreate,
     OpportunityDetailRead,
+    OpportunityUpdate,
     OpportunityRecommendationRead,
     OwnerOpportunityApplicationRead,
     OpportunityRead,
@@ -1112,6 +1114,35 @@ def update_application_status(
     return _owner_application_response(_get_owner_loaded_application(db, application.id))
 
 
+@router.delete("/applications/{application_id}", status_code=status.HTTP_204_NO_CONTENT)
+def withdraw_my_application(
+    application_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    profile = _get_or_create_profile(db, current_user)
+    application = db.scalar(
+        select(OpportunityApplication).where(
+            OpportunityApplication.id == application_id,
+            OpportunityApplication.applicant_profile_id == profile.id,
+        )
+    )
+    if application is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found",
+        )
+    if application.status not in OWNER_REVIEWABLE_APPLICATION_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Application cannot be withdrawn after review is complete",
+        )
+
+    db.delete(application)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.get("/opportunities", response_model=list[OpportunityRead])
 def list_opportunities(
     current_user: User = Depends(get_current_active_user),
@@ -1222,6 +1253,38 @@ def create_opportunity(
     return _opportunity_response(_get_opportunity(db, opportunity.id))
 
 
+@router.patch("/opportunities/{opportunity_id}", response_model=OpportunityRead)
+def update_opportunity(
+    opportunity_id: int,
+    request: OpportunityUpdate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> OpportunityRead:
+    profile = _get_or_create_profile(db, current_user)
+    opportunity = _get_opportunity(db, opportunity_id)
+    if opportunity.owner_profile_id != profile.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the opportunity owner can update this opportunity",
+        )
+
+    updates = request.model_dump(exclude_unset=True)
+    if (
+        "type" in updates
+        and updates["type"] not in _allowed_opportunity_types(profile)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=_opportunity_authoring_detail(profile),
+        )
+
+    for field, value in updates.items():
+        setattr(opportunity, field, value)
+
+    db.commit()
+    return _opportunity_response(_get_opportunity(db, opportunity.id))
+
+
 @router.post(
     "/opportunities/{opportunity_id}/apply",
     response_model=OpportunityApplicationRead,
@@ -1234,7 +1297,17 @@ def apply_to_opportunity(
     db: Session = Depends(get_db),
 ) -> OpportunityApplicationRead:
     profile = _get_or_create_profile(db, current_user)
-    _get_opportunity(db, opportunity_id)
+    opportunity = _get_opportunity(db, opportunity_id)
+    if opportunity.owner_profile_id == profile.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot apply to your own opportunity",
+        )
+    if opportunity.status != "open":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Opportunity is not open for applications",
+        )
     existing_application = db.scalar(
         select(OpportunityApplication).where(
             OpportunityApplication.opportunity_id == opportunity_id,
@@ -1358,6 +1431,50 @@ def request_connection(
     return _connection_response(connection_request)
 
 
+@router.patch("/connections/{connection_id}", response_model=ConnectionRequestRead)
+def update_connection_status(
+    connection_id: int,
+    request: ConnectionRequestStatusUpdate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> ConnectionRequestRead:
+    profile = _get_or_create_profile(db, current_user)
+    connection = db.scalar(
+        select(ConnectionRequest)
+        .options(*_connection_load_options())
+        .where(ConnectionRequest.id == connection_id)
+    )
+    if connection is None or profile.id not in (
+        connection.requester_profile_id,
+        connection.receiver_profile_id,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Connection request not found",
+        )
+    if connection.status != "pending":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Connection request has already been resolved",
+        )
+
+    if request.status == "canceled":
+        if connection.requester_profile_id != profile.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only the requester can cancel a connection request",
+            )
+    elif connection.receiver_profile_id != profile.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the receiver can accept or decline a connection request",
+        )
+
+    connection.status = request.status
+    db.commit()
+    return _connection_response(connection)
+
+
 @router.post(
     "/opportunities/{opportunity_id}/save",
     response_model=SavedOpportunityRead,
@@ -1390,3 +1507,30 @@ def save_opportunity(
     db.commit()
     db.refresh(saved_opportunity)
     return SavedOpportunityRead.model_validate(saved_opportunity)
+
+
+@router.delete(
+    "/opportunities/{opportunity_id}/save",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def unsave_opportunity(
+    opportunity_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    profile = _get_or_create_profile(db, current_user)
+    saved_opportunity = db.scalar(
+        select(SavedOpportunity).where(
+            SavedOpportunity.profile_id == profile.id,
+            SavedOpportunity.opportunity_id == opportunity_id,
+        )
+    )
+    if saved_opportunity is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Saved opportunity not found",
+        )
+
+    db.delete(saved_opportunity)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

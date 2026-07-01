@@ -1166,3 +1166,226 @@ def test_network_responses_do_not_include_password_fields(
         data = response.json()
         assert not _contains_key(data, "hashed_password")
         assert not _contains_key(data, "password")
+
+
+def test_receiver_can_accept_connection_request(
+    seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+) -> None:
+    client, testing_session_local = seeded_client_and_sessionmaker
+    student_token = _login(client, "student")
+    teacher_token = _login(client, "teacher")
+    teacher_profile_id = _profile_id_for_email(
+        testing_session_local,
+        DEV_CREDENTIALS["teacher"]["email"],
+    )
+    request_response = client.post(
+        f"/api/v1/network/connections/{teacher_profile_id}/request",
+        headers=_auth_headers(student_token),
+        json={"message": "Mentorship request."},
+    )
+    connection_id = request_response.json()["id"]
+
+    accept_response = client.patch(
+        f"/api/v1/network/connections/{connection_id}",
+        headers=_auth_headers(teacher_token),
+        json={"status": "accepted"},
+    )
+    repeat_response = client.patch(
+        f"/api/v1/network/connections/{connection_id}",
+        headers=_auth_headers(teacher_token),
+        json={"status": "declined"},
+    )
+
+    assert request_response.status_code == 201
+    assert accept_response.status_code == 200
+    assert accept_response.json()["status"] == "accepted"
+    assert repeat_response.status_code == 400
+
+
+def test_requester_cannot_accept_own_connection_request(
+    seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+) -> None:
+    client, testing_session_local = seeded_client_and_sessionmaker
+    student_token = _login(client, "student")
+    teacher_profile_id = _profile_id_for_email(
+        testing_session_local,
+        DEV_CREDENTIALS["teacher"]["email"],
+    )
+    request_response = client.post(
+        f"/api/v1/network/connections/{teacher_profile_id}/request",
+        headers=_auth_headers(student_token),
+        json={"message": "Mentorship request."},
+    )
+    connection_id = request_response.json()["id"]
+
+    accept_response = client.patch(
+        f"/api/v1/network/connections/{connection_id}",
+        headers=_auth_headers(student_token),
+        json={"status": "accepted"},
+    )
+    cancel_response = client.patch(
+        f"/api/v1/network/connections/{connection_id}",
+        headers=_auth_headers(student_token),
+        json={"status": "canceled"},
+    )
+
+    assert accept_response.status_code == 403
+    assert cancel_response.status_code == 200
+    assert cancel_response.json()["status"] == "canceled"
+
+
+def test_owner_can_update_and_close_opportunity(
+    seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+) -> None:
+    client, testing_session_local = seeded_client_and_sessionmaker
+    student_token = _login(client, "student")
+    teacher_token = _login(client, "teacher")
+    research_opportunity_id = _opportunity_id_by_type(testing_session_local, "research")
+
+    non_owner_response = client.patch(
+        f"/api/v1/network/opportunities/{research_opportunity_id}",
+        headers=_auth_headers(student_token),
+        json={"title": "Hijacked"},
+    )
+    owner_response = client.patch(
+        f"/api/v1/network/opportunities/{research_opportunity_id}",
+        headers=_auth_headers(teacher_token),
+        json={"title": "Updated research title", "status": "closed"},
+    )
+
+    assert non_owner_response.status_code == 403
+    assert owner_response.status_code == 200
+    data = owner_response.json()
+    assert data["title"] == "Updated research title"
+    assert data["status"] == "closed"
+
+
+def test_owner_cannot_change_opportunity_to_disallowed_type(
+    seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+) -> None:
+    client, testing_session_local = seeded_client_and_sessionmaker
+    teacher_token = _login(client, "teacher")
+    research_opportunity_id = _opportunity_id_by_type(testing_session_local, "research")
+
+    response = client.patch(
+        f"/api/v1/network/opportunities/{research_opportunity_id}",
+        headers=_auth_headers(teacher_token),
+        json={"type": "job"},
+    )
+
+    assert response.status_code == 403
+
+
+def test_cannot_apply_to_closed_or_own_opportunity(
+    seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+) -> None:
+    client, testing_session_local = seeded_client_and_sessionmaker
+    student_token = _login(client, "student")
+    teacher_token = _login(client, "teacher")
+    research_opportunity_id = _opportunity_id_by_type(testing_session_local, "research")
+
+    own_apply_response = client.post(
+        f"/api/v1/network/opportunities/{research_opportunity_id}/apply",
+        headers=_auth_headers(teacher_token),
+        json={"note": "Applying to my own post."},
+    )
+    close_response = client.patch(
+        f"/api/v1/network/opportunities/{research_opportunity_id}",
+        headers=_auth_headers(teacher_token),
+        json={"status": "closed"},
+    )
+    closed_apply_response = client.post(
+        f"/api/v1/network/opportunities/{research_opportunity_id}/apply",
+        headers=_auth_headers(student_token),
+        json={"note": "Too late."},
+    )
+
+    assert own_apply_response.status_code == 400
+    assert close_response.status_code == 200
+    assert closed_apply_response.status_code == 400
+
+
+def test_user_can_unsave_opportunity(
+    seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+) -> None:
+    client, testing_session_local = seeded_client_and_sessionmaker
+    student_token = _login(client, "student")
+    opportunity_id = _opportunity_id_by_type(testing_session_local, "internship")
+
+    save_response = client.post(
+        f"/api/v1/network/opportunities/{opportunity_id}/save",
+        headers=_auth_headers(student_token),
+    )
+    unsave_response = client.delete(
+        f"/api/v1/network/opportunities/{opportunity_id}/save",
+        headers=_auth_headers(student_token),
+    )
+    repeat_unsave_response = client.delete(
+        f"/api/v1/network/opportunities/{opportunity_id}/save",
+        headers=_auth_headers(student_token),
+    )
+
+    assert save_response.status_code == 201
+    assert unsave_response.status_code == 204
+    assert repeat_unsave_response.status_code == 404
+
+
+def test_applicant_can_withdraw_pending_application(
+    seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+) -> None:
+    client, testing_session_local = seeded_client_and_sessionmaker
+    student_token = _login(client, "student")
+    teacher_token = _login(client, "teacher")
+    research_opportunity_id = _opportunity_id_by_type(testing_session_local, "research")
+    apply_response = client.post(
+        f"/api/v1/network/opportunities/{research_opportunity_id}/apply",
+        headers=_auth_headers(student_token),
+        json={"note": "First try."},
+    )
+    application_id = apply_response.json()["id"]
+
+    non_applicant_withdraw = client.delete(
+        f"/api/v1/network/applications/{application_id}",
+        headers=_auth_headers(teacher_token),
+    )
+    withdraw_response = client.delete(
+        f"/api/v1/network/applications/{application_id}",
+        headers=_auth_headers(student_token),
+    )
+    reapply_response = client.post(
+        f"/api/v1/network/opportunities/{research_opportunity_id}/apply",
+        headers=_auth_headers(student_token),
+        json={"note": "Second try after withdrawing."},
+    )
+
+    assert apply_response.status_code == 201
+    assert non_applicant_withdraw.status_code == 404
+    assert withdraw_response.status_code == 204
+    assert reapply_response.status_code == 201
+
+
+def test_applicant_cannot_withdraw_reviewed_application(
+    seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+) -> None:
+    client, testing_session_local = seeded_client_and_sessionmaker
+    student_token = _login(client, "student")
+    teacher_token = _login(client, "teacher")
+    research_opportunity_id = _opportunity_id_by_type(testing_session_local, "research")
+    apply_response = client.post(
+        f"/api/v1/network/opportunities/{research_opportunity_id}/apply",
+        headers=_auth_headers(student_token),
+        json={"note": "Please review."},
+    )
+    application_id = apply_response.json()["id"]
+    client.patch(
+        f"/api/v1/network/applications/{application_id}",
+        headers=_auth_headers(teacher_token),
+        json={"status": "accepted"},
+    )
+
+    withdraw_response = client.delete(
+        f"/api/v1/network/applications/{application_id}",
+        headers=_auth_headers(student_token),
+    )
+
+    assert withdraw_response.status_code == 400

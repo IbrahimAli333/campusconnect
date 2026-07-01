@@ -18,6 +18,8 @@ export type OwnerApplicationStatusUpdate = "reviewing" | "accepted" | "rejected"
 
 export type ConnectionRequestStatus = "pending" | "accepted" | "declined" | "canceled";
 
+export type ConnectionRequestDecision = "accepted" | "declined" | "canceled";
+
 export interface NetworkUserSummary {
   id: number;
   email: string;
@@ -157,6 +159,14 @@ export interface OpportunityCreatePayload {
   title: string;
   description: string;
   required_skills: string[];
+  status?: OpportunityStatus;
+}
+
+export interface OpportunityUpdatePayload {
+  type?: OpportunityType;
+  title?: string;
+  description?: string;
+  required_skills?: string[];
   status?: OpportunityStatus;
 }
 

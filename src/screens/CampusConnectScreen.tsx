@@ -58,14 +58,21 @@ import {
   listProfiles,
   requestConnection,
   saveOpportunity,
+  unsaveOpportunity,
   updateApplicationStatus,
+  updateConnectionStatus,
   updateMySkill,
   updateMyProfile,
+  updateOpportunity,
   updateResumeEntry,
+  withdrawApplication,
 } from "../lib/api/network";
 import { usePortalData } from "../lib/api/usePortalData";
 import { palette, paperShadow, paperTexture, styles, webSafeTextShadow } from "../styles/theme";
 import type {
+  ConnectionRequestDecision,
+  ConnectionRequestRead,
+  MyOpportunityApplicationRead,
   NetworkTab,
   NetworkRole,
   OwnerApplicationStatusUpdate,
@@ -191,6 +198,10 @@ function toErrorMessage(error: unknown): string {
 
 function isConflict(error: unknown): boolean {
   return error instanceof NetworkApiError && error.status === 409;
+}
+
+function isNotFound(error: unknown): boolean {
+  return error instanceof NetworkApiError && error.status === 404;
 }
 
 function profileSkills(profile: ProfileRead): string[] {
@@ -866,9 +877,8 @@ function OpportunityCard({
           wide
         />
         <InlineAction
-          disabled={saveState === "sent"}
           icon={Save}
-          label={saveState === "sent" ? "Saved" : "Save"}
+          label={saveState === "sent" ? "Unsave" : "Save"}
           loading={saveState === "sending"}
           onPress={onSave}
           secondary
@@ -1079,9 +1089,8 @@ function OpportunityDetailPanel({
               wide
             />
             <InlineAction
-              disabled={saved}
               icon={Save}
-              label={saved ? "Saved" : "Save"}
+              label={saved ? "Unsave" : "Save"}
               loading={saveState === "sending"}
               onPress={() => onSave(detail)}
               secondary
@@ -1485,6 +1494,8 @@ function OpportunitiesScreen({ token }: { token: string | null }) {
   const [applyState, setApplyState] = useState<Record<number, ActionState>>({});
   const [saveState, setSaveState] = useState<Record<number, ActionState>>({});
   const [actionMessages, setActionMessages] = useState<Record<string, string>>({});
+  const [ownedStatusUpdating, setOwnedStatusUpdating] = useState<Record<number, boolean>>({});
+  const [ownedStatusErrors, setOwnedStatusErrors] = useState<Record<number, boolean>>({});
   const [selectedOpportunityId, setSelectedOpportunityId] = useState<number | null>(null);
   const [opportunityDetail, setOpportunityDetail] = useState<OpportunityDetailRead | null>(null);
   const [opportunityDetailLoading, setOpportunityDetailLoading] = useState(false);
@@ -1747,7 +1758,7 @@ function OpportunitiesScreen({ token }: { token: string | null }) {
     }
   }
 
-  async function save(opportunity: OpportunityRead) {
+  async function save(opportunity: OpportunityRead, currentlySaved: boolean) {
     if (!token) {
       return;
     }
@@ -1755,6 +1766,23 @@ function OpportunitiesScreen({ token }: { token: string | null }) {
     const key = `${opportunity.id}:save`;
     setSaveState((current) => ({ ...current, [opportunity.id]: "sending" }));
     setActionMessages((current) => ({ ...current, [key]: "" }));
+
+    if (currentlySaved) {
+      try {
+        await unsaveOpportunity(token, opportunity.id);
+      } catch (error) {
+        if (!isNotFound(error)) {
+          setSaveState((current) => ({ ...current, [opportunity.id]: "error" }));
+          setActionMessages((current) => ({ ...current, [key]: toErrorMessage(error) }));
+          return;
+        }
+      }
+
+      setSaveState((current) => ({ ...current, [opportunity.id]: "idle" }));
+      setActionMessages((current) => ({ ...current, [key]: "Removed from saved." }));
+      setOpportunityDetail((current) => (current?.id === opportunity.id ? { ...current, has_saved: false } : current));
+      return;
+    }
 
     try {
       await saveOpportunity(token, opportunity.id);
@@ -1771,6 +1799,34 @@ function OpportunitiesScreen({ token }: { token: string | null }) {
 
       setSaveState((current) => ({ ...current, [opportunity.id]: "error" }));
       setActionMessages((current) => ({ ...current, [key]: toErrorMessage(error) }));
+    }
+  }
+
+  async function toggleOpportunityStatus(opportunity: OpportunityRead) {
+    if (!token) {
+      return;
+    }
+
+    const nextStatus = opportunity.status === "open" ? "closed" : "open";
+    const key = `${opportunity.id}:status`;
+    setOwnedStatusUpdating((current) => ({ ...current, [opportunity.id]: true }));
+    setOwnedStatusErrors((current) => ({ ...current, [opportunity.id]: false }));
+    setActionMessages((current) => ({ ...current, [key]: "" }));
+
+    try {
+      await updateOpportunity(token, opportunity.id, { status: nextStatus });
+      setActionMessages((current) => ({
+        ...current,
+        [key]: nextStatus === "closed" ? "Post closed to new applicants." : "Post reopened.",
+      }));
+      ownedOpportunitiesState.retry();
+      opportunitiesState.retry();
+      recommendedOpportunitiesState.retry();
+    } catch (error) {
+      setOwnedStatusErrors((current) => ({ ...current, [opportunity.id]: true }));
+      setActionMessages((current) => ({ ...current, [key]: toErrorMessage(error) }));
+    } finally {
+      setOwnedStatusUpdating((current) => ({ ...current, [opportunity.id]: false }));
     }
   }
 
@@ -2009,12 +2065,34 @@ function OpportunitiesScreen({ token }: { token: string | null }) {
                       </View>
                       <SkillList emptyLabel="No required skills listed." items={opportunity.required_skills} />
                     </Pressable>
-                    <InlineAction
-                      icon={OwnedActionIcon}
-                      label={canReviewApplicants ? "Review Applicants" : "View Post"}
-                      onPress={openOwnedPost}
-                      wide
-                    />
+                    <View style={networkStyles.actionRow}>
+                      <InlineAction
+                        icon={OwnedActionIcon}
+                        label={canReviewApplicants ? "Review Applicants" : "View Post"}
+                        onPress={openOwnedPost}
+                        wide
+                      />
+                      {opportunity.status === "open" || opportunity.status === "closed" ? (
+                        <InlineAction
+                          icon={opportunity.status === "open" ? X : RefreshCw}
+                          label={opportunity.status === "open" ? "Close Post" : "Reopen Post"}
+                          loading={Boolean(ownedStatusUpdating[opportunity.id])}
+                          onPress={() => void toggleOpportunityStatus(opportunity)}
+                          secondary
+                          wide
+                        />
+                      ) : null}
+                    </View>
+                    {actionMessages[`${opportunity.id}:status`] ? (
+                      <Text
+                        style={[
+                          networkStyles.actionMessage,
+                          ownedStatusErrors[opportunity.id] && networkStyles.errorText,
+                        ]}
+                      >
+                        {actionMessages[`${opportunity.id}:status`]}
+                      </Text>
+                    ) : null}
                   </View>
                 );
               })}
@@ -2059,7 +2137,9 @@ function OpportunitiesScreen({ token }: { token: string | null }) {
           onClose={closeOpportunityDetail}
           onOpenOwner={openOwnerProfile}
           onRetry={retryOpportunityDetail}
-          onSave={save}
+          onSave={(opportunity) =>
+            void save(opportunity, (saveState[opportunity.id] ?? (opportunity.has_saved ? "sent" : "idle")) === "sent")
+          }
           saveMessage={opportunityDetail ? actionMessages[`${opportunityDetail.id}:save`] : undefined}
           saveState={
             opportunityDetail
@@ -2127,7 +2207,7 @@ function OpportunitiesScreen({ token }: { token: string | null }) {
                 matchScore={opportunity.match_score}
                 onApply={() => apply(opportunity)}
                 onOpen={() => void openOpportunityDetail(opportunity.id)}
-                onSave={() => save(opportunity)}
+                onSave={() => save(opportunity, currentSaveState === "sent")}
                 opportunity={opportunity}
                 saveMessage={saveMessage}
                 saveState={currentSaveState}
@@ -2164,7 +2244,7 @@ function OpportunitiesScreen({ token }: { token: string | null }) {
                 key={opportunity.id}
                 onApply={() => apply(opportunity)}
                 onOpen={() => void openOpportunityDetail(opportunity.id)}
-                onSave={() => save(opportunity)}
+                onSave={() => save(opportunity, currentSaveState === "sent")}
                 opportunity={opportunity}
                 saveMessage={saveMessage}
                 saveState={currentSaveState}
@@ -2195,6 +2275,8 @@ function ApplicationsScreen({ token }: { token: string | null }) {
   const [applyState, setApplyState] = useState<Record<number, ActionState>>({});
   const [saveState, setSaveState] = useState<Record<number, ActionState>>({});
   const [actionMessages, setActionMessages] = useState<Record<string, string>>({});
+  const [withdrawState, setWithdrawState] = useState<Record<number, ActionState>>({});
+  const [withdrawMessages, setWithdrawMessages] = useState<Record<number, string>>({});
   const { width } = useWindowDimensions();
   const isWide = width >= 760;
   const loadApplications = useCallback(() => {
@@ -2268,7 +2350,7 @@ function ApplicationsScreen({ token }: { token: string | null }) {
     }
   }
 
-  async function save(opportunity: OpportunityRead) {
+  async function save(opportunity: OpportunityRead, currentlySaved: boolean) {
     if (!token) {
       return;
     }
@@ -2276,6 +2358,23 @@ function ApplicationsScreen({ token }: { token: string | null }) {
     const key = `${opportunity.id}:save`;
     setSaveState((current) => ({ ...current, [opportunity.id]: "sending" }));
     setActionMessages((current) => ({ ...current, [key]: "" }));
+
+    if (currentlySaved) {
+      try {
+        await unsaveOpportunity(token, opportunity.id);
+      } catch (error) {
+        if (!isNotFound(error)) {
+          setSaveState((current) => ({ ...current, [opportunity.id]: "error" }));
+          setActionMessages((current) => ({ ...current, [key]: toErrorMessage(error) }));
+          return;
+        }
+      }
+
+      setSaveState((current) => ({ ...current, [opportunity.id]: "idle" }));
+      setActionMessages((current) => ({ ...current, [key]: "Removed from saved." }));
+      setOpportunityDetail((current) => (current?.id === opportunity.id ? { ...current, has_saved: false } : current));
+      return;
+    }
 
     try {
       await saveOpportunity(token, opportunity.id);
@@ -2292,6 +2391,24 @@ function ApplicationsScreen({ token }: { token: string | null }) {
 
       setSaveState((current) => ({ ...current, [opportunity.id]: "error" }));
       setActionMessages((current) => ({ ...current, [key]: toErrorMessage(error) }));
+    }
+  }
+
+  async function withdraw(application: MyOpportunityApplicationRead) {
+    if (!token) {
+      return;
+    }
+
+    setWithdrawState((current) => ({ ...current, [application.id]: "sending" }));
+    setWithdrawMessages((current) => ({ ...current, [application.id]: "" }));
+
+    try {
+      await withdrawApplication(token, application.id);
+      setWithdrawState((current) => ({ ...current, [application.id]: "sent" }));
+      applicationsState.retry();
+    } catch (error) {
+      setWithdrawState((current) => ({ ...current, [application.id]: "error" }));
+      setWithdrawMessages((current) => ({ ...current, [application.id]: toErrorMessage(error) }));
     }
   }
 
@@ -2333,7 +2450,9 @@ function ApplicationsScreen({ token }: { token: string | null }) {
           onApply={apply}
           onClose={closeOpportunityDetail}
           onRetry={retryOpportunityDetail}
-          onSave={save}
+          onSave={(opportunity) =>
+            void save(opportunity, (saveState[opportunity.id] ?? (opportunity.has_saved ? "sent" : "idle")) === "sent")
+          }
           saveMessage={opportunityDetail ? actionMessages[`${opportunityDetail.id}:save`] : undefined}
           saveState={
             opportunityDetail
@@ -2388,6 +2507,26 @@ function ApplicationsScreen({ token }: { token: string | null }) {
                   Applied {formatFullDate(application.created_at)}
                 </Text>
               </View>
+              {application.status === "submitted" || application.status === "reviewing" ? (
+                <InlineAction
+                  icon={Trash2}
+                  label="Withdraw"
+                  loading={withdrawState[application.id] === "sending"}
+                  onPress={() => void withdraw(application)}
+                  secondary
+                  wide
+                />
+              ) : null}
+              {withdrawMessages[application.id] ? (
+                <Text
+                  style={[
+                    networkStyles.actionMessage,
+                    withdrawState[application.id] === "error" && networkStyles.errorText,
+                  ]}
+                >
+                  {withdrawMessages[application.id]}
+                </Text>
+              ) : null}
             </Pressable>
           ))}
         </View>
@@ -3035,6 +3174,9 @@ function ProfileScreen({ token }: { token: string | null }) {
 }
 
 function ConnectionsScreen({ token }: { token: string | null }) {
+  const [decisionPending, setDecisionPending] = useState<Record<number, ConnectionRequestDecision | undefined>>({});
+  const [decisionMessages, setDecisionMessages] = useState<Record<number, string>>({});
+  const [decisionErrors, setDecisionErrors] = useState<Record<number, boolean>>({});
   const loadConnections = useCallback(() => {
     if (!token) {
       return Promise.reject(new Error("Missing authentication token"));
@@ -3047,6 +3189,35 @@ function ConnectionsScreen({ token }: { token: string | null }) {
   const sent = connections?.sent ?? [];
   const received = connections?.received ?? [];
   const hasConnections = sent.length > 0 || received.length > 0;
+
+  async function decide(connection: ConnectionRequestRead, decision: ConnectionRequestDecision) {
+    if (!token) {
+      return;
+    }
+
+    setDecisionPending((current) => ({ ...current, [connection.id]: decision }));
+    setDecisionMessages((current) => ({ ...current, [connection.id]: "" }));
+    setDecisionErrors((current) => ({ ...current, [connection.id]: false }));
+
+    try {
+      await updateConnectionStatus(token, connection.id, decision);
+      setDecisionMessages((current) => ({
+        ...current,
+        [connection.id]:
+          decision === "accepted"
+            ? "Connection accepted."
+            : decision === "declined"
+              ? "Request declined."
+              : "Request canceled.",
+      }));
+      connectionsState.retry();
+    } catch (error) {
+      setDecisionErrors((current) => ({ ...current, [connection.id]: true }));
+      setDecisionMessages((current) => ({ ...current, [connection.id]: toErrorMessage(error) }));
+    } finally {
+      setDecisionPending((current) => ({ ...current, [connection.id]: undefined }));
+    }
+  }
 
   if (connectionsState.loading && !connections) {
     return <LoadingState label="Loading connections" />;
@@ -3089,6 +3260,27 @@ function ConnectionsScreen({ token }: { token: string | null }) {
                     <Text style={styles.rowMeta} numberOfLines={2}>
                       {[profileMeta(connection.receiver_profile), formatFullDate(connection.created_at)].join(" - ")}
                     </Text>
+                    {connection.status === "pending" ? (
+                      <View style={networkStyles.actionRow}>
+                        <InlineAction
+                          icon={X}
+                          label="Cancel Request"
+                          loading={decisionPending[connection.id] === "canceled"}
+                          onPress={() => void decide(connection, "canceled")}
+                          secondary
+                        />
+                      </View>
+                    ) : null}
+                    {decisionMessages[connection.id] ? (
+                      <Text
+                        style={[
+                          networkStyles.actionMessage,
+                          decisionErrors[connection.id] && networkStyles.errorText,
+                        ]}
+                      >
+                        {decisionMessages[connection.id]}
+                      </Text>
+                    ) : null}
                   </View>
                   <StatusChip label={titleCase(connection.status)} tone={statusTone(connection.status)} />
                 </View>
@@ -3113,6 +3305,33 @@ function ConnectionsScreen({ token }: { token: string | null }) {
                     <Text style={styles.rowMeta} numberOfLines={2}>
                       {[profileMeta(connection.requester_profile), formatFullDate(connection.created_at)].join(" - ")}
                     </Text>
+                    {connection.status === "pending" ? (
+                      <View style={networkStyles.actionRow}>
+                        <InlineAction
+                          icon={CheckCircle2}
+                          label="Accept"
+                          loading={decisionPending[connection.id] === "accepted"}
+                          onPress={() => void decide(connection, "accepted")}
+                        />
+                        <InlineAction
+                          icon={X}
+                          label="Decline"
+                          loading={decisionPending[connection.id] === "declined"}
+                          onPress={() => void decide(connection, "declined")}
+                          secondary
+                        />
+                      </View>
+                    ) : null}
+                    {decisionMessages[connection.id] ? (
+                      <Text
+                        style={[
+                          networkStyles.actionMessage,
+                          decisionErrors[connection.id] && networkStyles.errorText,
+                        ]}
+                      >
+                        {decisionMessages[connection.id]}
+                      </Text>
+                    ) : null}
                   </View>
                   <StatusChip label={titleCase(connection.status)} tone={statusTone(connection.status)} />
                 </View>

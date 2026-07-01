@@ -3,6 +3,7 @@ import { useState } from "react";
 import { SafeAreaView, ScrollView, View, useWindowDimensions } from "react-native";
 
 import { PortalHeader } from "./src/components/common/PortalHeader";
+import { LoadingState } from "./src/components/common/PortalState";
 import { SegmentedControl } from "./src/components/common/SegmentedControl";
 import { useAuthStore } from "./src/lib/auth/auth-store";
 import { CampusConnectScreen } from "./src/screens/CampusConnectScreen";
@@ -21,6 +22,15 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<NetworkTab>("discover");
   const { width } = useWindowDimensions();
   const isCompact = width < 520;
+
+  if (auth.isRestoring) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="dark" />
+        <LoadingState label="Restoring your session" />
+      </SafeAreaView>
+    );
+  }
 
   if (!auth.isAuthenticated || !auth.user) {
     return (
