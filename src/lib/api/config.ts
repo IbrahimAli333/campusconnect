@@ -2,7 +2,7 @@ import { NativeModules, Platform } from "react-native";
 
 declare const process:
   | {
-      env?: {
+      env: {
         EXPO_PUBLIC_API_URL?: string;
       };
     }
@@ -79,7 +79,7 @@ function getDefaultApiBaseUrl(): string {
   return getNativeDevHostApiUrl() ?? LOCAL_API_URL;
 }
 
-const configuredApiUrl = typeof process !== "undefined" ? process.env?.EXPO_PUBLIC_API_URL : undefined;
+const configuredApiUrl = typeof process !== "undefined" ? process.env.EXPO_PUBLIC_API_URL : undefined;
 
 const configuredApiBaseUrl = configuredApiUrl?.trim();
 
