@@ -34,13 +34,27 @@ const tabIcons: Partial<Record<string, IconComponent>> = {
   connections: Users,
 };
 
+function TabBadge({ count }: { count: number }) {
+  if (count <= 0) {
+    return null;
+  }
+
+  return (
+    <View style={styles.segmentedBadge}>
+      <Text style={styles.segmentedBadgeText}>{count > 99 ? "99+" : count}</Text>
+    </View>
+  );
+}
+
 export function SegmentedControl<T extends string>({
   active,
+  badges,
   items,
   labels,
   onChange,
 }: {
   active: T;
+  badges?: Partial<Record<T, number>>;
   items: T[];
   labels?: Partial<Record<T, string>>;
   onChange: (item: T) => void;
@@ -90,6 +104,7 @@ export function SegmentedControl<T extends string>({
                 >
                   {label}
                 </Text>
+                <TabBadge count={badges?.[item] ?? 0} />
               </Pressable>
             );
           })}
@@ -111,6 +126,7 @@ export function SegmentedControl<T extends string>({
             style={({ pressed }) => [styles.segmentedItem, isActive && styles.segmentedItemActive, pressed && styles.pressed]}
           >
             <Text style={[styles.segmentedText, isActive && styles.segmentedTextActive]}>{label}</Text>
+            <TabBadge count={badges?.[item] ?? 0} />
           </Pressable>
         );
       })}
