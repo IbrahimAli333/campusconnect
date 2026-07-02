@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -16,6 +16,8 @@ import {
   Briefcase,
   Building2,
   CheckCircle2,
+  Eye,
+  EyeOff,
   FileText,
   GraduationCap,
   Home,
@@ -75,6 +77,7 @@ const loginPresets: Array<{
 ];
 
 const authModes: Array<{
+  compactLabel?: string;
   description: string;
   icon: IconComponent;
   label: string;
@@ -87,12 +90,18 @@ const authModes: Array<{
     value: "login",
   },
   {
+    compactLabel: "New account",
     description: "New campus access",
     icon: UserPlus,
     label: "Create account",
     value: "signup",
   },
 ];
+
+// Render on a free plan spins the API down when idle; the first request after
+// that can take 30-60s. The threshold is when we stop assuming a normal
+// round-trip and explain the wait to the user.
+const SLOW_LOGIN_HINT_MS = 4000;
 
 const heroHighlights: Array<{
   body: string;
@@ -311,9 +320,17 @@ export function LoginScreen({ onLogin }: { onLogin: (email: string, password: st
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState<LoginRole | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showSlowHint, setShowSlowHint] = useState(false);
+
+  useEffect(() => {
+    // Warm the backend as soon as the login screen appears so a spun-down
+    // Render instance is already waking while the user types.
+    void fetch(`${API_BASE_URL}/health`).catch(() => {});
+  }, []);
   const { width } = useWindowDimensions();
   const isWide = width >= 900;
   const isCompact = width < 520;
@@ -349,6 +366,8 @@ export function LoginScreen({ onLogin }: { onLogin: (email: string, password: st
     setLoading(true);
     setError(null);
 
+    const slowHintTimer = setTimeout(() => setShowSlowHint(true), SLOW_LOGIN_HINT_MS);
+
     try {
       await onLogin(normalizedEmail, password);
     } catch (loginError) {
@@ -358,6 +377,8 @@ export function LoginScreen({ onLogin }: { onLogin: (email: string, password: st
         setError("Could not connect to the API. Check the backend URL and try again.");
       }
     } finally {
+      clearTimeout(slowHintTimer);
+      setShowSlowHint(false);
       setLoading(false);
     }
   }
@@ -486,7 +507,7 @@ export function LoginScreen({ onLogin }: { onLogin: (email: string, password: st
                       </View>
                       <View style={loginStyles.modeCopy}>
                         <Text style={[loginStyles.modeLabel, active && loginStyles.modeLabelActive]} numberOfLines={1}>
-                          {mode.label}
+                          {isCompact ? mode.compactLabel ?? mode.label : mode.label}
                         </Text>
                         {!isCompact ? (
                           <Text style={[loginStyles.modeDescription, active && loginStyles.modeDescriptionActive]}>
@@ -606,11 +627,24 @@ export function LoginScreen({ onLogin }: { onLogin: (email: string, password: st
                           placeholder="Password"
                           placeholderTextColor={palette.faint}
                           returnKeyType="go"
-                          secureTextEntry
+                          secureTextEntry={!showPassword}
                           style={[loginStyles.textInput, isCompact && loginStyles.textInputCompact]}
                           textContentType="password"
                           value={password}
                         />
+                        <Pressable
+                          accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+                          accessibilityRole="button"
+                          hitSlop={8}
+                          onPress={() => setShowPassword((visible) => !visible)}
+                          style={({ pressed }) => [loginStyles.passwordToggle, pressed && styles.pressed]}
+                        >
+                          {showPassword ? (
+                            <EyeOff color={palette.muted} size={18} strokeWidth={2.4} />
+                          ) : (
+                            <Eye color={palette.muted} size={18} strokeWidth={2.4} />
+                          )}
+                        </Pressable>
                       </View>
                     </View>
                   </View>
@@ -618,6 +652,15 @@ export function LoginScreen({ onLogin }: { onLogin: (email: string, password: st
                   {error ? (
                     <View style={loginStyles.errorPanel}>
                       <Text style={loginStyles.errorText}>{error}</Text>
+                    </View>
+                  ) : null}
+
+                  {loading && showSlowHint ? (
+                    <View style={loginStyles.slowHintPanel}>
+                      <Text style={loginStyles.slowHintText}>
+                        Still connecting - the campus server may be waking up. The first login after a quiet period can
+                        take up to a minute.
+                      </Text>
                     </View>
                   ) : null}
 
@@ -1309,6 +1352,25 @@ const loginStyles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     padding: 10,
+  },
+  slowHintPanel: {
+    backgroundColor: palette.tealSoft,
+    borderColor: "#B9E5DC",
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+  },
+  slowHintText: {
+    color: palette.teal,
+    fontSize: 13,
+    fontWeight: "800",
+    lineHeight: 18,
+  },
+  passwordToggle: {
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 44,
+    width: 36,
   },
   errorText: {
     color: palette.red,

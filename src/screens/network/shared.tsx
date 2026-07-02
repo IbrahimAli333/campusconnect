@@ -37,6 +37,7 @@ import { SectionHeader } from "../../components/common/SectionHeader";
 import { StatusChip } from "../../components/common/StatusChip";
 import type { IconComponent } from "../../components/common/types";
 import { NetworkApiError } from "../../lib/api/network";
+import { useScrollIntoViewOnMount } from "../../lib/scroll-anchor";
 import { palette, styles } from "../../styles/theme";
 import type {
   NetworkTab,
@@ -878,8 +879,12 @@ export function PanelHeader({
   onClose: () => void;
   title: string;
 }) {
+  // Detail panels render below the fold in the shared ScrollView; without
+  // this scroll the panel opens invisibly and the tap looks like a no-op.
+  const anchorRef = useScrollIntoViewOnMount();
+
   return (
-    <View style={styles.cardTop}>
+    <View ref={anchorRef} style={styles.cardTop}>
       <View style={networkStyles.panelTitleRow}>
         <View style={networkStyles.panelIcon}>
           <Icon color={palette.teal} size={18} strokeWidth={2.5} />
@@ -1111,7 +1116,10 @@ export function OwnerApplicationsPanel({
       <View style={networkStyles.statusRow}>
         <StatusChip label={titleCase(opportunity.type)} tone={opportunityTone(opportunity.type)} />
         <StatusChip label={titleCase(opportunity.status)} tone={statusTone(opportunity.status)} />
-        <StatusChip label={`${applications.length} applicants`} tone={applications.length ? "green" : "slate"} />
+        <StatusChip
+          label={applications.length === 1 ? "1 applicant" : `${applications.length} applicants`}
+          tone={applications.length ? "green" : "slate"}
+        />
       </View>
 
       <Text style={styles.cardMeta} numberOfLines={3}>

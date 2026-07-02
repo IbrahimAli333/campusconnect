@@ -72,10 +72,13 @@ export function SegmentedControl<T extends string>({
             const isActive = item === active;
             const label = labels?.[item] ?? compactLabels[item] ?? tabLabels[item] ?? item;
             const Icon = tabIcons[item];
+            const badgeCount = badges?.[item] ?? 0;
 
             return (
               <Pressable
+                accessibilityLabel={badgeCount > 0 ? `${label}, ${badgeCount} new` : label}
                 accessibilityRole="tab"
+                aria-selected={isActive}
                 key={item}
                 onPress={() => onChange(item)}
                 style={({ pressed }) => [
@@ -104,7 +107,7 @@ export function SegmentedControl<T extends string>({
                 >
                   {label}
                 </Text>
-                <TabBadge count={badges?.[item] ?? 0} />
+                <TabBadge count={badgeCount} />
               </Pressable>
             );
           })}
@@ -118,15 +121,18 @@ export function SegmentedControl<T extends string>({
       {items.map((item) => {
         const isActive = item === active;
         const label = labels?.[item] ?? tabLabels[item] ?? item;
+        const badgeCount = badges?.[item] ?? 0;
         return (
           <Pressable
+            accessibilityLabel={badgeCount > 0 ? `${label}, ${badgeCount} new` : label}
             accessibilityRole="tab"
+            aria-selected={isActive}
             key={item}
             onPress={() => onChange(item)}
             style={({ pressed }) => [styles.segmentedItem, isActive && styles.segmentedItemActive, pressed && styles.pressed]}
           >
             <Text style={[styles.segmentedText, isActive && styles.segmentedTextActive]}>{label}</Text>
-            <TabBadge count={badges?.[item] ?? 0} />
+            <TabBadge count={badgeCount} />
           </Pressable>
         );
       })}
