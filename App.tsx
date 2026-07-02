@@ -75,7 +75,7 @@ export default function App() {
           showsVerticalScrollIndicator={false}
         >
           <ScrollAnchorContext.Provider value={scrollRef}>
-            <CampusConnectScreen activeTab={activeTab} token={auth.token} />
+            <CampusConnectScreen activeTab={activeTab} onAccountDeleted={auth.logout} token={auth.token} />
           </ScrollAnchorContext.Provider>
         </ScrollView>
       </View>

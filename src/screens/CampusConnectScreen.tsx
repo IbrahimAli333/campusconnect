@@ -7,10 +7,11 @@ import { ProfileScreen } from "./network/ProfileScreen";
 
 interface CampusConnectScreenProps {
   activeTab: NetworkTab;
+  onAccountDeleted?: () => void;
   token: string | null;
 }
 
-export function CampusConnectScreen({ activeTab, token }: CampusConnectScreenProps) {
+export function CampusConnectScreen({ activeTab, onAccountDeleted, token }: CampusConnectScreenProps) {
   if (activeTab === "opportunities") {
     return <OpportunitiesScreen token={token} />;
   }
@@ -20,7 +21,7 @@ export function CampusConnectScreen({ activeTab, token }: CampusConnectScreenPro
   }
 
   if (activeTab === "profile") {
-    return <ProfileScreen token={token} />;
+    return <ProfileScreen onAccountDeleted={onAccountDeleted} token={token} />;
   }
 
   if (activeTab === "connections") {

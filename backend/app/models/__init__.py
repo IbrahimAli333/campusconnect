@@ -1,6 +1,7 @@
 from app.models.announcement import Announcement
 from app.models.attendance_record import AttendanceRecord
 from app.models.connection_request import ConnectionRequest
+from app.models.content_report import ContentReport
 from app.models.course import Course
 from app.models.department import Department
 from app.models.enrollment import Enrollment
@@ -11,6 +12,7 @@ from app.models.lesson import Lesson
 from app.models.material import Material
 from app.models.opportunity import Opportunity
 from app.models.opportunity_application import OpportunityApplication
+from app.models.profile_block import ProfileBlock
 from app.models.resume_entry import ResumeEntry
 from app.models.saved_opportunity import SavedOpportunity
 from app.models.skill import Skill
@@ -26,6 +28,7 @@ __all__ = [
     "Announcement",
     "AttendanceRecord",
     "ConnectionRequest",
+    "ContentReport",
     "Course",
     "Department",
     "Enrollment",
@@ -36,6 +39,7 @@ __all__ = [
     "Material",
     "Opportunity",
     "OpportunityApplication",
+    "ProfileBlock",
     "ResumeEntry",
     "SavedOpportunity",
     "Skill",

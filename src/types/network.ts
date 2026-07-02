@@ -222,3 +222,18 @@ export interface SavedOpportunityRead {
   opportunity_id: number;
   created_at: string;
 }
+
+export type ContentReportTargetType = "profile" | "opportunity";
+
+export interface ContentReportCreatePayload {
+  target_type: ContentReportTargetType;
+  target_id: number;
+  reason?: string | null;
+}
+
+export interface ContentReportRead {
+  id: number;
+  target_type: ContentReportTargetType;
+  target_id: number;
+  created_at: string;
+}

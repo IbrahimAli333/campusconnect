@@ -805,11 +805,21 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
               ? saveState[opportunityDetail.id] ?? (opportunityDetail.has_saved ? "sent" : "idle")
               : "idle"
           }
+          token={token}
         />
       ) : null}
 
       {selectedOwnerProfile ? (
-        <ProfileDetailPanel onClose={closeOwnerProfile} profile={selectedOwnerProfile} />
+        <ProfileDetailPanel
+          onBlocked={() => {
+            closeOwnerProfile();
+            closeOpportunityDetail();
+            opportunitiesState.retry();
+          }}
+          onClose={closeOwnerProfile}
+          profile={selectedOwnerProfile}
+          token={token}
+        />
       ) : ownerProfileLoading || ownerProfileError ? (
         <View style={networkStyles.detailPanel}>
           <PanelHeader icon={Users} onClose={closeOwnerProfile} title="Profile detail" />

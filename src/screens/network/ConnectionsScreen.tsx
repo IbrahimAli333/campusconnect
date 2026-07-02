@@ -7,6 +7,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import {
+  Ban,
   Briefcase,
   Building2,
   CalendarDays,
@@ -47,10 +48,12 @@ import {
   getProfileDetail,
   getRecommendedOpportunities,
   getRecommendedProfiles,
+  listMyBlocks,
   listOpportunities,
   listProfiles,
   requestConnection,
   saveOpportunity,
+  unblockProfile,
   unsaveOpportunity,
   updateApplicationStatus,
   updateConnectionStatus,
@@ -157,6 +160,36 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
   const sent = connections?.sent ?? [];
   const received = connections?.received ?? [];
   const hasConnections = sent.length > 0 || received.length > 0;
+  const loadBlocks = useCallback(() => {
+    if (!token) {
+      return Promise.reject(new Error("Missing authentication token"));
+    }
+
+    return listMyBlocks(token);
+  }, [token]);
+  const blocksState = usePortalData(Boolean(token), loadBlocks);
+  const blockedProfiles = blocksState.data ?? [];
+  const [unblockingProfileId, setUnblockingProfileId] = useState<number | null>(null);
+  const [unblockError, setUnblockError] = useState<string | null>(null);
+
+  async function unblock(profileId: number) {
+    if (!token) {
+      return;
+    }
+
+    setUnblockingProfileId(profileId);
+    setUnblockError(null);
+
+    try {
+      await unblockProfile(token, profileId);
+      blocksState.retry();
+      connectionsState.retry();
+    } catch (error) {
+      setUnblockError(toErrorMessage(error));
+    } finally {
+      setUnblockingProfileId(null);
+    }
+  }
 
   async function decide(connection: ConnectionRequestRead, decision: ConnectionRequestDecision) {
     if (!token) {
@@ -316,6 +349,39 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
           title="No connections yet"
         />
       )}
+
+      {blockedProfiles.length ? (
+        <>
+          <SectionHeader action={`${blockedProfiles.length} blocked`} icon={Ban} title="Blocked Users" />
+          <View style={networkStyles.panelList}>
+            {blockedProfiles.map((profile) => (
+              <View key={profile.id} style={styles.listRow}>
+                <View style={networkStyles.resumeIcon}>
+                  <Ban color={palette.red} size={18} strokeWidth={2.4} />
+                </View>
+                <View style={styles.rowBody}>
+                  <Text style={styles.rowTitle} numberOfLines={1}>
+                    {profile.user.full_name}
+                  </Text>
+                  <Text style={styles.rowMeta} numberOfLines={2}>
+                    {profileMeta(profile)}
+                  </Text>
+                </View>
+                <InlineAction
+                  icon={X}
+                  label="Unblock"
+                  loading={unblockingProfileId === profile.id}
+                  onPress={() => void unblock(profile.id)}
+                  secondary
+                />
+              </View>
+            ))}
+          </View>
+          {unblockError ? (
+            <Text style={[networkStyles.actionMessage, networkStyles.errorText]}>{unblockError}</Text>
+          ) : null}
+        </>
+      ) : null}
     </View>
   );
 }

@@ -333,6 +333,7 @@ export function ApplicationsScreen({ token }: { token: string | null }) {
               ? saveState[opportunityDetail.id] ?? (opportunityDetail.has_saved ? "sent" : "idle")
               : "idle"
           }
+          token={token}
         />
       ) : null}
 

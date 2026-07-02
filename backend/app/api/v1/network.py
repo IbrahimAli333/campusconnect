@@ -11,8 +11,10 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.api.deps import get_current_active_user
 from app.db.session import get_db
 from app.models.connection_request import ConnectionRequest
+from app.models.content_report import ContentReport
 from app.models.opportunity import Opportunity
 from app.models.opportunity_application import OpportunityApplication
+from app.models.profile_block import ProfileBlock
 from app.models.resume_entry import ResumeEntry
 from app.models.saved_opportunity import SavedOpportunity
 from app.models.skill import Skill
@@ -21,6 +23,8 @@ from app.models.user_profile import NETWORK_PROFILE_ROLES, UserProfile
 from app.models.user_skill import UserSkill
 from app.schemas.network import (
     ConnectionRequestCreate,
+    ContentReportCreate,
+    ContentReportRead,
     ConnectionRequestRead,
     ConnectionRequestStatusUpdate,
     MyConnectionsRead,
@@ -226,6 +230,21 @@ def _can_view_profile(viewer_profile: UserProfile, profile: UserProfile) -> bool
     ):
         return True
     return False
+
+
+def _blocked_profile_ids(db: Session, profile_id: int) -> set[int]:
+    """Profiles hidden from this viewer: anyone they blocked or who blocked them."""
+    pairs = db.execute(
+        select(ProfileBlock.blocker_profile_id, ProfileBlock.blocked_profile_id).where(
+            or_(
+                ProfileBlock.blocker_profile_id == profile_id,
+                ProfileBlock.blocked_profile_id == profile_id,
+            )
+        )
+    ).all()
+    return {
+        blocked if blocker == profile_id else blocker for blocker, blocked in pairs
+    }
 
 
 def _normalized_text(value: str | None) -> str:
@@ -906,11 +925,16 @@ def list_network_profiles(
             )
         )
 
+    filters = [or_(*visibility_filters)]
+    blocked_ids = _blocked_profile_ids(db, viewer_profile.id)
+    if blocked_ids:
+        filters.append(UserProfile.id.not_in(blocked_ids))
+
     profiles = db.scalars(
         select(UserProfile)
         .join(UserProfile.user)
         .options(*_profile_load_options())
-        .where(or_(*visibility_filters))
+        .where(*filters)
         .order_by(User.full_name, UserProfile.id)
         .limit(limit)
         .offset(offset)
@@ -935,14 +959,19 @@ def recommend_profiles(
             )
         )
 
+    recommendation_filters = [
+        UserProfile.id != viewer_profile.id,
+        or_(*visibility_filters),
+    ]
+    blocked_ids = _blocked_profile_ids(db, viewer_profile.id)
+    if blocked_ids:
+        recommendation_filters.append(UserProfile.id.not_in(blocked_ids))
+
     profiles = db.scalars(
         select(UserProfile)
         .join(UserProfile.user)
         .options(*_profile_load_options())
-        .where(
-            UserProfile.id != viewer_profile.id,
-            or_(*visibility_filters),
-        )
+        .where(*recommendation_filters)
     ).all()
     connections = db.scalars(
         select(ConnectionRequest)
@@ -994,7 +1023,9 @@ def read_network_profile(
 ) -> ProfileRead:
     viewer_profile = _get_or_create_profile(db, current_user)
     profile = _get_profile(db, profile_id)
-    if not _can_view_profile(viewer_profile, profile):
+    if not _can_view_profile(viewer_profile, profile) or profile.id in _blocked_profile_ids(
+        db, viewer_profile.id
+    ):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Profile not found",
@@ -1037,13 +1068,18 @@ def recommend_opportunities(
     db: Session = Depends(get_db),
 ) -> list[OpportunityRecommendationRead]:
     profile = _get_or_create_profile(db, current_user)
+    recommendation_filters = [
+        Opportunity.status == "open",
+        Opportunity.owner_profile_id != profile.id,
+    ]
+    blocked_ids = _blocked_profile_ids(db, profile.id)
+    if blocked_ids:
+        recommendation_filters.append(Opportunity.owner_profile_id.not_in(blocked_ids))
+
     opportunities = db.scalars(
         select(Opportunity)
         .options(*_opportunity_load_options())
-        .where(
-            Opportunity.status == "open",
-            Opportunity.owner_profile_id != profile.id,
-        )
+        .where(*recommendation_filters)
     ).all()
     opportunity_ids = [opportunity.id for opportunity in opportunities]
     if not opportunity_ids:
@@ -1159,15 +1195,20 @@ def list_opportunities(
     db: Session = Depends(get_db),
 ) -> list[OpportunityRead]:
     profile = _get_or_create_profile(db, current_user)
+    list_filters = [
+        or_(
+            Opportunity.status == "open",
+            Opportunity.owner_profile_id == profile.id,
+        )
+    ]
+    blocked_ids = _blocked_profile_ids(db, profile.id)
+    if blocked_ids:
+        list_filters.append(Opportunity.owner_profile_id.not_in(blocked_ids))
+
     opportunities = db.scalars(
         select(Opportunity)
         .options(*_opportunity_load_options())
-        .where(
-            or_(
-                Opportunity.status == "open",
-                Opportunity.owner_profile_id == profile.id,
-            )
-        )
+        .where(*list_filters)
         .order_by(Opportunity.created_at.desc(), Opportunity.id.desc())
         .limit(limit)
         .offset(offset)
@@ -1202,7 +1243,9 @@ def read_opportunity(
 ) -> OpportunityDetailRead:
     profile = _get_or_create_profile(db, current_user)
     opportunity = _get_opportunity(db, opportunity_id)
-    if opportunity.status != "open" and opportunity.owner_profile_id != profile.id:
+    if (
+        opportunity.status != "open" and opportunity.owner_profile_id != profile.id
+    ) or opportunity.owner_profile_id in _blocked_profile_ids(db, profile.id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Opportunity not found",
@@ -1557,5 +1600,141 @@ def unsave_opportunity(
         )
 
     db.delete(saved_opportunity)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/reports", response_model=ContentReportRead, status_code=status.HTTP_201_CREATED)
+def report_content(
+    request: ContentReportCreate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> ContentReportRead:
+    reporter_profile = _get_or_create_profile(db, current_user)
+
+    target_profile_id: int | None = None
+    target_opportunity_id: int | None = None
+    if request.target_type == "profile":
+        target = _get_profile(db, request.target_id)
+        if target.id == reporter_profile.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You cannot report your own profile",
+            )
+        target_profile_id = target.id
+    else:
+        opportunity = _get_opportunity(db, request.target_id)
+        if opportunity.owner_profile_id == reporter_profile.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You cannot report your own post",
+            )
+        target_opportunity_id = opportunity.id
+
+    existing = db.scalar(
+        select(ContentReport).where(
+            ContentReport.reporter_profile_id == reporter_profile.id,
+            ContentReport.target_type == request.target_type,
+            ContentReport.target_profile_id == target_profile_id,
+            ContentReport.target_opportunity_id == target_opportunity_id,
+        )
+    )
+    if existing is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="You already reported this content",
+        )
+
+    report = ContentReport(
+        reporter_profile_id=reporter_profile.id,
+        target_type=request.target_type,
+        target_profile_id=target_profile_id,
+        target_opportunity_id=target_opportunity_id,
+        reason=request.reason,
+    )
+    db.add(report)
+    db.commit()
+    db.refresh(report)
+    return ContentReportRead(
+        id=report.id,
+        target_type=request.target_type,
+        target_id=request.target_id,
+        created_at=report.created_at,
+    )
+
+
+@router.get("/blocks/me", response_model=list[ProfileSummary])
+def list_my_blocks(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> list[ProfileSummary]:
+    profile = _get_or_create_profile(db, current_user)
+    blocks = db.scalars(
+        select(ProfileBlock)
+        .options(
+            joinedload(ProfileBlock.blocked_profile).joinedload(UserProfile.user)
+        )
+        .where(ProfileBlock.blocker_profile_id == profile.id)
+        .order_by(ProfileBlock.created_at.desc(), ProfileBlock.id.desc())
+    ).all()
+    return [_profile_summary(block.blocked_profile) for block in blocks]
+
+
+@router.post("/blocks/{profile_id}", response_model=ProfileSummary, status_code=status.HTTP_201_CREATED)
+def block_profile(
+    profile_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> ProfileSummary:
+    blocker_profile = _get_or_create_profile(db, current_user)
+    target = _get_profile(db, profile_id)
+    if target.id == blocker_profile.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot block yourself",
+        )
+
+    existing = db.scalar(
+        select(ProfileBlock).where(
+            ProfileBlock.blocker_profile_id == blocker_profile.id,
+            ProfileBlock.blocked_profile_id == target.id,
+        )
+    )
+    if existing is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Profile is already blocked",
+        )
+
+    db.add(
+        ProfileBlock(
+            blocker_profile_id=blocker_profile.id,
+            blocked_profile_id=target.id,
+        )
+    )
+    db.commit()
+    return _profile_summary(target)
+
+
+@router.delete("/blocks/{profile_id}", status_code=status.HTTP_204_NO_CONTENT)
+def unblock_profile(
+    profile_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    blocker_profile = _get_or_create_profile(db, current_user)
+    block = db.scalar(
+        select(ProfileBlock).where(
+            ProfileBlock.blocker_profile_id == blocker_profile.id,
+            ProfileBlock.blocked_profile_id == profile_id,
+        )
+    )
+    if block is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Block not found",
+        )
+
+    db.delete(block)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)

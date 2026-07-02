@@ -103,6 +103,10 @@ const authModes: Array<{
 // round-trip and explain the wait to the user.
 const SLOW_LOGIN_HINT_MS = 4000;
 
+// Store builds must not ship one-tap demo credentials. Direct member access on
+// process.env is required for Expo to inline the value at bundle time.
+const DEMO_LOGINS_ENABLED = process.env.EXPO_PUBLIC_ENABLE_DEMO_LOGINS !== "0";
+
 const heroHighlights: Array<{
   body: string;
   icon: IconComponent;
@@ -281,8 +285,9 @@ function RequestAccessPanel({ onUseDemoLogin }: { onUseDemoLogin: () => void }) 
         <View style={loginStyles.requestCopy}>
           <Text style={loginStyles.requestTitle}>Account creation is invite-based right now.</Text>
           <Text style={loginStyles.requestBody}>
-            This API does not expose public registration. New accounts should come from a campus invite or admin setup;
-            demo access is available through the role presets.
+            {DEMO_LOGINS_ENABLED
+              ? "This API does not expose public registration. New accounts should come from a campus invite or admin setup; demo access is available through the role presets."
+              : "New accounts are provisioned by campus or program administrators. Ask your faculty coordinator for an invite, then log in with the credentials you receive."}
           </Text>
         </View>
       </View>
@@ -295,13 +300,15 @@ function RequestAccessPanel({ onUseDemoLogin }: { onUseDemoLogin: () => void }) 
           <Text style={loginStyles.accessTitle}>Campus invite</Text>
           <Text style={loginStyles.accessBody}>Faculty or program admins provision new users for the MVP.</Text>
         </View>
-        <View style={loginStyles.accessTile}>
-          <View style={loginStyles.accessIcon}>
-            <CheckCircle2 color={palette.green} size={18} strokeWidth={2.5} />
+        {DEMO_LOGINS_ENABLED ? (
+          <View style={loginStyles.accessTile}>
+            <View style={loginStyles.accessIcon}>
+              <CheckCircle2 color={palette.green} size={18} strokeWidth={2.5} />
+            </View>
+            <Text style={loginStyles.accessTitle}>Demo roles</Text>
+            <Text style={loginStyles.accessBody}>Member, Student, and Teacher presets remain ready to test.</Text>
           </View>
-          <Text style={loginStyles.accessTitle}>Demo roles</Text>
-          <Text style={loginStyles.accessBody}>Member, Student, and Teacher presets remain ready to test.</Text>
-        </View>
+        ) : null}
       </View>
 
       <Pressable
@@ -310,7 +317,7 @@ function RequestAccessPanel({ onUseDemoLogin }: { onUseDemoLogin: () => void }) 
         style={({ pressed }) => [loginStyles.secondaryButton, pressed && styles.pressed]}
       >
         <LogIn color={palette.text} size={18} strokeWidth={2.6} />
-        <Text style={loginStyles.secondaryButtonText}>Use demo login</Text>
+        <Text style={loginStyles.secondaryButtonText}>{DEMO_LOGINS_ENABLED ? "Use demo login" : "Back to log in"}</Text>
       </Pressable>
     </View>
   );
@@ -434,9 +441,13 @@ export function LoginScreen({ onLogin }: { onLogin: (email: string, password: st
                   {isCompact ? "CampusConnect access for campus roles." : "Connect classroom work to real campus opportunity."}
                 </Text>
                 <Text style={[loginStyles.heroBody, isCompact && loginStyles.heroBodyCompact]}>
-                  {isCompact
-                    ? "Log in with a demo role or check invite-based account access."
-                    : "Sign in as a member, student, or teacher to test a role-specific network for projects, applications, mentorship, and academic review."}
+                  {DEMO_LOGINS_ENABLED
+                    ? isCompact
+                      ? "Log in with a demo role or check invite-based account access."
+                      : "Sign in as a member, student, or teacher to test a role-specific network for projects, applications, mentorship, and academic review."
+                    : isCompact
+                      ? "Log in or request invite-based account access."
+                      : "Sign in to a role-aware campus network for projects, applications, mentorship, and academic review."}
                 </Text>
               </View>
 
@@ -478,10 +489,14 @@ export function LoginScreen({ onLogin }: { onLogin: (email: string, password: st
                 </Text>
                 <Text style={[loginStyles.formIntro, isCompact && loginStyles.formIntroCompact]}>
                   {authMode === "login"
-                    ? isCompact
-                      ? "Use a demo role preset or working credentials."
-                      : "Use a demo role preset or enter working credentials manually."
-                    : "CampusConnect account creation is currently managed by invite and demo access."}
+                    ? DEMO_LOGINS_ENABLED
+                      ? isCompact
+                        ? "Use a demo role preset or working credentials."
+                        : "Use a demo role preset or enter working credentials manually."
+                      : "Sign in with your CampusConnect credentials."
+                    : DEMO_LOGINS_ENABLED
+                      ? "CampusConnect account creation is currently managed by invite and demo access."
+                      : "CampusConnect account creation is currently managed by campus invite."}
                 </Text>
               </View>
 
@@ -522,6 +537,7 @@ export function LoginScreen({ onLogin }: { onLogin: (email: string, password: st
 
               {authMode === "login" ? (
                 <>
+                  {DEMO_LOGINS_ENABLED ? (
                   <View style={[loginStyles.roleSection, isCompact && loginStyles.roleSectionCompact]}>
                     <View style={loginStyles.sectionLabelRow}>
                       <Text style={[loginStyles.sectionLabel, isCompact && loginStyles.sectionLabelCompact]}>
@@ -589,6 +605,7 @@ export function LoginScreen({ onLogin }: { onLogin: (email: string, password: st
                       })}
                     </View>
                   </View>
+                  ) : null}
 
                   <View style={[loginStyles.formStack, isCompact && loginStyles.formStackCompact]}>
                     <View style={loginStyles.field}>
@@ -603,7 +620,7 @@ export function LoginScreen({ onLogin }: { onLogin: (email: string, password: st
                             setEmail(value);
                             setSelectedRole(null);
                           }}
-                          placeholder="member@example.edu"
+                          placeholder={DEMO_LOGINS_ENABLED ? "member@example.edu" : "you@university.edu"}
                           placeholderTextColor={palette.faint}
                           returnKeyType="next"
                           style={[loginStyles.textInput, isCompact && loginStyles.textInputCompact]}
@@ -687,15 +704,17 @@ export function LoginScreen({ onLogin }: { onLogin: (email: string, password: st
                 <RequestAccessPanel onUseDemoLogin={() => switchAuthMode("login")} />
               )}
 
-              <View style={loginStyles.apiHint}>
-                <Server color={palette.navy} size={16} strokeWidth={2.4} />
-                <View style={loginStyles.apiHintText}>
-                  <Text style={loginStyles.hintLabel}>API endpoint</Text>
-                  <Text style={loginStyles.hintValue} numberOfLines={2}>
-                    {API_BASE_URL}
-                  </Text>
+              {DEMO_LOGINS_ENABLED ? (
+                <View style={loginStyles.apiHint}>
+                  <Server color={palette.navy} size={16} strokeWidth={2.4} />
+                  <View style={loginStyles.apiHintText}>
+                    <Text style={loginStyles.hintLabel}>API endpoint</Text>
+                    <Text style={loginStyles.hintValue} numberOfLines={2}>
+                      {API_BASE_URL}
+                    </Text>
+                  </View>
                 </View>
-              </View>
+              ) : null}
             </View>
             <DashboardPreview compact={isCompact} />
           </View>

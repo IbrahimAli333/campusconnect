@@ -55,3 +55,6 @@ class Opportunity(Base):
     saved_opportunities: Mapped[list["SavedOpportunity"]] = relationship(
         back_populates="opportunity", cascade="all, delete-orphan"
     )
+    reports: Mapped[list["ContentReport"]] = relationship(
+        back_populates="target_opportunity", cascade="all, delete-orphan"
+    )

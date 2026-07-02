@@ -286,3 +286,19 @@ class SavedOpportunityRead(ReadSchema):
     profile_id: int
     opportunity_id: int
     created_at: datetime
+
+
+ContentReportTargetType = Literal["profile", "opportunity"]
+
+
+class ContentReportCreate(BaseModel):
+    target_type: ContentReportTargetType
+    target_id: int
+    reason: Optional[str] = Field(default=None, max_length=1000)
+
+
+class ContentReportRead(BaseModel):
+    id: int
+    target_type: ContentReportTargetType
+    target_id: int
+    created_at: datetime

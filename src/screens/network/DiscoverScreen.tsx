@@ -244,7 +244,15 @@ export function DiscoverScreen({ token }: { token: string | null }) {
       <SearchBox onChangeText={setQuery} value={query} />
 
       {selectedProfile ? (
-        <ProfileDetailPanel onClose={() => setSelectedProfile(null)} profile={selectedProfile} />
+        <ProfileDetailPanel
+          onBlocked={() => {
+            setSelectedProfile(null);
+            discoverState.retry();
+          }}
+          onClose={() => setSelectedProfile(null)}
+          profile={selectedProfile}
+          token={token}
+        />
       ) : null}
 
       <SectionHeader

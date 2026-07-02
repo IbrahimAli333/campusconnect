@@ -61,6 +61,7 @@ import {
   withdrawApplication,
 } from "../../lib/api/network";
 import { usePortalData } from "../../lib/api/usePortalData";
+import { deleteAccount } from "../../lib/api/auth";
 import { palette, styles } from "../../styles/theme";
 import type {
   ConnectionRequestDecision,
@@ -141,8 +142,18 @@ import type {
 } from "./shared";
 import { networkStyles } from "./styles";
 
-export function ProfileScreen({ token }: { token: string | null }) {
+export function ProfileScreen({
+  onAccountDeleted,
+  token,
+}: {
+  onAccountDeleted?: () => void;
+  token: string | null;
+}) {
   const [profile, setProfile] = useState<ProfileRead | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteState, setDeleteState] = useState<PortfolioSaveState>("idle");
+  const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
   const [draft, setDraft] = useState<ProfileDraft | null>(null);
   const [saveState, setSaveState] = useState<PortfolioSaveState>("idle");
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -415,6 +426,28 @@ export function ProfileScreen({ token }: { token: string | null }) {
     } catch (error) {
       setSaveState("error");
       setSaveMessage(toErrorMessage(error));
+    }
+  }
+
+  async function confirmAccountDeletion() {
+    if (!token || deleteState === "saving") {
+      return;
+    }
+    if (!deletePassword) {
+      setDeleteState("error");
+      setDeleteMessage("Enter your password to confirm deletion.");
+      return;
+    }
+
+    setDeleteState("saving");
+    setDeleteMessage(null);
+
+    try {
+      await deleteAccount(token, deletePassword);
+      onAccountDeleted?.();
+    } catch (error) {
+      setDeleteState("error");
+      setDeleteMessage(error instanceof Error ? error.message : "Could not delete the account.");
     }
   }
 
@@ -768,6 +801,61 @@ export function ProfileScreen({ token }: { token: string | null }) {
           loading={saveState === "saving"}
           onPress={saveProfile}
         />
+      </View>
+
+      <View style={[styles.card, styles.compactCard]}>
+        <SectionHeader action="Irreversible" icon={Trash2} title="Delete Account" />
+        <Text style={styles.smallText}>
+          Permanently removes your account, portfolio, posts, applications, and connections. This cannot be undone.
+        </Text>
+        {!deleteConfirmOpen ? (
+          <InlineAction
+            icon={Trash2}
+            label="Delete account"
+            onPress={() => {
+              setDeleteConfirmOpen(true);
+              setDeleteMessage(null);
+            }}
+            secondary
+          />
+        ) : (
+          <>
+            <LabeledInput
+              autoCapitalize="none"
+              label="Confirm your password to delete this account"
+              onChangeText={setDeletePassword}
+              placeholder="Password"
+              secureTextEntry
+              value={deletePassword}
+            />
+            <View style={networkStyles.actionRow}>
+              <InlineAction
+                icon={Trash2}
+                label={deleteState === "saving" ? "Deleting" : "Permanently delete"}
+                loading={deleteState === "saving"}
+                onPress={() => void confirmAccountDeletion()}
+                wide
+              />
+              <InlineAction
+                icon={X}
+                label="Cancel"
+                onPress={() => {
+                  setDeleteConfirmOpen(false);
+                  setDeletePassword("");
+                  setDeleteMessage(null);
+                  setDeleteState("idle");
+                }}
+                secondary
+                wide
+              />
+            </View>
+            {deleteMessage ? (
+              <Text style={[networkStyles.actionMessage, deleteState === "error" && networkStyles.errorText]}>
+                {deleteMessage}
+              </Text>
+            ) : null}
+          </>
+        )}
       </View>
     </View>
   );

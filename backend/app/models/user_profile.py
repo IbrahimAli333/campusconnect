@@ -83,3 +83,23 @@ class UserProfile(Base):
     saved_opportunities: Mapped[list["SavedOpportunity"]] = relationship(
         back_populates="profile", cascade="all, delete-orphan"
     )
+    blocks_made: Mapped[list["ProfileBlock"]] = relationship(
+        back_populates="blocker_profile",
+        cascade="all, delete-orphan",
+        foreign_keys="ProfileBlock.blocker_profile_id",
+    )
+    blocks_received: Mapped[list["ProfileBlock"]] = relationship(
+        back_populates="blocked_profile",
+        cascade="all, delete-orphan",
+        foreign_keys="ProfileBlock.blocked_profile_id",
+    )
+    filed_reports: Mapped[list["ContentReport"]] = relationship(
+        back_populates="reporter_profile",
+        cascade="all, delete-orphan",
+        foreign_keys="ContentReport.reporter_profile_id",
+    )
+    reports_against: Mapped[list["ContentReport"]] = relationship(
+        back_populates="target_profile",
+        cascade="all, delete-orphan",
+        foreign_keys="ContentReport.target_profile_id",
+    )

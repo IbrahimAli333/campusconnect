@@ -3,6 +3,8 @@ import { fetchWithTimeout } from "./request";
 import type {
   ConnectionRequestDecision,
   ConnectionRequestRead,
+  ContentReportCreatePayload,
+  ContentReportRead,
   MyConnectionsRead,
   MyOpportunityApplicationRead,
   OwnerApplicationStatusUpdate,
@@ -15,6 +17,7 @@ import type {
   OpportunityUpdatePayload,
   ProfileRead,
   ProfileRecommendationRead,
+  ProfileSummary,
   ProfileUpdatePayload,
   ResumeEntryCreatePayload,
   ResumeEntryRead,
@@ -298,6 +301,29 @@ export function withdrawApplication(token: string, applicationId: number): Promi
   return requestNetworkNoContent(`/api/v1/network/applications/${applicationId}`, token, {
     method: "DELETE",
   });
+}
+
+export function reportContent(token: string, payload: ContentReportCreatePayload): Promise<ContentReportRead> {
+  return requestNetworkJson<ContentReportRead>("/api/v1/network/reports", token, {
+    method: "POST",
+    ...jsonRequest(payload),
+  });
+}
+
+export function blockProfile(token: string, profileId: number): Promise<ProfileSummary> {
+  return requestNetworkJson<ProfileSummary>(`/api/v1/network/blocks/${profileId}`, token, {
+    method: "POST",
+  });
+}
+
+export function unblockProfile(token: string, profileId: number): Promise<void> {
+  return requestNetworkNoContent(`/api/v1/network/blocks/${profileId}`, token, {
+    method: "DELETE",
+  });
+}
+
+export function listMyBlocks(token: string): Promise<ProfileSummary[]> {
+  return requestNetworkJson<ProfileSummary[]>("/api/v1/network/blocks/me", token);
 }
 
 export function updateConnectionStatus(

@@ -94,6 +94,30 @@ export function login(email: string, password: string): Promise<TokenResponse> {
   });
 }
 
+export async function deleteAccount(token: string, password: string): Promise<void> {
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/auth/delete-account`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ password }),
+    });
+  } catch (error) {
+    throw new AuthApiError(
+      error instanceof Error ? error.message : "Could not connect to the API",
+      0,
+    );
+  }
+
+  if (!response.ok) {
+    throw new AuthApiError(await getErrorMessage(response), response.status);
+  }
+}
+
 export function getMe(token: string): Promise<AuthUser> {
   return requestJson<AuthUser>("/api/v1/auth/me", {
     method: "GET",

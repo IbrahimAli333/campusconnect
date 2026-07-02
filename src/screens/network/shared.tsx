@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -11,12 +11,14 @@ import {
   useWindowDimensions,
 } from "react-native";
 import {
+  Ban,
   Briefcase,
   Building2,
   CalendarDays,
   CheckCircle2,
   Eye,
   FileText,
+  Flag,
   GraduationCap,
   Inbox,
   MapPin,
@@ -36,10 +38,11 @@ import { EmptyState, ErrorState, LoadingState } from "../../components/common/Po
 import { SectionHeader } from "../../components/common/SectionHeader";
 import { StatusChip } from "../../components/common/StatusChip";
 import type { IconComponent } from "../../components/common/types";
-import { NetworkApiError } from "../../lib/api/network";
+import { NetworkApiError, blockProfile, reportContent } from "../../lib/api/network";
 import { useScrollIntoViewOnMount } from "../../lib/scroll-anchor";
 import { palette, styles } from "../../styles/theme";
 import type {
+  ContentReportTargetType,
   NetworkTab,
   NetworkRole,
   OwnerApplicationStatusUpdate,
@@ -868,6 +871,96 @@ export function OpportunityCard({
   );
 }
 
+export function ModerationActions({
+  blockProfileId,
+  onBlocked,
+  targetId,
+  targetType,
+  token,
+}: {
+  blockProfileId?: number;
+  onBlocked?: () => void;
+  targetId: number;
+  targetType: ContentReportTargetType;
+  token?: string | null;
+}) {
+  const [reportState, setReportState] = useState<"idle" | "saving" | "sent" | "error">("idle");
+  const [blockSaving, setBlockSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [isError, setIsError] = useState(false);
+
+  if (!token) {
+    return null;
+  }
+
+  async function report() {
+    setReportState("saving");
+    setMessage(null);
+    try {
+      await reportContent(token as string, { target_type: targetType, target_id: targetId });
+      setReportState("sent");
+      setIsError(false);
+      setMessage("Reported. Our team will review this content.");
+    } catch (error) {
+      if (isConflict(error)) {
+        setReportState("sent");
+        setIsError(false);
+        setMessage("You already reported this content.");
+        return;
+      }
+      setReportState("error");
+      setIsError(true);
+      setMessage(toErrorMessage(error));
+    }
+  }
+
+  async function block() {
+    if (blockProfileId === undefined) {
+      return;
+    }
+    setBlockSaving(true);
+    setMessage(null);
+    try {
+      await blockProfile(token as string, blockProfileId);
+      onBlocked?.();
+    } catch (error) {
+      setBlockSaving(false);
+      setIsError(true);
+      setMessage(toErrorMessage(error));
+    }
+  }
+
+  return (
+    <>
+      <View style={networkStyles.actionRow}>
+        <InlineAction
+          disabled={reportState === "sent"}
+          icon={Flag}
+          label={reportState === "sent" ? "Reported" : "Report"}
+          loading={reportState === "saving"}
+          onPress={() => void report()}
+          secondary
+          wide
+        />
+        {blockProfileId !== undefined ? (
+          <InlineAction
+            icon={Ban}
+            label="Block user"
+            loading={blockSaving}
+            onPress={() => void block()}
+            secondary
+            wide
+          />
+        ) : null}
+      </View>
+      {message ? (
+        <Text style={[networkStyles.actionMessage, isError && networkStyles.errorText]}>{message}</Text>
+      ) : null}
+    </>
+  );
+}
+
+
 export function PanelHeader({
   eyebrow,
   icon: Icon,
@@ -908,7 +1001,17 @@ export function PanelHeader({
   );
 }
 
-export function ProfileDetailPanel({ onClose, profile }: { onClose: () => void; profile: ProfileRead }) {
+export function ProfileDetailPanel({
+  onBlocked,
+  onClose,
+  profile,
+  token,
+}: {
+  onBlocked?: () => void;
+  onClose: () => void;
+  profile: ProfileRead;
+  token?: string | null;
+}) {
   return (
     <View style={networkStyles.detailPanel}>
       <PanelHeader eyebrow={titleCase(profile.role)} icon={Users} onClose={onClose} title={profile.user.full_name} />
@@ -959,6 +1062,14 @@ export function ProfileDetailPanel({ onClose, profile }: { onClose: () => void; 
       ) : (
         <Text style={styles.smallText}>No portfolio or resume entries yet.</Text>
       )}
+
+      <ModerationActions
+        blockProfileId={profile.id}
+        onBlocked={onBlocked}
+        targetId={profile.id}
+        targetType="profile"
+        token={token}
+      />
     </View>
   );
 }
@@ -976,6 +1087,7 @@ export function OpportunityDetailPanel({
   onSave,
   saveMessage,
   saveState,
+  token,
 }: {
   applyMessage?: string;
   applyState: ActionState;
@@ -989,6 +1101,7 @@ export function OpportunityDetailPanel({
   onSave: (opportunity: OpportunityDetailRead) => void;
   saveMessage?: string;
   saveState: ActionState;
+  token?: string | null;
 }) {
   const applied = detail ? detail.has_applied || applyState === "sent" : false;
   const saved = detail ? detail.has_saved || saveState === "sent" : false;
@@ -1080,6 +1193,8 @@ export function OpportunityDetailPanel({
               {saveMessage}
             </Text>
           ) : null}
+
+          <ModerationActions targetId={detail.id} targetType="opportunity" token={token} />
         </>
       ) : null}
     </View>

@@ -47,6 +47,8 @@ def test_model_metadata_includes_expected_tables() -> None:
         "opportunity_applications",
         "connection_requests",
         "saved_opportunities",
+        "content_reports",
+        "profile_blocks",
     }
 
     assert expected_tables.issubset(set(Base.metadata.tables.keys()))
