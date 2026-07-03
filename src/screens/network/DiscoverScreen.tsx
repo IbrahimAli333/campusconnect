@@ -146,6 +146,8 @@ export function DiscoverScreen({ token }: { token: string | null }) {
   const [selectedProfile, setSelectedProfile] = useState<ProfileRead | null>(null);
   const [connectState, setConnectState] = useState<Record<number, ActionState>>({});
   const [connectMessages, setConnectMessages] = useState<Record<number, string>>({});
+  const [composeKey, setComposeKey] = useState<string | null>(null);
+  const [composeMessage, setComposeMessage] = useState("");
   const { width } = useWindowDimensions();
   const isWide = width >= 760;
   const isCompact = width < 520;
@@ -191,6 +193,12 @@ export function DiscoverScreen({ token }: { token: string | null }) {
     });
   }, [data, query]);
 
+  function openConnectComposer(listId: string, profile: ProfileRead) {
+    setComposeKey(`${listId}:${profile.id}`);
+    setComposeMessage("");
+    setConnectMessages((current) => ({ ...current, [profile.id]: "" }));
+  }
+
   async function connect(profile: ProfileRead) {
     if (!token) {
       return;
@@ -200,11 +208,14 @@ export function DiscoverScreen({ token }: { token: string | null }) {
     setConnectMessages((current) => ({ ...current, [profile.id]: "" }));
 
     try {
-      await requestConnection(token, profile.id);
+      await requestConnection(token, profile.id, composeMessage);
+      setComposeKey(null);
+      setComposeMessage("");
       setConnectState((current) => ({ ...current, [profile.id]: "sent" }));
       setConnectMessages((current) => ({ ...current, [profile.id]: "Request sent." }));
     } catch (error) {
       if (isConflict(error)) {
+        setComposeKey(null);
         setConnectState((current) => ({ ...current, [profile.id]: "sent" }));
         setConnectMessages((current) => ({ ...current, [profile.id]: "Request already sent." }));
         return;
@@ -213,6 +224,41 @@ export function DiscoverScreen({ token }: { token: string | null }) {
       setConnectState((current) => ({ ...current, [profile.id]: "error" }));
       setConnectMessages((current) => ({ ...current, [profile.id]: toErrorMessage(error) }));
     }
+  }
+
+  function connectComposer(listId: string, profile: ProfileRead) {
+    if (composeKey !== `${listId}:${profile.id}`) {
+      return undefined;
+    }
+
+    const sending = (connectState[profile.id] ?? "idle") === "sending";
+    return (
+      <View style={networkStyles.formField}>
+        <LabeledInput
+          label="Message (Optional)"
+          maxLength={500}
+          multiline
+          onChangeText={setComposeMessage}
+          placeholder="Add a short note to introduce yourself"
+          value={composeMessage}
+        />
+        <View style={networkStyles.actionRow}>
+          <InlineAction
+            icon={Send}
+            label="Send Request"
+            loading={sending}
+            onPress={() => void connect(profile)}
+          />
+          <InlineAction
+            disabled={sending}
+            icon={X}
+            label="Cancel"
+            onPress={() => setComposeKey(null)}
+            secondary
+          />
+        </View>
+      </View>
+    );
   }
 
   if (discoverState.loading && !data) {
@@ -267,7 +313,11 @@ export function DiscoverScreen({ token }: { token: string | null }) {
             const actionState = connectState[profile.id] ?? "idle";
             const message = connectMessages[profile.id];
             const hasConnection = Boolean(profile.connection_status);
-            const disabled = hasConnection || actionState === "sent" || actionState === "sending";
+            const disabled =
+              hasConnection ||
+              actionState === "sent" ||
+              actionState === "sending" ||
+              composeKey === `recommended:${profile.id}`;
             const connectionLabel =
               actionState === "sent"
                 ? "Requested"
@@ -286,12 +336,13 @@ export function DiscoverScreen({ token }: { token: string | null }) {
                 actionLabel={connectionLabel}
                 actionLoading={actionState === "sending"}
                 actionSecondary={Boolean(profile.connection_status) || actionState === "sent"}
+                footer={connectComposer("recommended", profile)}
                 key={profile.id}
                 matchReasons={profile.match_reasons}
                 matchScore={profile.match_score}
                 message={message}
                 messageError={actionState === "error"}
-                onAction={() => connect(profile)}
+                onAction={() => openConnectComposer("recommended", profile)}
                 onOpen={() => setSelectedProfile(profile)}
                 profile={profile}
               />
@@ -318,7 +369,8 @@ export function DiscoverScreen({ token }: { token: string | null }) {
             const isSelf = profile.id === data.myProfile.id;
             const actionState = connectState[profile.id] ?? "idle";
             const message = connectMessages[profile.id];
-            const disabled = isSelf || actionState === "sent" || actionState === "sending";
+            const disabled =
+              isSelf || actionState === "sent" || actionState === "sending" || composeKey === `directory:${profile.id}`;
 
             return (
               <ProfileCard
@@ -327,10 +379,11 @@ export function DiscoverScreen({ token }: { token: string | null }) {
                 actionLabel={isSelf ? "Your Profile" : actionState === "sent" ? "Requested" : "Connect"}
                 actionLoading={actionState === "sending"}
                 actionSecondary={isSelf || actionState === "sent"}
+                footer={connectComposer("directory", profile)}
                 key={profile.id}
                 message={message}
                 messageError={actionState === "error"}
-                onAction={() => connect(profile)}
+                onAction={() => openConnectComposer("directory", profile)}
                 onOpen={() => setSelectedProfile(profile)}
                 profile={profile}
               />

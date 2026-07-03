@@ -5,6 +5,8 @@ import type {
   ConnectionRequestRead,
   ContentReportCreatePayload,
   ContentReportRead,
+  MessageRead,
+  MessageThreadRead,
   MyConnectionsRead,
   MyOpportunityApplicationRead,
   OwnerApplicationStatusUpdate,
@@ -19,10 +21,13 @@ import type {
   ProfileRecommendationRead,
   ProfileSummary,
   ProfileUpdatePayload,
+  PushPlatform,
+  PushTokenRead,
   ResumeEntryCreatePayload,
   ResumeEntryRead,
   ResumeEntryUpdatePayload,
   SavedOpportunityRead,
+  UnreadMessagesRead,
   UserSkillCreatePayload,
   UserSkillRead,
   UserSkillUpdatePayload,
@@ -264,9 +269,11 @@ export function applyToOpportunity(token: string, opportunityId: number): Promis
   });
 }
 
-export function requestConnection(token: string, profileId: number): Promise<ConnectionRequestRead> {
+export function requestConnection(token: string, profileId: number, message?: string): Promise<ConnectionRequestRead> {
+  const trimmedMessage = message?.trim();
   return requestNetworkJson<ConnectionRequestRead>(`/api/v1/network/connections/${profileId}/request`, token, {
     method: "POST",
+    ...(trimmedMessage ? jsonRequest({ message: trimmedMessage }) : {}),
   });
 }
 
@@ -324,6 +331,58 @@ export function unblockProfile(token: string, profileId: number): Promise<void> 
 
 export function listMyBlocks(token: string): Promise<ProfileSummary[]> {
   return requestNetworkJson<ProfileSummary[]>("/api/v1/network/blocks/me", token);
+}
+
+export function registerPushToken(
+  token: string,
+  pushToken: string,
+  platform?: PushPlatform,
+): Promise<PushTokenRead> {
+  return requestNetworkJson<PushTokenRead>("/api/v1/notifications/tokens", token, {
+    method: "POST",
+    ...jsonRequest(platform ? { token: pushToken, platform } : { token: pushToken }),
+  });
+}
+
+export function unregisterPushToken(token: string, pushToken: string): Promise<void> {
+  return requestNetworkNoContent("/api/v1/notifications/tokens/unregister", token, {
+    method: "POST",
+    ...jsonRequest({ token: pushToken }),
+  });
+}
+
+export function listMessageThreads(token: string): Promise<MessageThreadRead[]> {
+  return requestNetworkJson<MessageThreadRead[]>("/api/v1/network/messages/threads", token);
+}
+
+export function getThreadMessages(
+  token: string,
+  profileId: number,
+  options: { limit?: number; offset?: number } = {},
+): Promise<MessageRead[]> {
+  const params = new URLSearchParams();
+  if (options.limit !== undefined) {
+    params.set("limit", String(options.limit));
+  }
+  if (options.offset !== undefined) {
+    params.set("offset", String(options.offset));
+  }
+  const query = params.toString();
+  return requestNetworkJson<MessageRead[]>(
+    `/api/v1/network/messages/threads/${profileId}${query ? `?${query}` : ""}`,
+    token,
+  );
+}
+
+export function sendThreadMessage(token: string, profileId: number, body: string): Promise<MessageRead> {
+  return requestNetworkJson<MessageRead>(`/api/v1/network/messages/threads/${profileId}`, token, {
+    method: "POST",
+    ...jsonRequest({ body }),
+  });
+}
+
+export function getUnreadMessages(token: string): Promise<UnreadMessagesRead> {
+  return requestNetworkJson<UnreadMessagesRead>("/api/v1/network/messages/unread", token);
 }
 
 export function updateConnectionStatus(

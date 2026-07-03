@@ -17,6 +17,7 @@ import {
   GraduationCap,
   Inbox,
   MapPin,
+  MessageCircle,
   Pencil,
   Plus,
   RefreshCw,
@@ -142,9 +143,11 @@ import type {
   ResumeDraft,
   SkillDraft,
 } from "./shared";
+import { MessagesSection } from "./MessagesSection";
 import { networkStyles } from "./styles";
 
 export function ConnectionsScreen({ token }: { token: string | null }) {
+  const [openThreadProfile, setOpenThreadProfile] = useState<ProfileSummary | null>(null);
   const [decisionPending, setDecisionPending] = useState<Record<number, ConnectionRequestDecision | undefined>>({});
   const [decisionMessages, setDecisionMessages] = useState<Record<number, string>>({});
   const [decisionErrors, setDecisionErrors] = useState<Record<number, boolean>>({});
@@ -244,6 +247,8 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
         />
       ) : null}
 
+      <MessagesSection onOpenThread={setOpenThreadProfile} openThreadProfile={openThreadProfile} token={token} />
+
       {hasConnections ? (
         <>
           <SectionHeader action={sent.length ? `${sent.length} sent` : "Empty"} icon={Send} title="Sent Connections" />
@@ -261,6 +266,11 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
                     <Text style={styles.rowMeta} numberOfLines={2}>
                       {[profileMeta(connection.receiver_profile), formatFullDate(connection.created_at)].join(" - ")}
                     </Text>
+                    {connection.message ? (
+                      <View style={networkStyles.requestNote}>
+                        <Text style={networkStyles.requestNoteText}>{`"${connection.message}"`}</Text>
+                      </View>
+                    ) : null}
                     {connection.status === "pending" ? (
                       <View style={networkStyles.actionRow}>
                         <InlineAction
@@ -268,6 +278,16 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
                           label="Cancel Request"
                           loading={decisionPending[connection.id] === "canceled"}
                           onPress={() => void decide(connection, "canceled")}
+                          secondary
+                        />
+                      </View>
+                    ) : null}
+                    {connection.status === "accepted" ? (
+                      <View style={networkStyles.actionRow}>
+                        <InlineAction
+                          icon={MessageCircle}
+                          label="Message"
+                          onPress={() => setOpenThreadProfile(connection.receiver_profile)}
                           secondary
                         />
                       </View>
@@ -306,6 +326,11 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
                     <Text style={styles.rowMeta} numberOfLines={2}>
                       {[profileMeta(connection.requester_profile), formatFullDate(connection.created_at)].join(" - ")}
                     </Text>
+                    {connection.message ? (
+                      <View style={networkStyles.requestNote}>
+                        <Text style={networkStyles.requestNoteText}>{`"${connection.message}"`}</Text>
+                      </View>
+                    ) : null}
                     {connection.status === "pending" ? (
                       <View style={networkStyles.actionRow}>
                         <InlineAction
@@ -319,6 +344,16 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
                           label="Decline"
                           loading={decisionPending[connection.id] === "declined"}
                           onPress={() => void decide(connection, "declined")}
+                          secondary
+                        />
+                      </View>
+                    ) : null}
+                    {connection.status === "accepted" ? (
+                      <View style={networkStyles.actionRow}>
+                        <InlineAction
+                          icon={MessageCircle}
+                          label="Message"
+                          onPress={() => setOpenThreadProfile(connection.requester_profile)}
                           secondary
                         />
                       </View>

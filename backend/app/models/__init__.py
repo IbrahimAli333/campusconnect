@@ -10,9 +10,11 @@ from app.models.grade_item import GradeItem
 from app.models.grade_record import GradeRecord
 from app.models.lesson import Lesson
 from app.models.material import Material
+from app.models.message import Message
 from app.models.opportunity import Opportunity
 from app.models.opportunity_application import OpportunityApplication
 from app.models.profile_block import ProfileBlock
+from app.models.push_token import PushToken
 from app.models.resume_entry import ResumeEntry
 from app.models.saved_opportunity import SavedOpportunity
 from app.models.skill import Skill
@@ -37,9 +39,11 @@ __all__ = [
     "GradeRecord",
     "Lesson",
     "Material",
+    "Message",
     "Opportunity",
     "OpportunityApplication",
     "ProfileBlock",
+    "PushToken",
     "ResumeEntry",
     "SavedOpportunity",
     "Skill",

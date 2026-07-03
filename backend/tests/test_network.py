@@ -1480,3 +1480,35 @@ def test_profiles_list_returns_full_profiles_and_respects_pagination(
     paged = paged_response.json()
     assert len(paged) == 1
     assert paged[0]["id"] == profiles[1]["id"]
+
+
+def test_connection_request_message_is_stored_and_visible_to_receiver(
+    seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+) -> None:
+    client, testing_session_local = seeded_client_and_sessionmaker
+    student_token = _login(client, "student")
+    teacher_token = _login(client, "teacher")
+    teacher_profile_id = _profile_id_for_email(
+        testing_session_local, DEV_CREDENTIALS["teacher"]["email"]
+    )
+
+    request_response = client.post(
+        f"/api/v1/network/connections/{teacher_profile_id}/request",
+        headers=_auth_headers(student_token),
+        json={"message": "I would love to join your NLP research group."},
+    )
+
+    assert request_response.status_code == 201
+    assert (
+        request_response.json()["message"]
+        == "I would love to join your NLP research group."
+    )
+
+    received_response = client.get(
+        "/api/v1/network/connections/me",
+        headers=_auth_headers(teacher_token),
+    )
+    assert received_response.status_code == 200
+    received = received_response.json()["received"]
+    assert len(received) == 1
+    assert received[0]["message"] == "I would love to join your NLP research group."

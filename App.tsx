@@ -1,5 +1,5 @@
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { SafeAreaView, ScrollView, View, useWindowDimensions } from "react-native";
 
 import "./src/styles/webFocus";
@@ -8,6 +8,11 @@ import { LoadingState } from "./src/components/common/PortalState";
 import { SegmentedControl } from "./src/components/common/SegmentedControl";
 import { useNetworkBadges } from "./src/lib/api/useNetworkBadges";
 import { useAuthStore } from "./src/lib/auth/auth-store";
+import {
+  registerForPushNotifications,
+  subscribeToNotificationTaps,
+  unregisterPushNotifications,
+} from "./src/lib/notifications";
 import { ScrollAnchorContext } from "./src/lib/scroll-anchor";
 import { CampusConnectScreen } from "./src/screens/CampusConnectScreen";
 import { LoginScreen } from "./src/screens/LoginScreen";
@@ -38,6 +43,23 @@ export default function App() {
     [markApplicationsSeen],
   );
 
+  const handleLogout = useCallback(() => {
+    if (auth.token) {
+      void unregisterPushNotifications(auth.token);
+    }
+    auth.logout();
+  }, [auth]);
+
+  // Ask for notification permission and register the device only once a
+  // session exists, so the prompt never shows on the login screen.
+  useEffect(() => {
+    if (auth.token) {
+      void registerForPushNotifications(auth.token);
+    }
+  }, [auth.token]);
+
+  useEffect(() => subscribeToNotificationTaps(handleTabChange), [handleTabChange]);
+
   if (auth.isRestoring) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -61,7 +83,7 @@ export default function App() {
       <StatusBar style="dark" />
       <View style={[styles.shell, isCompact && styles.shellCompact]}>
         <PortalHeader
-          onLogout={auth.logout}
+          onLogout={handleLogout}
           profileMeta={`${roleLabel(auth.user.role)} profile - CampusConnect`}
           profileName={auth.user.full_name}
           role={auth.user.role === "teacher" ? "teacher" : auth.user.role === "member" ? "member" : "student"}

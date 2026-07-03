@@ -4,7 +4,15 @@ import re
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Query,
+    Response,
+    status,
+)
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
@@ -53,6 +61,7 @@ from app.schemas.network import (
     UserSkillRead,
     UserSkillUpdate,
 )
+from app.services.push import queue_push_to_users
 
 
 router = APIRouter(prefix="/network", tags=["network"])
@@ -1136,6 +1145,7 @@ def recommend_opportunities(
 def update_application_status(
     application_id: int,
     request: OpportunityApplicationStatusUpdate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ) -> OwnerOpportunityApplicationRead:
@@ -1155,6 +1165,18 @@ def update_application_status(
 
     application.status = request.status
     db.commit()
+    if request.status in ("accepted", "rejected"):
+        queue_push_to_users(
+            db,
+            background_tasks,
+            [application.applicant_profile.user_id],
+            title="Application update",
+            body=(
+                f'Your application to "{application.opportunity.title}" was '
+                f"{request.status}."
+            ),
+            data={"tab": "applications"},
+        )
     return _owner_application_response(_get_owner_loaded_application(db, application.id))
 
 
@@ -1437,6 +1459,7 @@ def list_my_connections(
 )
 def request_connection(
     profile_id: int,
+    background_tasks: BackgroundTasks,
     request: Optional[ConnectionRequestCreate] = None,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
@@ -1496,6 +1519,14 @@ def request_connection(
         .where(ConnectionRequest.id == connection_request.id)
     )
     assert connection_request is not None
+    queue_push_to_users(
+        db,
+        background_tasks,
+        [receiver_profile.user_id],
+        title="New connection request",
+        body=f"{current_user.full_name} wants to connect with you.",
+        data={"tab": "connections"},
+    )
     return _connection_response(connection_request)
 
 
@@ -1503,6 +1534,7 @@ def request_connection(
 def update_connection_status(
     connection_id: int,
     request: ConnectionRequestStatusUpdate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ) -> ConnectionRequestRead:
@@ -1540,6 +1572,15 @@ def update_connection_status(
 
     connection.status = request.status
     db.commit()
+    if request.status == "accepted":
+        queue_push_to_users(
+            db,
+            background_tasks,
+            [connection.requester_profile.user_id],
+            title="Connection accepted",
+            body=f"{current_user.full_name} accepted your connection request.",
+            data={"tab": "connections"},
+        )
     return _connection_response(connection)
 
 

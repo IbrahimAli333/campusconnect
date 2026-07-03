@@ -688,6 +688,7 @@ export function ProfileCard({
   actionLabel,
   actionLoading,
   actionSecondary = false,
+  footer,
   matchReasons,
   matchScore,
   message,
@@ -701,6 +702,7 @@ export function ProfileCard({
   actionLabel: string;
   actionLoading: boolean;
   actionSecondary?: boolean;
+  footer?: ReactNode;
   matchReasons?: string[];
   matchScore?: number;
   message?: string;
@@ -764,6 +766,7 @@ export function ProfileCard({
         secondary={actionSecondary}
         wide
       />
+      {footer}
       {message ? (
         <Text style={[networkStyles.actionMessage, messageError && networkStyles.errorText]}>
           {message}

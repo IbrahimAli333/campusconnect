@@ -223,6 +223,34 @@ export interface SavedOpportunityRead {
   created_at: string;
 }
 
+export interface MessageRead {
+  id: number;
+  sender_profile_id: number;
+  recipient_profile_id: number;
+  body: string;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface MessageThreadRead {
+  profile: ProfileSummary;
+  last_message: MessageRead;
+  unread_count: number;
+}
+
+export interface UnreadMessagesRead {
+  unread: number;
+}
+
+export type PushPlatform = "ios" | "android";
+
+export interface PushTokenRead {
+  id: number;
+  token: string;
+  platform: PushPlatform | null;
+  created_at: string;
+}
+
 export type ContentReportTargetType = "profile" | "opportunity";
 
 export interface ContentReportCreatePayload {

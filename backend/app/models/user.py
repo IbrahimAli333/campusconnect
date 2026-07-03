@@ -59,3 +59,6 @@ class User(Base):
     published_announcements: Mapped[list["Announcement"]] = relationship(
         back_populates="published_by_user"
     )
+    push_tokens: Mapped[list["PushToken"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )

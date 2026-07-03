@@ -2,10 +2,11 @@ import * as SecureStore from "expo-secure-store";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Platform } from "react-native";
 
-import { getMyApplications, getMyConnections } from "./network";
+import { getMyApplications, getMyConnections, getUnreadMessages } from "./network";
 import type { MyOpportunityApplicationRead, NetworkTab } from "../../types/network";
 
 const APPLICATIONS_SEEN_AT_KEY = "campusconnect.applications_seen_at";
+const BADGE_POLL_MS = 30000;
 
 function webStorage(): Storage | null {
   return typeof localStorage === "undefined" ? null : localStorage;
@@ -51,6 +52,7 @@ export function useNetworkBadges(
   markApplicationsSeen: () => void;
 } {
   const [pendingReceived, setPendingReceived] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const [decidedUpdatedAts, setDecidedUpdatedAts] = useState<number[]>([]);
   const [seenAt, setSeenAt] = useState<number | null>(null);
   const [seenAtLoaded, setSeenAtLoaded] = useState(false);
@@ -71,36 +73,52 @@ export function useNetworkBadges(
   useEffect(() => {
     if (!token) {
       setPendingReceived(0);
+      setUnreadMessages(0);
       setDecidedUpdatedAts([]);
       return;
     }
 
     let cancelled = false;
 
-    void getMyConnections(token)
-      .then((connections) => {
-        if (!cancelled) {
-          setPendingReceived(connections.received.filter((request) => request.status === "pending").length);
-        }
-      })
-      .catch(() => {
-        // Badges are best-effort; keep the last known count on failure.
-      });
+    const refresh = () => {
+      void getMyConnections(token)
+        .then((connections) => {
+          if (!cancelled) {
+            setPendingReceived(connections.received.filter((request) => request.status === "pending").length);
+          }
+        })
+        .catch(() => {
+          // Badges are best-effort; keep the last known count on failure.
+        });
 
-    void getMyApplications(token)
-      .then((applications) => {
-        if (!cancelled) {
-          setDecidedUpdatedAts(
-            applications.filter(isDecided).map((application) => Date.parse(application.updated_at)),
-          );
-        }
-      })
-      .catch(() => {
-        // Badges are best-effort; keep the last known count on failure.
-      });
+      void getUnreadMessages(token)
+        .then((result) => {
+          if (!cancelled) {
+            setUnreadMessages(result.unread);
+          }
+        })
+        .catch(() => {
+          // Badges are best-effort; keep the last known count on failure.
+        });
 
+      void getMyApplications(token)
+        .then((applications) => {
+          if (!cancelled) {
+            setDecidedUpdatedAts(
+              applications.filter(isDecided).map((application) => Date.parse(application.updated_at)),
+            );
+          }
+        })
+        .catch(() => {
+          // Badges are best-effort; keep the last known count on failure.
+        });
+    };
+
+    refresh();
+    const interval = setInterval(refresh, BADGE_POLL_MS);
     return () => {
       cancelled = true;
+      clearInterval(interval);
     };
   }, [token, activeTab]);
 
@@ -117,10 +135,10 @@ export function useNetworkBadges(
       ? decidedUpdatedAts.filter((updatedAt) => seenAt === null || updatedAt > seenAt).length
       : 0;
     return {
-      connections: pendingReceived,
+      connections: pendingReceived + unreadMessages,
       applications: unseenDecisions,
     };
-  }, [pendingReceived, decidedUpdatedAts, seenAt, seenAtLoaded]);
+  }, [pendingReceived, unreadMessages, decidedUpdatedAts, seenAt, seenAtLoaded]);
 
   return { badges, markApplicationsSeen };
 }

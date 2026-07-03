@@ -83,6 +83,16 @@ class UserProfile(Base):
     saved_opportunities: Mapped[list["SavedOpportunity"]] = relationship(
         back_populates="profile", cascade="all, delete-orphan"
     )
+    sent_messages: Mapped[list["Message"]] = relationship(
+        back_populates="sender_profile",
+        cascade="all, delete-orphan",
+        foreign_keys="Message.sender_profile_id",
+    )
+    received_messages: Mapped[list["Message"]] = relationship(
+        back_populates="recipient_profile",
+        cascade="all, delete-orphan",
+        foreign_keys="Message.recipient_profile_id",
+    )
     blocks_made: Mapped[list["ProfileBlock"]] = relationship(
         back_populates="blocker_profile",
         cascade="all, delete-orphan",
