@@ -73,6 +73,7 @@ htmlcov/
 # QA artifacts
 screenshots/
 *.apk
+*.aab
 
 # generated native folders
 /ios

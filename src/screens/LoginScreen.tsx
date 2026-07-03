@@ -38,6 +38,13 @@ import type { IconComponent } from "../components/common/types";
 type LoginRole = "member" | "student" | "teacher";
 type AuthMode = "login" | "signup";
 
+// Store builds must not ship one-tap demo credentials. Direct member access on
+// process.env is required for Expo to inline the value at bundle time.
+const DEMO_LOGINS_ENABLED = process.env.EXPO_PUBLIC_ENABLE_DEMO_LOGINS !== "0";
+
+// The ternary keeps the preset credentials out of the production bundle
+// entirely: with the flag inlined to "0", the minifier folds the condition and
+// drops the array literal, so the strings never reach the shipped binary.
 const loginPresets: Array<{
   description: string;
   email: string;
@@ -46,7 +53,7 @@ const loginPresets: Array<{
   password: string;
   permissions: string[];
   role: LoginRole;
-}> = [
+}> = !DEMO_LOGINS_ENABLED ? [] : [
   {
     description: "Save opportunities and build your campus network.",
     email: "member@example.edu",
@@ -102,10 +109,6 @@ const authModes: Array<{
 // that can take 30-60s. The threshold is when we stop assuming a normal
 // round-trip and explain the wait to the user.
 const SLOW_LOGIN_HINT_MS = 4000;
-
-// Store builds must not ship one-tap demo credentials. Direct member access on
-// process.env is required for Expo to inline the value at bundle time.
-const DEMO_LOGINS_ENABLED = process.env.EXPO_PUBLIC_ENABLE_DEMO_LOGINS !== "0";
 
 const heroHighlights: Array<{
   body: string;
