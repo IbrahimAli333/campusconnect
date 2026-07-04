@@ -1,0 +1,79 @@
+# EAS build archive ignore rules: same as .gitignore, except the Firebase
+# config files must reach the build sandbox (they stay out of git).
+
+# dependencies
+node_modules/
+.venv/
+
+# Expo
+.expo/
+.eas/
+dist/
+web-build/
+build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.keystore
+*.p8
+*.p12
+*.key
+*.mobileprovision
+credentials.json
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# editors
+.vscode/
+.idea/
+*.swp
+
+# local env files
+.env
+.env.*
+.env*.local
+!.env.example
+!.env.*.example
+
+# local database files
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+
+# typescript
+*.tsbuildinfo
+
+# Python/cache/test output
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+.coverage
+coverage/
+htmlcov/
+
+# QA artifacts
+screenshots/
+*.apk
+*.aab
+
+# generated native folders
+/ios
+/android
