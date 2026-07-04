@@ -50,7 +50,6 @@ const loginPresets: Array<{
   email: string;
   icon: IconComponent;
   label: string;
-  password: string;
   permissions: string[];
   role: LoginRole;
 }> = !DEMO_LOGINS_ENABLED ? [] : [
@@ -59,7 +58,6 @@ const loginPresets: Array<{
     email: "member@example.edu",
     icon: UserRound,
     label: "Member",
-    password: "member-password",
     permissions: ["Browse", "Save", "Apply", "Connect"],
     role: "member",
   },
@@ -68,7 +66,6 @@ const loginPresets: Array<{
     email: "student@example.edu",
     icon: GraduationCap,
     label: "Student",
-    password: "student-password",
     permissions: ["Post startups", "Post projects", "Apply"],
     role: "student",
   },
@@ -77,7 +74,6 @@ const loginPresets: Array<{
     email: "teacher@example.edu",
     icon: Users,
     label: "Teacher",
-    password: "teacher-password",
     permissions: ["Post research", "Review applicants", "Connect"],
     role: "teacher",
   },
@@ -362,7 +358,9 @@ export function LoginScreen({ onLogin }: { onLogin: (email: string, password: st
 
     setSelectedRole(role);
     setEmail(preset.email);
-    setPassword(preset.password);
+    // Presets intentionally leave the password blank: demo passwords rotate on
+    // prod, so shipping one in the bundle would only produce failed logins.
+    setPassword("");
     setError(null);
   }
 
