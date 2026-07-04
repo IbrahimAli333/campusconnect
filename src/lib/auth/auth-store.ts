@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { getMe as requestCurrentUser, login as requestLogin, type AuthUser } from "../api/auth";
+import {
+  getMe as requestCurrentUser,
+  login as requestLogin,
+  loginWithGoogle as requestGoogleLogin,
+  type AuthUser,
+} from "../api/auth";
 import { setUnauthorizedHandler } from "../api/network";
 import { clearStoredToken, loadStoredToken, storeToken } from "./token-storage";
 
@@ -10,6 +15,7 @@ export interface AuthStore {
   isAuthenticated: boolean;
   isRestoring: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
+  loginWithGoogle: (idToken: string) => Promise<AuthUser>;
   refreshCurrentUser: () => Promise<AuthUser | null>;
   logout: () => void;
 }
@@ -21,6 +27,14 @@ export function useAuthStore(): AuthStore {
 
   const login = useCallback(async (email: string, password: string) => {
     const response = await requestLogin(email, password);
+    setToken(response.access_token);
+    setUser(response.user);
+    void storeToken(response.access_token);
+    return response.user;
+  }, []);
+
+  const loginWithGoogle = useCallback(async (idToken: string) => {
+    const response = await requestGoogleLogin(idToken);
     setToken(response.access_token);
     setUser(response.user);
     void storeToken(response.access_token);
@@ -85,9 +99,10 @@ export function useAuthStore(): AuthStore {
       isAuthenticated: Boolean(token && user),
       isRestoring,
       login,
+      loginWithGoogle,
       refreshCurrentUser,
       logout,
     }),
-    [isRestoring, login, logout, refreshCurrentUser, token, user],
+    [isRestoring, login, loginWithGoogle, logout, refreshCurrentUser, token, user],
   );
 }

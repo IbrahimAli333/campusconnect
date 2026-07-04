@@ -61,6 +61,7 @@ import {
   withdrawApplication,
 } from "../../lib/api/network";
 import { usePortalData } from "../../lib/api/usePortalData";
+import { universityFilterOptions, universityKey } from "../../lib/universities";
 import { palette, styles } from "../../styles/theme";
 import type {
   ConnectionRequestDecision,
@@ -143,6 +144,7 @@ import { networkStyles } from "./styles";
 
 export function DiscoverScreen({ token }: { token: string | null }) {
   const [query, setQuery] = useState("");
+  const [universityFilter, setUniversityFilter] = useState("all");
   const [selectedProfile, setSelectedProfile] = useState<ProfileRead | null>(null);
   const [connectState, setConnectState] = useState<Record<number, ActionState>>({});
   const [connectMessages, setConnectMessages] = useState<Record<number, string>>({});
@@ -165,17 +167,35 @@ export function DiscoverScreen({ token }: { token: string | null }) {
   }, [token]);
   const discoverState = usePortalData(Boolean(token), loadDiscover);
   const data = discoverState.data;
+  const universityOptions = useMemo(
+    () =>
+      universityFilterOptions([
+        ...(data?.profiles ?? []).map((profile) => profile.university),
+        ...(data?.recommendedProfiles ?? []).map((profile) => profile.university),
+      ]),
+    [data],
+  );
+  const matchesUniversity = useCallback(
+    (university: string | null | undefined) =>
+      universityFilter === "all" || universityKey(university) === universityFilter,
+    [universityFilter],
+  );
+  const filteredRecommended = useMemo(
+    () => (data ? data.recommendedProfiles.filter((profile) => matchesUniversity(profile.university)) : []),
+    [data, matchesUniversity],
+  );
   const filteredProfiles = useMemo(() => {
     if (!data) {
       return [];
     }
 
+    const byUniversity = data.profiles.filter((profile) => matchesUniversity(profile.university));
     const normalizedQuery = query.trim().toLowerCase();
     if (!normalizedQuery) {
-      return data.profiles;
+      return byUniversity;
     }
 
-    return data.profiles.filter((profile) => {
+    return byUniversity.filter((profile) => {
       const haystack = [
         profile.user.full_name,
         profile.role,
@@ -191,7 +211,7 @@ export function DiscoverScreen({ token }: { token: string | null }) {
 
       return haystack.includes(normalizedQuery);
     });
-  }, [data, query]);
+  }, [data, matchesUniversity, query]);
 
   function openConnectComposer(listId: string, profile: ProfileRead) {
     setComposeKey(`${listId}:${profile.id}`);
@@ -289,6 +309,26 @@ export function DiscoverScreen({ token }: { token: string | null }) {
 
       <SearchBox onChangeText={setQuery} value={query} />
 
+      {universityOptions.length > 0 ? (
+        <View style={networkStyles.filterRow}>
+          <FilterChip
+            active={universityFilter === "all"}
+            label="All Universities"
+            onPress={setUniversityFilter}
+            value="all"
+          />
+          {universityOptions.map((option) => (
+            <FilterChip
+              active={universityFilter === option.value}
+              key={option.value}
+              label={option.label}
+              onPress={setUniversityFilter}
+              value={option.value}
+            />
+          ))}
+        </View>
+      ) : null}
+
       {selectedProfile ? (
         <ProfileDetailPanel
           onBlocked={() => {
@@ -302,14 +342,14 @@ export function DiscoverScreen({ token }: { token: string | null }) {
       ) : null}
 
       <SectionHeader
-        action={data.recommendedProfiles.length ? `${data.recommendedProfiles.length} shown` : "Empty"}
+        action={filteredRecommended.length ? `${filteredRecommended.length} shown` : "Empty"}
         icon={CheckCircle2}
         title="Recommended"
       />
 
-      {data.recommendedProfiles.length ? (
+      {filteredRecommended.length ? (
         <View style={[styles.grid, isWide && styles.gridWide]}>
-          {data.recommendedProfiles.map((profile) => {
+          {filteredRecommended.map((profile) => {
             const actionState = connectState[profile.id] ?? "idle";
             const message = connectMessages[profile.id];
             const hasConnection = Boolean(profile.connection_status);
@@ -351,7 +391,11 @@ export function DiscoverScreen({ token }: { token: string | null }) {
         </View>
       ) : (
         <EmptyState
-          body="Recommended profiles will appear as public profiles match your skills and profile."
+          body={
+            universityFilter !== "all"
+              ? "No recommended profiles at this university yet."
+              : "Recommended profiles will appear as public profiles match your skills and profile."
+          }
           icon={Users}
           title="No recommended profiles"
         />
@@ -393,12 +437,12 @@ export function DiscoverScreen({ token }: { token: string | null }) {
       ) : (
         <EmptyState
           body={
-            query.trim()
-              ? "No students, mentors, professors, or collaborators match this search."
+            query.trim() || universityFilter !== "all"
+              ? "No students, mentors, professors, or collaborators match this search or university filter."
               : "Student, mentor, professor, employer, and collaborator profiles will appear here."
           }
           icon={Inbox}
-          title={query.trim() ? "No matching profiles" : "No CampusConnect profiles"}
+          title={query.trim() || universityFilter !== "all" ? "No matching profiles" : "No CampusConnect profiles"}
         />
       )}
     </View>

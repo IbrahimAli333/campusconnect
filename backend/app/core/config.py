@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     cors_origins: str = ""
+    google_oauth_client_ids: str = ""
 
     @model_validator(mode="after")
     def normalize_database_url(self) -> "Settings":
@@ -48,6 +49,13 @@ class Settings(BaseSettings):
                 "UNIVERSITY_PORTAL_SECRET_KEY must be set in production"
             )
         return self
+
+    def parsed_google_oauth_client_ids(self) -> list[str]:
+        return [
+            client_id.strip()
+            for client_id in self.google_oauth_client_ids.split(",")
+            if client_id.strip()
+        ]
 
     def parsed_cors_origins(self) -> list[str]:
         return [

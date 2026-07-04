@@ -61,6 +61,7 @@ import {
   withdrawApplication,
 } from "../../lib/api/network";
 import { usePortalData } from "../../lib/api/usePortalData";
+import { universityFilterOptions, universityKey } from "../../lib/universities";
 import { palette, styles } from "../../styles/theme";
 import type {
   ConnectionRequestDecision,
@@ -143,6 +144,7 @@ import { networkStyles } from "./styles";
 
 export function OpportunitiesScreen({ token }: { token: string | null }) {
   const [filter, setFilter] = useState<OpportunityFilter>("all");
+  const [universityFilter, setUniversityFilter] = useState("all");
   const [createOpen, setCreateOpen] = useState(false);
   const [createType, setCreateType] = useState<OpportunityType>("startup");
   const [createTitle, setCreateTitle] = useState("");
@@ -217,9 +219,18 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
   const canCreateOpportunity = allowedCreateTypes.length > 0;
   const canReviewApplicants = myProfile?.role === "teacher";
   const shouldShowOwnedSection = ownedOpportunities.length > 0 || canCreateOpportunity;
+  const universityOptions = useMemo(
+    () => universityFilterOptions(opportunities.map((item) => item.owner_profile.university)),
+    [opportunities],
+  );
   const filteredOpportunities = useMemo(
-    () => (filter === "all" ? opportunities : opportunities.filter((item) => item.type === filter)),
-    [filter, opportunities],
+    () =>
+      opportunities.filter(
+        (item) =>
+          (filter === "all" || item.type === filter) &&
+          (universityFilter === "all" || universityKey(item.owner_profile.university) === universityFilter),
+      ),
+    [filter, opportunities, universityFilter],
   );
 
   useEffect(() => {
@@ -594,6 +605,26 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
         />
       </View>
 
+      {universityOptions.length > 0 ? (
+        <View style={networkStyles.filterRow}>
+          <FilterChip
+            active={universityFilter === "all"}
+            label="All Universities"
+            onPress={setUniversityFilter}
+            value="all"
+          />
+          {universityOptions.map((option) => (
+            <FilterChip
+              active={universityFilter === option.value}
+              key={option.value}
+              label={option.label}
+              onPress={setUniversityFilter}
+              value={option.value}
+            />
+          ))}
+        </View>
+      ) : null}
+
       <Text style={networkStyles.permissionText}>
         {myProfileState.loading && !myProfile ? "Checking posting permissions." : opportunityAuthoringCopy(myProfile?.role)}
       </Text>
@@ -924,9 +955,9 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
       ) : (
         <EmptyState
           body={
-            filter === "all"
+            filter === "all" && universityFilter === "all"
               ? "Startup cofounder, research, internship, job, project teammate, and hackathon team posts will appear here."
-              : `No ${filter} opportunities are open right now.`
+              : "No open posts match the selected filters right now."
           }
           icon={Briefcase}
           title="No open opportunities"

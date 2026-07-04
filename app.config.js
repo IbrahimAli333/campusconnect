@@ -34,6 +34,7 @@ const baseConfig = {
   web: {
     favicon: "./assets/favicon.png",
   },
+  plugins: ["expo-web-browser"],
   extra: {
     productName: "CampusConnect",
     eas: {

@@ -94,6 +94,16 @@ export function login(email: string, password: string): Promise<TokenResponse> {
   });
 }
 
+export function loginWithGoogle(idToken: string): Promise<TokenResponse> {
+  return requestJson<TokenResponse>("/api/v1/auth/sso/google", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ id_token: idToken }),
+  });
+}
+
 export async function deleteAccount(token: string, password: string): Promise<void> {
   let response: Response;
   try {

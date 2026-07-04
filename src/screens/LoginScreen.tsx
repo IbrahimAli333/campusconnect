@@ -30,10 +30,15 @@ import {
   Users,
 } from "lucide-react-native";
 
+import * as Google from "expo-auth-session/providers/google";
+import * as WebBrowser from "expo-web-browser";
+
 import { API_BASE_URL } from "../lib/api/config";
 import { AuthApiError } from "../lib/api/auth";
 import { palette, platformShadow, styles, webSafeTextShadow } from "../styles/theme";
 import type { IconComponent } from "../components/common/types";
+
+WebBrowser.maybeCompleteAuthSession();
 
 type LoginRole = "member" | "student" | "teacher";
 type AuthMode = "login" | "signup";
@@ -41,6 +46,11 @@ type AuthMode = "login" | "signup";
 // Store builds must not ship one-tap demo credentials. Direct member access on
 // process.env is required for Expo to inline the value at bundle time.
 const DEMO_LOGINS_ENABLED = process.env.EXPO_PUBLIC_ENABLE_DEMO_LOGINS !== "0";
+
+// University SSO stays hidden until an OAuth client ID is provisioned for the
+// build. Direct member access keeps Expo env inlining working (no optional
+// chaining — see the crash note above DEMO_LOGINS_ENABLED).
+const GOOGLE_OAUTH_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID;
 
 // The ternary keeps the preset credentials out of the production bundle
 // entirely: with the flag inlined to "0", the minifier folds the condition and
@@ -322,7 +332,65 @@ function RequestAccessPanel({ onUseDemoLogin }: { onUseDemoLogin: () => void }) 
   );
 }
 
-export function LoginScreen({ onLogin }: { onLogin: (email: string, password: string) => Promise<unknown> }) {
+// Mounted only when GOOGLE_OAUTH_CLIENT_ID exists so the auth-request hook
+// never runs with an empty client ID.
+function GoogleSsoButton({
+  disabled,
+  onError,
+  onIdToken,
+}: {
+  disabled: boolean;
+  onError: (message: string) => void;
+  onIdToken: (idToken: string) => void;
+}) {
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+    clientId: GOOGLE_OAUTH_CLIENT_ID,
+  });
+
+  useEffect(() => {
+    if (!response) {
+      return;
+    }
+
+    if (response.type === "success") {
+      const idToken = response.params.id_token;
+      if (idToken) {
+        onIdToken(idToken);
+      } else {
+        onError("Google sign-in did not return an identity token.");
+      }
+    } else if (response.type === "error") {
+      onError(response.error?.message ?? "Google sign-in failed. Try again.");
+    }
+    // The callbacks are stable enough for this screen; re-running on response
+    // changes only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [response]);
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      disabled={disabled || !request}
+      onPress={() => void promptAsync()}
+      style={({ pressed }) => [
+        loginStyles.secondaryButton,
+        (disabled || !request) && loginStyles.disabled,
+        pressed && !disabled && styles.pressed,
+      ]}
+    >
+      <GraduationCap color={palette.text} size={18} strokeWidth={2.6} />
+      <Text style={loginStyles.secondaryButtonText}>Continue with university Google account</Text>
+    </Pressable>
+  );
+}
+
+export function LoginScreen({
+  onLogin,
+  onGoogleLogin,
+}: {
+  onLogin: (email: string, password: string) => Promise<unknown>;
+  onGoogleLogin?: (idToken: string) => Promise<unknown>;
+}) {
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -387,6 +455,27 @@ export function LoginScreen({ onLogin }: { onLogin: (email: string, password: st
     } finally {
       clearTimeout(slowHintTimer);
       setShowSlowHint(false);
+      setLoading(false);
+    }
+  }
+
+  async function submitGoogleToken(idToken: string) {
+    if (!onGoogleLogin) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      await onGoogleLogin(idToken);
+    } catch (loginError) {
+      if (loginError instanceof AuthApiError) {
+        setError(loginError.message);
+      } else {
+        setError("Could not connect to the API. Check the backend URL and try again.");
+      }
+    } finally {
       setLoading(false);
     }
   }
@@ -700,6 +789,14 @@ export function LoginScreen({ onLogin }: { onLogin: (email: string, password: st
                     )}
                     <Text style={loginStyles.submitButtonText}>{loading ? "Logging in" : "Log in"}</Text>
                   </Pressable>
+
+                  {GOOGLE_OAUTH_CLIENT_ID && onGoogleLogin ? (
+                    <GoogleSsoButton
+                      disabled={loading}
+                      onError={setError}
+                      onIdToken={(idToken) => void submitGoogleToken(idToken)}
+                    />
+                  ) : null}
                 </>
               ) : (
                 <RequestAccessPanel onUseDemoLogin={() => switchAuthMode("login")} />

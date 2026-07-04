@@ -38,6 +38,10 @@ class ChangePasswordRequest(BaseModel):
     new_password: str = Field(min_length=8, max_length=255)
 
 
+class GoogleSsoRequest(BaseModel):
+    id_token: str = Field(min_length=1, max_length=4096)
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"

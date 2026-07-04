@@ -1,20 +1,27 @@
+import secrets
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_active_user
+from app.core.config import get_settings
 from app.core.login_rate_limit import login_rate_limiter
 from app.core.security import create_access_token, hash_password, verify_password
+from app.core.universities import university_for_email
 from app.db.session import get_db
 from app.models.user import User, UserRole
+from app.models.user_profile import NETWORK_PROFILE_ROLES, UserProfile
 from app.schemas.auth import (
     BootstrapAdminRequest,
     ChangePasswordRequest,
     DeleteAccountRequest,
+    GoogleSsoRequest,
     LoginRequest,
     TokenResponse,
 )
 from app.schemas.user import UserRead
+from app.services.google_sso import GoogleSsoError, verify_google_id_token
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -78,6 +85,83 @@ def login(
         )
 
     login_rate_limiter.record_success(request.email)
+    access_token = create_access_token(user.id, user.role)
+    return TokenResponse(access_token=access_token, user=UserRead.model_validate(user))
+
+
+@router.post("/sso/google", response_model=TokenResponse)
+def login_with_google(
+    request: GoogleSsoRequest,
+    db: Session = Depends(get_db),
+) -> TokenResponse:
+    allowed_audiences = get_settings().parsed_google_oauth_client_ids()
+    if not allowed_audiences:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Google sign-in is not configured",
+        )
+
+    try:
+        identity = verify_google_id_token(request.id_token)
+    except GoogleSsoError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(exc),
+        ) from exc
+
+    if identity.audience not in allowed_audiences:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Google sign-in token was issued for another application",
+        )
+
+    if not identity.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Google account email is not verified",
+        )
+
+    university = university_for_email(identity.email)
+    if university is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Sign in with your university email account",
+        )
+
+    user = db.scalar(select(User).where(User.email == identity.email))
+    if user is None:
+        user = User(
+            email=identity.email,
+            # SSO accounts have no usable password; login stays Google-only.
+            hashed_password=hash_password(secrets.token_urlsafe(32)),
+            full_name=identity.full_name or identity.email.split("@")[0],
+            role=UserRole.member.value,
+            is_active=True,
+        )
+        db.add(user)
+        db.flush()
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Inactive user",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    profile = user.network_profile
+    if profile is None:
+        profile = UserProfile(
+            user_id=user.id,
+            role=user.role if user.role in NETWORK_PROFILE_ROLES else "member",
+            university=university,
+            visibility="public",
+        )
+        db.add(profile)
+    elif not profile.university:
+        profile.university = university
+
+    db.commit()
+    db.refresh(user)
     access_token = create_access_token(user.id, user.role)
     return TokenResponse(access_token=access_token, user=UserRead.model_validate(user))
 
