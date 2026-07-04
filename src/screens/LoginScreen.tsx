@@ -139,9 +139,9 @@ const heroHighlights: Array<{
 ];
 
 const previewProfiles = [
-  { match: "88%", name: "Prof. Leyla", role: "Mentor", tone: "mentor" },
-  { match: "74%", name: "Rauf H.", role: "Student", tone: "student" },
-  { match: "69%", name: "Aydin M.", role: "Student", tone: "student" },
+  { name: "Prof. Leyla", role: "Mentor", tone: "mentor" },
+  { name: "Rauf H.", role: "Student", tone: "student" },
+  { name: "Aydin M.", role: "Student", tone: "student" },
 ];
 
 const previewOpportunities = [
@@ -240,7 +240,6 @@ function DashboardPreview({ compact }: { compact: boolean }) {
             >
               {profile.role}
             </Text>
-            <Text style={loginStyles.previewMatch}>{profile.match} Match</Text>
           </View>
         ))}
       </View>
@@ -1939,11 +1938,6 @@ const loginStyles = StyleSheet.create({
   previewRolePillStudent: {
     backgroundColor: palette.blueSoft,
     color: palette.blue,
-  },
-  previewMatch: {
-    color: palette.blue,
-    fontSize: 11,
-    fontWeight: "900",
   },
   previewOpportunityRow: {
     flexDirection: "row",
