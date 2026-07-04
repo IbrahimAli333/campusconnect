@@ -22,6 +22,7 @@ const baseConfig = {
   android: {
     package: "com.ibrahimalikhudiyev.campusconnect",
     versionCode: 1,
+    googleServicesFile: "./google-services.json",
     adaptiveIcon: {
       backgroundColor: "#E6F4FE",
       foregroundImage: "./assets/android-icon-foreground.png",
