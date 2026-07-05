@@ -17,6 +17,18 @@ function fail(message) {
   process.exit(1);
 }
 
+// Demo login presets must never reach store builds. The flag is fail-open in
+// LoginScreen (any value except "0" keeps presets), so require eas.json to
+// pin it off for the production profile instead of trusting the local env.
+const easConfig = require("../eas.json");
+const productionDemoLogins = easConfig?.build?.production?.env?.EXPO_PUBLIC_ENABLE_DEMO_LOGINS;
+
+if (productionDemoLogins !== "0") {
+  fail(
+    'eas.json must set build.production.env.EXPO_PUBLIC_ENABLE_DEMO_LOGINS to "0" so store builds do not ship demo login presets.',
+  );
+}
+
 const apiUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
 
 if (!apiUrl) {

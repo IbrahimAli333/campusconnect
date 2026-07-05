@@ -26,7 +26,7 @@ export const AZ_UNIVERSITIES: UniversityInfo[] = [
   { name: "Nakhchivan State University", short: "NDU" },
   { name: "Ganja State University", short: "GDU" },
   { name: "Sumgait State University", short: "SDU" },
-  { name: "Lankaran State University", short: "LDU" },
+  { name: "Lankaran State University", short: "LSU" },
   { name: "Western Caspian University", short: "WCU" },
 ];
 
