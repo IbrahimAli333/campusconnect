@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import require_roles
-from app.api.v1.grades import teacher_grade_item_summary
+from app.api.v1.grades import teacher_grade_item_summaries
 from app.db.session import get_db
 from app.models.announcement import Announcement
 from app.models.attendance_record import AttendanceRecord
@@ -256,7 +256,11 @@ def _visible_announcements(
 
 
 def _is_upcoming(starts_at: datetime) -> bool:
-    now = datetime.now(starts_at.tzinfo) if starts_at.tzinfo else datetime.now()
+    # Timestamps are written as tz-aware UTC; drivers without tz support
+    # (e.g. SQLite) return them naive, so naive values are UTC, not local.
+    now = datetime.now(starts_at.tzinfo if starts_at.tzinfo else timezone.utc)
+    if starts_at.tzinfo is None:
+        starts_at = starts_at.replace(tzinfo=timezone.utc)
     return starts_at >= now
 
 
@@ -531,9 +535,7 @@ def read_teacher_portal(
             .where(GradeItem.course_id.in_(course_ids))
             .order_by(GradeItem.due_at, GradeItem.id)
         ).all()
-        teacher_grade_items = [
-            teacher_grade_item_summary(db, item) for item in grade_items
-        ]
+        teacher_grade_items = teacher_grade_item_summaries(db, grade_items)
 
     attendance_summary_by_lesson_id, roster_by_lesson_id = _lesson_attendance_data(
         db,

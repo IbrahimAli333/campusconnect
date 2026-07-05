@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, case, func, or_, select, update
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import get_current_active_user
@@ -112,36 +112,58 @@ def list_my_threads(
     db: Session = Depends(get_db),
 ) -> list[MessageThreadRead]:
     profile = _get_or_create_profile(db, current_user)
-    messages = db.scalars(
-        select(Message)
+
+    # One row per counterpart via a window function, so the thread list stays
+    # a bounded query instead of loading the full message history.
+    other_profile_id = case(
+        (Message.sender_profile_id == profile.id, Message.recipient_profile_id),
+        else_=Message.sender_profile_id,
+    ).label("other_profile_id")
+    ranked = (
+        select(
+            Message.id.label("message_id"),
+            other_profile_id,
+            func.row_number()
+            .over(
+                partition_by=other_profile_id,
+                order_by=(Message.created_at.desc(), Message.id.desc()),
+            )
+            .label("recency_rank"),
+        )
         .where(
             or_(
                 Message.sender_profile_id == profile.id,
                 Message.recipient_profile_id == profile.id,
             )
         )
+        .subquery()
+    )
+    last_message_rows = db.execute(
+        select(ranked.c.other_profile_id, Message)
+        .join(Message, Message.id == ranked.c.message_id)
+        .where(ranked.c.recency_rank == 1)
         .order_by(Message.created_at.desc(), Message.id.desc())
     ).all()
 
     blocked_ids = _blocked_profile_ids(db, profile.id)
-    last_message_by_profile_id: dict[int, Message] = {}
-    unread_by_profile_id: dict[int, int] = {}
-    for message in messages:
-        other_profile_id = (
-            message.recipient_profile_id
-            if message.sender_profile_id == profile.id
-            else message.sender_profile_id
-        )
-        if other_profile_id in blocked_ids:
-            continue
-        last_message_by_profile_id.setdefault(other_profile_id, message)
-        if message.recipient_profile_id == profile.id and message.read_at is None:
-            unread_by_profile_id[other_profile_id] = (
-                unread_by_profile_id.get(other_profile_id, 0) + 1
-            )
-
+    last_message_by_profile_id: dict[int, Message] = {
+        counterpart_id: message
+        for counterpart_id, message in last_message_rows
+        if counterpart_id not in blocked_ids
+    }
     if not last_message_by_profile_id:
         return []
+
+    unread_by_profile_id: dict[int, int] = dict(
+        db.execute(
+            select(Message.sender_profile_id, func.count(Message.id))
+            .where(
+                Message.recipient_profile_id == profile.id,
+                Message.read_at.is_(None),
+            )
+            .group_by(Message.sender_profile_id)
+        ).all()
+    )
 
     other_profiles = db.scalars(
         select(UserProfile)
@@ -209,14 +231,24 @@ def list_thread_messages(
         .offset(offset)
     ).all()
 
-    # Reading a thread marks the other side's messages as read.
+    # Reading a thread marks every message from the other side as read — not
+    # just the fetched page — so unread badges cannot stay stuck on long
+    # threads.
     now = datetime.now(timezone.utc)
-    marked_read = False
     for message in messages:
         if message.recipient_profile_id == profile.id and message.read_at is None:
             message.read_at = now
-            marked_read = True
-    if marked_read:
+    marked = db.execute(
+        update(Message)
+        .where(
+            Message.sender_profile_id == other_profile.id,
+            Message.recipient_profile_id == profile.id,
+            Message.read_at.is_(None),
+        )
+        .values(read_at=now)
+        .execution_options(synchronize_session=False)
+    )
+    if marked.rowcount or any(message.read_at == now for message in messages):
         db.commit()
 
     return [_message_response(message) for message in messages]

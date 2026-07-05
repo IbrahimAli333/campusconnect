@@ -12,9 +12,10 @@ from typing import Any, Optional
 
 import httpx
 from fastapi import BackgroundTasks
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
+from app.db.session import SessionLocal
 from app.models.push_token import PushToken
 
 
@@ -34,6 +35,24 @@ def _post_expo_push(messages: list[dict[str, Any]]) -> dict[str, Any]:
     return response.json()
 
 
+def _prune_dead_tokens(tokens: list[str]) -> None:
+    """Delete tokens Expo reported as DeviceNotRegistered.
+
+    Runs in the delivery background task, after the request session has
+    closed, so it opens its own short-lived session.
+    """
+    if not tokens:
+        return
+
+    try:
+        with SessionLocal() as db:
+            db.execute(delete(PushToken).where(PushToken.token.in_(tokens)))
+            db.commit()
+        logger.info("Pruned %d unregistered push token(s)", len(tokens))
+    except Exception:
+        logger.exception("Failed to prune %d dead push token(s)", len(tokens))
+
+
 def _deliver_expo_pushes(messages: list[dict[str, Any]]) -> None:
     try:
         result = _post_expo_push(messages)
@@ -45,14 +64,21 @@ def _deliver_expo_pushes(messages: list[dict[str, Any]]) -> None:
         return
 
     tickets = result.get("data", []) if isinstance(result, dict) else []
+    dead_tokens: list[str] = []
     for message, ticket in zip(messages, tickets):
         if isinstance(ticket, dict) and ticket.get("status") == "error":
+            error_code = (ticket.get("details") or {}).get("error")
             logger.error(
                 "Expo push to %s failed: %s (%s)",
                 message.get("to"),
                 ticket.get("message"),
-                (ticket.get("details") or {}).get("error"),
+                error_code,
             )
+            token = message.get("to")
+            if error_code == "DeviceNotRegistered" and isinstance(token, str):
+                dead_tokens.append(token)
+
+    _prune_dead_tokens(dead_tokens)
 
 
 def queue_push_to_users(

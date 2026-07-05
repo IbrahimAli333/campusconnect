@@ -62,38 +62,47 @@ def ensure_teacher_owns_grade_item(
         )
 
 
-def active_course_roster(db: Session, course_id: int) -> list[StudentProfile]:
-    return db.scalars(
-        select(StudentProfile)
-        .join(StudentProfile.user)
-        .join(Enrollment, Enrollment.student_profile_id == StudentProfile.id)
+def active_course_rosters(
+    db: Session,
+    course_ids: list[int],
+) -> dict[int, list[StudentProfile]]:
+    """Active-enrollment rosters for several courses in one query."""
+    rosters: dict[int, list[StudentProfile]] = {course_id: [] for course_id in course_ids}
+    if not course_ids:
+        return rosters
+
+    rows = db.execute(
+        select(Enrollment.course_id, StudentProfile)
+        .join(StudentProfile, Enrollment.student_profile_id == StudentProfile.id)
+        .join(User, User.id == StudentProfile.user_id)
         .options(
             joinedload(StudentProfile.user),
             joinedload(StudentProfile.student_group),
         )
         .where(
-            Enrollment.course_id == course_id,
+            Enrollment.course_id.in_(course_ids),
             Enrollment.status == "active",
         )
         .order_by(User.full_name, StudentProfile.id)
     ).all()
+    for course_id, student in rows:
+        rosters[course_id].append(student)
+    return rosters
 
 
-def teacher_grade_item_summary(
-    db: Session,
+def active_course_roster(db: Session, course_id: int) -> list[StudentProfile]:
+    return active_course_rosters(db, [course_id])[course_id]
+
+
+def _grade_item_summary(
     grade_item: GradeItem,
+    roster: list[StudentProfile],
+    records_by_item_and_student: dict[tuple[int, int], GradeRecord],
 ) -> PortalTeacherGradeItem:
-    roster = active_course_roster(db, grade_item.course_id)
-    records_by_student_id = {
-        record.student_profile_id: record
-        for record in db.scalars(
-            select(GradeRecord).where(GradeRecord.grade_item_id == grade_item.id)
-        ).all()
-    }
     roster_rows: list[PortalTeacherGradeRosterStudent] = []
 
     for student in roster:
-        record = records_by_student_id.get(student.id)
+        record = records_by_item_and_student.get((grade_item.id, student.id))
         group: StudentGroup = student.student_group
         roster_rows.append(
             PortalTeacherGradeRosterStudent(
@@ -125,6 +134,47 @@ def teacher_grade_item_summary(
         pending_count=max(len(roster_rows) - graded_count, 0),
         roster=roster_rows,
     )
+
+
+def teacher_grade_item_summaries(
+    db: Session,
+    grade_items: list[GradeItem],
+) -> list[PortalTeacherGradeItem]:
+    """Summaries for many grade items with a fixed number of queries.
+
+    The teacher portal renders every grade item at once; loading rosters and
+    records per item multiplies queries by the item count.
+    """
+    if not grade_items:
+        return []
+
+    rosters_by_course_id = active_course_rosters(
+        db,
+        sorted({item.course_id for item in grade_items}),
+    )
+    records_by_item_and_student = {
+        (record.grade_item_id, record.student_profile_id): record
+        for record in db.scalars(
+            select(GradeRecord).where(
+                GradeRecord.grade_item_id.in_([item.id for item in grade_items])
+            )
+        ).all()
+    }
+    return [
+        _grade_item_summary(
+            item,
+            rosters_by_course_id[item.course_id],
+            records_by_item_and_student,
+        )
+        for item in grade_items
+    ]
+
+
+def teacher_grade_item_summary(
+    db: Session,
+    grade_item: GradeItem,
+) -> PortalTeacherGradeItem:
+    return teacher_grade_item_summaries(db, [grade_item])[0]
 
 
 @router.put(

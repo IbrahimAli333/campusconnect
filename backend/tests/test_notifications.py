@@ -376,3 +376,44 @@ def test_push_failure_does_not_fail_triggering_request(
     )
 
     assert response.status_code == 201
+
+
+def test_device_not_registered_ticket_prunes_token(
+    seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, testing_session_local = seeded_client_and_sessionmaker
+    monkeypatch.setattr(push_service, "SessionLocal", testing_session_local)
+
+    def dead_device_post(messages: list[dict[str, Any]]) -> dict[str, Any]:
+        return {
+            "data": [
+                {
+                    "status": "error",
+                    "message": "device is not registered",
+                    "details": {"error": "DeviceNotRegistered"},
+                }
+                for _ in messages
+            ]
+        }
+
+    monkeypatch.setattr(push_service, "_post_expo_push", dead_device_post)
+
+    student_token = _login(client, "student")
+    teacher_token = _login(client, "teacher")
+    _register_push_token(client, teacher_token, "ExponentPushToken[gone]")
+    teacher_profile_id = _profile_id_for_email(
+        testing_session_local, DEV_CREDENTIALS["teacher"]["email"]
+    )
+
+    response = client.post(
+        f"/api/v1/network/connections/{teacher_profile_id}/request",
+        headers=_auth_headers(student_token),
+    )
+    assert response.status_code == 201
+
+    with testing_session_local() as db:
+        remaining = db.scalar(
+            select(PushToken).where(PushToken.token == "ExponentPushToken[gone]")
+        )
+    assert remaining is None

@@ -409,3 +409,35 @@ def test_empty_message_body_is_rejected(
         json={"body": ""},
     )
     assert response.status_code == 422
+
+
+def test_reading_first_page_marks_entire_thread_read(
+    seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+) -> None:
+    client, testing_session_local = seeded_client_and_sessionmaker
+    student_token = _login(client, "student")
+    teacher_token = _login(client, "teacher")
+    teacher_profile_id = _profile_id_for_email(
+        testing_session_local, DEV_CREDENTIALS["teacher"]["email"]
+    )
+    student_profile_id = _profile_id_for_email(
+        testing_session_local, DEV_CREDENTIALS["student"]["email"]
+    )
+    _connect_accepted(client, student_token, teacher_token, teacher_profile_id)
+    for index in range(3):
+        _send_message(client, teacher_token, student_profile_id, f"Message {index}")
+
+    # Fetch only the newest message; older unread ones must still be marked.
+    response = client.get(
+        f"/api/v1/network/messages/threads/{teacher_profile_id}",
+        headers=_auth_headers(student_token),
+        params={"limit": 1, "offset": 0},
+    )
+    unread = client.get(
+        "/api/v1/network/messages/unread",
+        headers=_auth_headers(student_token),
+    )
+
+    assert response.status_code == 200
+    assert unread.status_code == 200
+    assert unread.json()["unread"] == 0
