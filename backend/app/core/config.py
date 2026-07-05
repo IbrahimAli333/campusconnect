@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     secret_key: str = DEFAULT_SECRET_KEY
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
+    refresh_token_expire_days: int = 30
     cors_origins: str = ""
     google_oauth_client_ids: str = ""
 

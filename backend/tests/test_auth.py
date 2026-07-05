@@ -297,3 +297,105 @@ def test_user_can_change_password(
     assert change_response.status_code == 204
     assert old_password_login.status_code == 401
     assert new_password_login.status_code == 200
+
+
+def test_password_spray_across_emails_is_ip_rate_limited(
+    client_and_sessionmaker: tuple[TestClient, "sessionmaker[Session]"],
+) -> None:
+    client, _ = client_and_sessionmaker
+    client.post("/api/v1/auth/bootstrap-admin", json=ADMIN_PAYLOAD)
+
+    # One address rotating through many emails never trips the per-credential
+    # limiter, but the per-IP limiter must eventually stop it.
+    for index in range(50):
+        response = client.post(
+            "/api/v1/auth/login",
+            json={"email": f"victim{index}@example.edu", "password": "Spray-123"},
+        )
+        assert response.status_code == 401
+
+    sprayed_response = client.post(
+        "/api/v1/auth/login",
+        json={"email": "victim51@example.edu", "password": "Spray-123"},
+    )
+    valid_after_spray = client.post(
+        "/api/v1/auth/login",
+        json=_seed_and_login_payload(),
+    )
+
+    assert sprayed_response.status_code == 429
+    # The IP block also stops valid logins from the spraying address.
+    assert valid_after_spray.status_code == 429
+
+
+def test_refresh_token_rotates_session(
+    client_and_sessionmaker: tuple[TestClient, "sessionmaker[Session]"],
+) -> None:
+    client, _ = client_and_sessionmaker
+    client.post("/api/v1/auth/bootstrap-admin", json=ADMIN_PAYLOAD)
+    login_response = client.post("/api/v1/auth/login", json=_seed_and_login_payload())
+    assert login_response.status_code == 200
+    body = login_response.json()
+    assert body["refresh_token"]
+
+    refresh_response = client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": body["refresh_token"]},
+    )
+
+    assert refresh_response.status_code == 200
+    refreshed = refresh_response.json()
+    assert refreshed["access_token"]
+    assert refreshed["refresh_token"]
+    assert refreshed["user"]["email"] == ADMIN_PAYLOAD["email"]
+
+    # The new access token authenticates API requests.
+    me = client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {refreshed['access_token']}"},
+    )
+    assert me.status_code == 200
+
+
+def test_access_token_is_rejected_as_refresh_token_and_vice_versa(
+    client_and_sessionmaker: tuple[TestClient, "sessionmaker[Session]"],
+) -> None:
+    client, _ = client_and_sessionmaker
+    client.post("/api/v1/auth/bootstrap-admin", json=ADMIN_PAYLOAD)
+    body = client.post("/api/v1/auth/login", json=_seed_and_login_payload()).json()
+
+    refresh_with_access = client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": body["access_token"]},
+    )
+    me_with_refresh = client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {body['refresh_token']}"},
+    )
+
+    assert refresh_with_access.status_code == 401
+    assert me_with_refresh.status_code == 401
+
+
+def test_password_change_revokes_outstanding_refresh_tokens(
+    client_and_sessionmaker: tuple[TestClient, "sessionmaker[Session]"],
+) -> None:
+    client, _ = client_and_sessionmaker
+    client.post("/api/v1/auth/bootstrap-admin", json=ADMIN_PAYLOAD)
+    body = client.post("/api/v1/auth/login", json=_seed_and_login_payload()).json()
+
+    change_response = client.post(
+        "/api/v1/auth/change-password",
+        headers={"Authorization": f"Bearer {body['access_token']}"},
+        json={
+            "current_password": ADMIN_PAYLOAD["password"],
+            "new_password": "rotated-password-123",
+        },
+    )
+    refresh_response = client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": body["refresh_token"]},
+    )
+
+    assert change_response.status_code == 204
+    assert refresh_response.status_code == 401

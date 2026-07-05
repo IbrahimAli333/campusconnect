@@ -14,4 +14,6 @@ COPY app ./app
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# --proxy-headers + forwarded-allow-ips lets rate limiting see the real client
+# IP behind Render's proxy; only the platform proxy can reach the container.
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips '*'"]

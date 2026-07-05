@@ -20,6 +20,7 @@ export interface LoginRequest {
 
 export interface TokenResponse {
   access_token: string;
+  refresh_token: string;
   token_type: "bearer";
   user: AuthUser;
 }
@@ -94,6 +95,16 @@ export function login(email: string, password: string): Promise<TokenResponse> {
   });
 }
 
+export function refreshSession(refreshToken: string): Promise<TokenResponse> {
+  return requestJson<TokenResponse>("/api/v1/auth/refresh", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+}
+
 export function loginWithGoogle(idToken: string): Promise<TokenResponse> {
   return requestJson<TokenResponse>("/api/v1/auth/sso/google", {
     method: "POST",
@@ -104,7 +115,16 @@ export function loginWithGoogle(idToken: string): Promise<TokenResponse> {
   });
 }
 
-export async function deleteAccount(token: string, password: string): Promise<void> {
+// SSO accounts have no usable password; they confirm deletion with a fresh
+// Google ID token instead.
+export type DeleteAccountCredential = { password: string } | { googleIdToken: string };
+
+export async function deleteAccount(token: string, credential: DeleteAccountCredential): Promise<void> {
+  const payload =
+    "password" in credential
+      ? { password: credential.password }
+      : { google_id_token: credential.googleIdToken };
+
   let response: Response;
   try {
     response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/auth/delete-account`, {
@@ -114,7 +134,7 @@ export async function deleteAccount(token: string, password: string): Promise<vo
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify(payload),
     });
   } catch (error) {
     throw new AuthApiError(

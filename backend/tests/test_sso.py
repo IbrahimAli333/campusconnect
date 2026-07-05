@@ -215,3 +215,113 @@ def test_sso_sets_university_on_existing_profile_without_one(
     with session_local() as db:
         profile = db.scalars(select(UserProfile)).one()
         assert profile.university == "Baku State University"
+
+
+def test_sso_user_can_delete_account_with_google_reauth(
+    client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, session_local = client_and_sessionmaker
+    configure_sso(monkeypatch)
+    stub_identity(monkeypatch)
+
+    access_token = sso_login(client).json()["access_token"]
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    # The random SSO password can never be known, so the password path fails.
+    password_attempt = client.post(
+        "/api/v1/auth/delete-account",
+        headers=headers,
+        json={"password": "guessed-password"},
+    )
+    assert password_attempt.status_code == 400
+
+    response = client.post(
+        "/api/v1/auth/delete-account",
+        headers=headers,
+        json={"google_id_token": "stub-token"},
+    )
+    assert response.status_code == 204
+
+    with session_local() as db:
+        user = db.scalar(select(User).where(User.email == "aysel.aliyeva@bsu.edu.az"))
+        assert user is None
+
+
+def test_google_reauth_rejects_token_for_other_account(
+    client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, session_local = client_and_sessionmaker
+    configure_sso(monkeypatch)
+    stub_identity(monkeypatch)
+
+    access_token = sso_login(client).json()["access_token"]
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    # A valid Google token for a different email must not authorize deletion.
+    stub_identity(monkeypatch, email="someone.else@bsu.edu.az")
+    response = client.post(
+        "/api/v1/auth/delete-account",
+        headers=headers,
+        json={"google_id_token": "stub-token"},
+    )
+    assert response.status_code == 403
+
+    with session_local() as db:
+        user = db.scalar(select(User).where(User.email == "aysel.aliyeva@bsu.edu.az"))
+        assert user is not None
+
+
+def test_delete_account_requires_exactly_one_credential(
+    client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, _ = client_and_sessionmaker
+    configure_sso(monkeypatch)
+    stub_identity(monkeypatch)
+
+    access_token = sso_login(client).json()["access_token"]
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    neither = client.post(
+        "/api/v1/auth/delete-account",
+        headers=headers,
+        json={},
+    )
+    both = client.post(
+        "/api/v1/auth/delete-account",
+        headers=headers,
+        json={"password": "irrelevant", "google_id_token": "stub-token"},
+    )
+    assert neither.status_code == 422
+    assert both.status_code == 422
+
+
+def test_sso_user_can_set_password_with_google_reauth(
+    client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, _ = client_and_sessionmaker
+    configure_sso(monkeypatch)
+    stub_identity(monkeypatch)
+
+    access_token = sso_login(client).json()["access_token"]
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    response = client.post(
+        "/api/v1/auth/change-password",
+        headers=headers,
+        json={"google_id_token": "stub-token", "new_password": "fresh-password-123"},
+    )
+    assert response.status_code == 204
+
+    # The account now has a usable password for regular login.
+    login_response = client.post(
+        "/api/v1/auth/login",
+        json={
+            "email": "aysel.aliyeva@bsu.edu.az",
+            "password": "fresh-password-123",
+        },
+    )
+    assert login_response.status_code == 200

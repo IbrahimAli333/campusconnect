@@ -30,15 +30,12 @@ import {
   Users,
 } from "lucide-react-native";
 
-import * as Google from "expo-auth-session/providers/google";
-import * as WebBrowser from "expo-web-browser";
-
 import { API_BASE_URL } from "../lib/api/config";
 import { AuthApiError } from "../lib/api/auth";
+import { GOOGLE_OAUTH_CLIENT_ID } from "../lib/google-oauth";
+import { GoogleIdTokenGate } from "../components/common/GoogleIdTokenGate";
 import { palette, platformShadow, styles, webSafeTextShadow } from "../styles/theme";
 import type { IconComponent } from "../components/common/types";
-
-WebBrowser.maybeCompleteAuthSession();
 
 type LoginRole = "member" | "student" | "teacher";
 type AuthMode = "login" | "signup";
@@ -46,11 +43,6 @@ type AuthMode = "login" | "signup";
 // Store builds must not ship one-tap demo credentials. Direct member access on
 // process.env is required for Expo to inline the value at bundle time.
 const DEMO_LOGINS_ENABLED = process.env.EXPO_PUBLIC_ENABLE_DEMO_LOGINS !== "0";
-
-// University SSO stays hidden until an OAuth client ID is provisioned for the
-// build. Direct member access keeps Expo env inlining working (no optional
-// chaining — see the crash note above DEMO_LOGINS_ENABLED).
-const GOOGLE_OAUTH_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_OAUTH_CLIENT_ID;
 
 // The ternary keeps the preset credentials out of the production bundle
 // entirely: with the flag inlined to "0", the minifier folds the condition and
@@ -334,52 +326,34 @@ function RequestAccessPanel({ onUseDemoLogin }: { onUseDemoLogin: () => void }) 
 // Mounted only when GOOGLE_OAUTH_CLIENT_ID exists so the auth-request hook
 // never runs with an empty client ID.
 function GoogleSsoButton({
+  clientId,
   disabled,
   onError,
   onIdToken,
 }: {
+  clientId: string;
   disabled: boolean;
   onError: (message: string) => void;
   onIdToken: (idToken: string) => void;
 }) {
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: GOOGLE_OAUTH_CLIENT_ID,
-  });
-
-  useEffect(() => {
-    if (!response) {
-      return;
-    }
-
-    if (response.type === "success") {
-      const idToken = response.params.id_token;
-      if (idToken) {
-        onIdToken(idToken);
-      } else {
-        onError("Google sign-in did not return an identity token.");
-      }
-    } else if (response.type === "error") {
-      onError(response.error?.message ?? "Google sign-in failed. Try again.");
-    }
-    // The callbacks are stable enough for this screen; re-running on response
-    // changes only.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [response]);
-
   return (
-    <Pressable
-      accessibilityRole="button"
-      disabled={disabled || !request}
-      onPress={() => void promptAsync()}
-      style={({ pressed }) => [
-        loginStyles.secondaryButton,
-        (disabled || !request) && loginStyles.disabled,
-        pressed && !disabled && styles.pressed,
-      ]}
-    >
-      <GraduationCap color={palette.text} size={18} strokeWidth={2.6} />
-      <Text style={loginStyles.secondaryButtonText}>Continue with university Google account</Text>
-    </Pressable>
+    <GoogleIdTokenGate clientId={clientId} onError={onError} onIdToken={onIdToken}>
+      {(promptGoogleSignIn, ready) => (
+        <Pressable
+          accessibilityRole="button"
+          disabled={disabled || !ready}
+          onPress={promptGoogleSignIn}
+          style={({ pressed }) => [
+            loginStyles.secondaryButton,
+            (disabled || !ready) && loginStyles.disabled,
+            pressed && !disabled && styles.pressed,
+          ]}
+        >
+          <GraduationCap color={palette.text} size={18} strokeWidth={2.6} />
+          <Text style={loginStyles.secondaryButtonText}>Continue with university Google account</Text>
+        </Pressable>
+      )}
+    </GoogleIdTokenGate>
   );
 }
 
@@ -791,6 +765,7 @@ export function LoginScreen({
 
                   {GOOGLE_OAUTH_CLIENT_ID && onGoogleLogin ? (
                     <GoogleSsoButton
+                      clientId={GOOGLE_OAUTH_CLIENT_ID}
                       disabled={loading}
                       onError={setError}
                       onIdToken={(idToken) => void submitGoogleToken(idToken)}

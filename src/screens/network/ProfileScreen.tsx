@@ -62,6 +62,8 @@ import {
 } from "../../lib/api/network";
 import { usePortalData } from "../../lib/api/usePortalData";
 import { deleteAccount } from "../../lib/api/auth";
+import { GOOGLE_OAUTH_CLIENT_ID } from "../../lib/google-oauth";
+import { GoogleIdTokenGate } from "../../components/common/GoogleIdTokenGate";
 import { palette, styles } from "../../styles/theme";
 import type {
   ConnectionRequestDecision,
@@ -439,11 +441,29 @@ export function ProfileScreen({
       return;
     }
 
+    await runAccountDeletion({ password: deletePassword });
+  }
+
+  // Google-created accounts have no usable password, so a fresh Google
+  // sign-in for the same email confirms deletion instead.
+  async function confirmAccountDeletionWithGoogle(idToken: string) {
+    if (!token || deleteState === "saving") {
+      return;
+    }
+
+    await runAccountDeletion({ googleIdToken: idToken });
+  }
+
+  async function runAccountDeletion(credential: Parameters<typeof deleteAccount>[1]) {
+    if (!token) {
+      return;
+    }
+
     setDeleteState("saving");
     setDeleteMessage(null);
 
     try {
-      await deleteAccount(token, deletePassword);
+      await deleteAccount(token, credential);
       onAccountDeleted?.();
     } catch (error) {
       setDeleteState("error");
@@ -849,6 +869,32 @@ export function ProfileScreen({
                 wide
               />
             </View>
+            {GOOGLE_OAUTH_CLIENT_ID ? (
+              <>
+                <Text style={styles.smallText}>
+                  Signed in with your university Google account? Verify with Google instead of a password.
+                </Text>
+                <GoogleIdTokenGate
+                  clientId={GOOGLE_OAUTH_CLIENT_ID}
+                  onError={(message) => {
+                    setDeleteState("error");
+                    setDeleteMessage(message);
+                  }}
+                  onIdToken={(idToken) => void confirmAccountDeletionWithGoogle(idToken)}
+                >
+                  {(promptGoogleSignIn, ready) => (
+                    <InlineAction
+                      disabled={!ready || deleteState === "saving"}
+                      icon={GraduationCap}
+                      label="Verify with Google and delete"
+                      onPress={promptGoogleSignIn}
+                      secondary
+                      wide
+                    />
+                  )}
+                </GoogleIdTokenGate>
+              </>
+            ) : null}
             {deleteMessage ? (
               <Text style={[networkStyles.actionMessage, deleteState === "error" && networkStyles.errorText]}>
                 {deleteMessage}

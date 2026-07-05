@@ -51,4 +51,12 @@ class LoginRateLimiter:
             self._failures.clear()
 
 
+# Targeted brute force: 5 failures per (client IP, email) in 15 minutes.
+# Keying on the IP as well means an attacker spamming a victim's email cannot
+# lock the real user out from their own address.
 login_rate_limiter = LoginRateLimiter()
+
+# Password spraying: one address rotating through many emails. The threshold
+# is deliberately generous because campus NAT can put a whole building behind
+# one IP; the per-(IP, email) limiter above stays the tight one.
+ip_rate_limiter = LoginRateLimiter(max_attempts=50, window_seconds=900)
