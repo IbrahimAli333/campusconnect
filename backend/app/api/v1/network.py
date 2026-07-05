@@ -14,6 +14,7 @@ from fastapi import (
     status,
 )
 from sqlalchemy import and_, func, or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.deps import get_current_active_user
@@ -162,6 +163,19 @@ PROFILE_ROLE_RELEVANCE = {
     ("admin", "mentor"): 8,
     ("admin", "employer"): 8,
 }
+
+
+def _commit_or_conflict(db: Session, detail: str) -> None:
+    """Commit, mapping unique-constraint violations to the 409 the pre-checks
+    return, so concurrent duplicate writes don't surface as 500s."""
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=detail,
+        ) from None
 
 
 def _default_profile_role(user: User) -> str:
@@ -818,7 +832,7 @@ def add_my_skill(
         level=request.level,
     )
     db.add(user_skill)
-    db.commit()
+    _commit_or_conflict(db, "Profile already has this skill")
     return _user_skill_response(_get_my_user_skill(db, profile, user_skill.id))
 
 
@@ -1379,6 +1393,11 @@ def apply_to_opportunity(
 ) -> OpportunityApplicationRead:
     profile = _get_or_create_profile(db, current_user)
     opportunity = _get_opportunity(db, opportunity_id)
+    if opportunity.owner_profile_id in _blocked_profile_ids(db, profile.id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Opportunity not found",
+        )
     if opportunity.owner_profile_id == profile.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -1408,7 +1427,7 @@ def apply_to_opportunity(
         note=request.note if request is not None else None,
     )
     db.add(application)
-    db.commit()
+    _commit_or_conflict(db, "Application already exists")
     application = db.scalar(
         select(OpportunityApplication)
         .options(
@@ -1466,7 +1485,9 @@ def request_connection(
 ) -> ConnectionRequestRead:
     requester_profile = _get_or_create_profile(db, current_user)
     receiver_profile = _get_profile(db, profile_id)
-    if not _can_view_profile(requester_profile, receiver_profile):
+    if not _can_view_profile(
+        requester_profile, receiver_profile
+    ) or receiver_profile.id in _blocked_profile_ids(db, requester_profile.id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Profile not found",
@@ -1505,7 +1526,7 @@ def request_connection(
         message=request.message if request is not None else None,
     )
     db.add(connection_request)
-    db.commit()
+    _commit_or_conflict(db, "Connection request already exists")
     connection_request = db.scalar(
         select(ConnectionRequest)
         .options(
@@ -1613,7 +1634,7 @@ def save_opportunity(
         opportunity_id=opportunity_id,
     )
     db.add(saved_opportunity)
-    db.commit()
+    _commit_or_conflict(db, "Opportunity already saved")
     db.refresh(saved_opportunity)
     return SavedOpportunityRead.model_validate(saved_opportunity)
 
@@ -1753,7 +1774,7 @@ def block_profile(
             blocked_profile_id=target.id,
         )
     )
-    db.commit()
+    _commit_or_conflict(db, "Profile is already blocked")
     return _profile_summary(target)
 
 

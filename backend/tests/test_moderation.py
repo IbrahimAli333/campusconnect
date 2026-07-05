@@ -312,3 +312,52 @@ class TestProfileBlocks:
             headers=_auth_headers(member_token),
         )
         assert response.status_code == 404
+
+    def test_block_prevents_connection_requests_and_applications(
+        self, seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]]
+    ) -> None:
+        client, _ = seeded_client_and_sessionmaker
+        member_token = _login(client, "member")
+        teacher_token = _login(client, "teacher")
+        teacher_email = DEV_CREDENTIALS["teacher"]["email"]
+        member_email = DEV_CREDENTIALS["member"]["email"]
+        teacher_profile_id = _profile_id_by_email(client, member_token, teacher_email)
+        member_profile_id = _profile_id_by_email(client, teacher_token, member_email)
+
+        # Find an opportunity owned by the teacher before blocking.
+        response = client.get(
+            "/api/v1/network/opportunities", headers=_auth_headers(member_token)
+        )
+        teacher_opportunity_ids = [
+            opportunity["id"]
+            for opportunity in response.json()
+            if opportunity["owner_profile"]["id"] == teacher_profile_id
+            and opportunity["status"] == "open"
+        ]
+        assert teacher_opportunity_ids
+        teacher_opportunity_id = teacher_opportunity_ids[0]
+
+        response = client.post(
+            f"/api/v1/network/blocks/{teacher_profile_id}",
+            headers=_auth_headers(member_token),
+        )
+        assert response.status_code == 201
+
+        # Neither side can send a connection request.
+        response = client.post(
+            f"/api/v1/network/connections/{member_profile_id}/request",
+            headers=_auth_headers(teacher_token),
+        )
+        assert response.status_code == 404
+        response = client.post(
+            f"/api/v1/network/connections/{teacher_profile_id}/request",
+            headers=_auth_headers(member_token),
+        )
+        assert response.status_code == 404
+
+        # The blocker cannot apply to the blocked user's opportunity.
+        response = client.post(
+            f"/api/v1/network/opportunities/{teacher_opportunity_id}/apply",
+            headers=_auth_headers(member_token),
+        )
+        assert response.status_code == 404

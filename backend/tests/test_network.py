@@ -145,6 +145,28 @@ def test_authenticated_user_can_get_and_update_own_profile(
     assert data["visibility"] == "university_only"
 
 
+def test_profile_update_cannot_change_role(
+    seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+) -> None:
+    client, _ = seeded_client_and_sessionmaker
+    member_token = _login(client, "member")
+
+    update_response = client.patch(
+        "/api/v1/network/me",
+        headers=_auth_headers(member_token),
+        json={"role": "admin", "headline": "Trying to escalate"},
+    )
+    me_response = client.get(
+        "/api/v1/network/me",
+        headers=_auth_headers(member_token),
+    )
+
+    assert update_response.status_code == 200
+    assert update_response.json()["role"] == "member"
+    assert me_response.json()["role"] == "member"
+    assert me_response.json()["headline"] == "Trying to escalate"
+
+
 def test_add_skill_creates_and_reuses_skill(
     seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
 ) -> None:

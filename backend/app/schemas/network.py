@@ -115,7 +115,9 @@ class ProfileCreate(ProfileBase):
 
 
 class ProfileUpdate(BaseModel):
-    role: Optional[NetworkRole] = None
+    # The profile role is derived from the account role at creation and is not
+    # user-editable: elevated roles unlock posting rights and imply campus
+    # trust, so self-assignment would be a privilege escalation.
     headline: Optional[str] = Field(default=None, max_length=255)
     bio: Optional[str] = None
     university: Optional[str] = Field(default=None, max_length=255)

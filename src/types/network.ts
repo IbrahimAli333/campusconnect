@@ -81,7 +81,6 @@ export interface ProfileRecommendationRead extends ProfileRead {
 }
 
 export interface ProfileUpdatePayload {
-  role?: NetworkRole;
   headline?: string | null;
   bio?: string | null;
   university?: string | null;
