@@ -10,6 +10,7 @@ from app.db.base import Base
 
 
 CONTENT_REPORT_TARGET_TYPES = ("profile", "opportunity")
+CONTENT_REPORT_STATUSES = ("open", "resolved", "dismissed")
 
 
 class ContentReport(Base):
@@ -18,6 +19,10 @@ class ContentReport(Base):
         CheckConstraint(
             "target_type IN ('profile', 'opportunity')",
             name="content_report_target_type",
+        ),
+        CheckConstraint(
+            "status IN ('open', 'resolved', 'dismissed')",
+            name="content_report_status",
         ),
         CheckConstraint(
             "(target_type = 'profile' AND target_profile_id IS NOT NULL AND target_opportunity_id IS NULL)"
@@ -38,6 +43,9 @@ class ContentReport(Base):
         ForeignKey("opportunities.id", ondelete="CASCADE"), nullable=True
     )
     reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(20), default="open", server_default="open", nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

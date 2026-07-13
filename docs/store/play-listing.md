@@ -31,18 +31,20 @@ Access is invite-based: accounts are provisioned by campus or program administra
 
 - **Category:** Social (alternative: Education)
 - **Tags:** networking, education, campus
-- **Contact email:** ikhudiyev@student.bridgew.edu
+- **Contact email:** ibrahimaliworkacc@gmail.com
 - **Privacy policy URL:** https://ibrahimali333.github.io/campusconnect/privacy-policy.html
 
 ## Access instructions for Google reviewers (App access form)
 
 The app is invite-based, so declare "All or some functionality is restricted"
-and provide a demo credential set. YOU: create a dedicated reviewer account on
-the production backend first (do NOT hand out the shared demo accounts):
+and provide a demo credential set. The reviewer account (reviewer@example.edu,
+student role) is provisioned automatically on deploy once
+UNIVERSITY_PORTAL_REVIEWER_PASSWORD is set in the Render dashboard — read the
+password from there (do NOT hand out the shared demo accounts):
 
 ```
-Email: <reviewer account email>
-Password: <reviewer account password>
+Email: reviewer@example.edu
+Password: <UNIVERSITY_PORTAL_REVIEWER_PASSWORD from the Render dashboard>
 Notes: Log in with the credentials above. All app functionality
 (discover, apply, post, connect, report, block, delete account)
 is available to this account.

@@ -18,6 +18,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.deps import get_current_active_user
+from app.core.action_rate_limit import (
+    application_rate_limiter,
+    connection_rate_limiter,
+    enforce_action_limit,
+    opportunity_rate_limiter,
+    report_rate_limiter,
+)
 from app.db.session import get_db
 from app.models.connection_request import ConnectionRequest
 from app.models.content_report import ContentReport
@@ -1328,6 +1335,7 @@ def create_opportunity(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ) -> OpportunityRead:
+    enforce_action_limit(opportunity_rate_limiter, current_user.id)
     profile = _get_or_create_profile(db, current_user)
     if request.type not in _allowed_opportunity_types(profile):
         raise HTTPException(
@@ -1391,6 +1399,7 @@ def apply_to_opportunity(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ) -> OpportunityApplicationRead:
+    enforce_action_limit(application_rate_limiter, current_user.id)
     profile = _get_or_create_profile(db, current_user)
     opportunity = _get_opportunity(db, opportunity_id)
     if opportunity.owner_profile_id in _blocked_profile_ids(db, profile.id):
@@ -1483,6 +1492,7 @@ def request_connection(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ) -> ConnectionRequestRead:
+    enforce_action_limit(connection_rate_limiter, current_user.id)
     requester_profile = _get_or_create_profile(db, current_user)
     receiver_profile = _get_profile(db, profile_id)
     if not _can_view_profile(
@@ -1672,6 +1682,7 @@ def report_content(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ) -> ContentReportRead:
+    enforce_action_limit(report_rate_limiter, current_user.id)
     reporter_profile = _get_or_create_profile(db, current_user)
 
     target_profile_id: int | None = None

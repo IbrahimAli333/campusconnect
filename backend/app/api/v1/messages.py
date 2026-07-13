@@ -7,6 +7,7 @@ from sqlalchemy import and_, case, func, or_, select, update
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import get_current_active_user
+from app.core.action_rate_limit import enforce_action_limit, message_rate_limiter
 from app.api.v1.network import (
     _blocked_profile_ids,
     _get_or_create_profile,
@@ -266,6 +267,7 @@ def send_message(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ) -> MessageRead:
+    enforce_action_limit(message_rate_limiter, current_user.id)
     profile = _get_or_create_profile(db, current_user)
     other_profile = _get_messageable_profile(db, profile, profile_id)
 

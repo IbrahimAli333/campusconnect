@@ -86,6 +86,16 @@ def bootstrap_admin(
     request: BootstrapAdminRequest,
     db: Session = Depends(get_db),
 ) -> User:
+    settings = get_settings()
+    if (
+        settings.environment.lower() in {"prod", "production"}
+        and not settings.enable_bootstrap_admin
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not Found",
+        )
+
     user_count = db.scalar(select(func.count(User.id)))
     if user_count:
         raise HTTPException(
@@ -149,9 +159,11 @@ def login(
         )
 
     if not user.is_active:
+        # Same message as a bad password so responses don't reveal whether an
+        # account exists but was deactivated.
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Inactive user",
+            detail="Invalid email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

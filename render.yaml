@@ -12,7 +12,7 @@ services:
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    preDeployCommand: alembic upgrade head
+    preDeployCommand: sh -c "alembic upgrade head && python -m app.scripts.provision_admin_accounts"
     healthCheckPath: /health
     envVars:
       - key: UNIVERSITY_PORTAL_APP_NAME
@@ -30,6 +30,17 @@ services:
       - key: UNIVERSITY_PORTAL_ALGORITHM
         value: HS256
       - key: UNIVERSITY_PORTAL_ACCESS_TOKEN_EXPIRE_MINUTES
-        value: 10080
+        value: 60
       - key: UNIVERSITY_PORTAL_CORS_ORIGINS
+        sync: false
+      # Moderation + store-review accounts, provisioned by the preDeployCommand.
+      # The accounts are only created once their password is set in the Render
+      # dashboard; passwords are never stored in the repo.
+      - key: UNIVERSITY_PORTAL_ADMIN_EMAIL
+        value: ibrahimaliworkacc@gmail.com
+      - key: UNIVERSITY_PORTAL_ADMIN_PASSWORD
+        sync: false
+      - key: UNIVERSITY_PORTAL_REVIEWER_EMAIL
+        value: reviewer@example.edu
+      - key: UNIVERSITY_PORTAL_REVIEWER_PASSWORD
         sync: false

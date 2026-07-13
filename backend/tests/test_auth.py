@@ -147,6 +147,9 @@ def test_inactive_users_cannot_login(
     )
 
     assert response.status_code == 401
+    # The response must be indistinguishable from a wrong password so it does
+    # not reveal that the account exists but was deactivated.
+    assert response.json()["detail"] == "Invalid email or password"
 
 
 def test_auth_me_returns_current_user_with_bearer_token(
@@ -399,3 +402,27 @@ def test_password_change_revokes_outstanding_refresh_tokens(
 
     assert change_response.status_code == 204
     assert refresh_response.status_code == 401
+
+
+def test_bootstrap_admin_is_gated_in_production(
+    client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.core.config import get_settings
+
+    client, _ = client_and_sessionmaker
+    monkeypatch.setenv("UNIVERSITY_PORTAL_ENVIRONMENT", "production")
+    monkeypatch.setenv("UNIVERSITY_PORTAL_SECRET_KEY", "test-production-secret")
+    get_settings.cache_clear()
+
+    try:
+        response = client.post("/api/v1/auth/bootstrap-admin", json=ADMIN_PAYLOAD)
+        assert response.status_code == 404
+
+        monkeypatch.setenv("UNIVERSITY_PORTAL_ENABLE_BOOTSTRAP_ADMIN", "1")
+        get_settings.cache_clear()
+
+        response = client.post("/api/v1/auth/bootstrap-admin", json=ADMIN_PAYLOAD)
+        assert response.status_code == 201
+    finally:
+        get_settings.cache_clear()

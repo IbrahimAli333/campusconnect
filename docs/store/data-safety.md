@@ -4,7 +4,7 @@
 
 - Does your app collect or share any of the required user data types? **Yes (collects; does not share)**
 - Is all of the user data collected by your app encrypted in transit? **Yes (HTTPS only)**
-- Do you provide a way for users to request that their data is deleted? **Yes** - in-app account deletion (Me tab) plus email requests to ikhudiyev@student.bridgew.edu.
+- Do you provide a way for users to request that their data is deleted? **Yes** - in-app account deletion (Me tab) plus email requests to ibrahimaliworkacc@gmail.com.
 
 ## Data types collected
 

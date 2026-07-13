@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 30
     cors_origins: str = ""
     google_oauth_client_ids: str = ""
+    # The zero-users guard makes bootstrap-admin inert on a live database, but
+    # a wiped or recreated production database would let anyone seize admin.
+    # Require an explicit opt-in outside development.
+    enable_bootstrap_admin: bool = False
 
     @model_validator(mode="after")
     def normalize_database_url(self) -> "Settings":

@@ -18,6 +18,11 @@ const baseConfig = {
     bundleIdentifier: "com.ibrahimalikhudiyev.campusconnect",
     buildNumber: "1",
     supportsTablet: true,
+    infoPlist: {
+      // HTTPS-only networking qualifies for the standard exemption; declaring
+      // it here skips the export-compliance prompt on every TestFlight upload.
+      ITSAppUsesNonExemptEncryption: false,
+    },
   },
   android: {
     package: "com.ibrahimalikhudiyev.campusconnect",
@@ -34,7 +39,7 @@ const baseConfig = {
   web: {
     favicon: "./assets/favicon.png",
   },
-  plugins: ["expo-web-browser"],
+  plugins: ["expo-web-browser", "expo-notifications"],
   extra: {
     productName: "CampusConnect",
     eas: {
