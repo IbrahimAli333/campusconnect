@@ -399,7 +399,7 @@ export function InlineAction({
 }) {
   const { width } = useWindowDimensions();
   const locked = disabled && !loading;
-  const color = locked ? "#746D62" : secondary ? palette.text : palette.surface;
+  const color = locked ? "#6B7686" : secondary ? palette.text : palette.surface;
   const shouldStretch = wide && width < 640;
 
   return (

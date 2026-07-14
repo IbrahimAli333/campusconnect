@@ -1,33 +1,33 @@
 import { Platform, StyleSheet, type TextStyle, type ViewStyle } from "react-native";
 
 export const palette = {
-  page: "#F1EADF",
-  surface: "#FFFDF6",
-  surfaceAlt: "#F4EFE6",
-  paper: "#FFF7EA",
-  paperMuted: "#E8DFD2",
-  bond: "#FFFDF8",
-  buff: "#F6E2B9",
-  buffBorder: "#E3B66A",
-  charcoal: "#202327",
+  page: "#F5F7FA",
+  surface: "#FFFFFF",
+  surfaceAlt: "#F0F3F7",
+  paper: "#FFFFFF",
+  paperMuted: "#E4EAF1",
+  bond: "#FFFFFF",
+  buff: "#FBEBC8",
+  buffBorder: "#E4B75F",
+  charcoal: "#1E293B",
   navy: "#0A2540",
   navySoft: "#E7EEF4",
-  border: "#D8CDC0",
-  text: "#15181D",
-  muted: "#596170",
-  faint: "#8B97A6",
-  blue: "#1F5FBF",
-  blueSoft: "#E8F1FF",
-  teal: "#0F766E",
-  tealSoft: "#E2F3EF",
-  amber: "#B76312",
-  amberSoft: "#FFF0D6",
-  red: "#B42318",
-  redSoft: "#FDE8E7",
-  green: "#177245",
-  greenSoft: "#E6F4EA",
-  violet: "#6D28D9",
-  violetSoft: "#F0E9FF",
+  border: "#DCE3EC",
+  text: "#0F172A",
+  muted: "#5A6679",
+  faint: "#8C9AAC",
+  blue: "#2563EB",
+  blueSoft: "#EAF1FD",
+  teal: "#0D9488",
+  tealSoft: "#E0F4F0",
+  amber: "#B45309",
+  amberSoft: "#FDF1DC",
+  red: "#DC2626",
+  redSoft: "#FDECEC",
+  green: "#15803D",
+  greenSoft: "#E7F5EC",
+  violet: "#7C3AED",
+  violetSoft: "#F1EBFE",
 };
 
 interface ShadowStyleOptions {
@@ -80,38 +80,19 @@ type WebTextStyle = TextStyle & {
   textShadow?: string;
 };
 
-export function paperTexture(kind: "page" | "sheet" = "sheet"): ViewStyle {
-  if (Platform.OS !== "web") {
-    return {};
-  }
-
-  const pageTexture =
-    "radial-gradient(circle at 10px 12px, rgba(61, 52, 39, 0.055) 0 0.7px, transparent 0.9px), " +
-    "radial-gradient(circle at 28px 30px, rgba(255, 255, 255, 0.7) 0 0.8px, transparent 1px), " +
-    "linear-gradient(180deg, rgba(255, 253, 248, 0.3), rgba(222, 211, 194, 0.18))";
-  const sheetTexture =
-    "radial-gradient(circle at 8px 10px, rgba(61, 52, 39, 0.035) 0 0.6px, transparent 0.8px), " +
-    "linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(248, 241, 230, 0.2))";
-
-  return {
-    backgroundImage: kind === "page" ? pageTexture : sheetTexture,
-    backgroundSize: kind === "page" ? "34px 34px, 42px 42px, 100% 100%" : "24px 24px, 100% 100%",
-  } as WebPaperStyle;
+export function paperTexture(_kind: "page" | "sheet" = "sheet"): ViewStyle {
+  // Flat surfaces: the old paper-grain texture is retired with the parchment theme.
+  return {};
 }
 
 export function paperShadow(kind: "sheet" | "strip" | "pressed" | "cutout" | "sunken" = "sheet"): ViewStyle {
   if (Platform.OS === "web") {
     const shadows: Record<typeof kind, string> = {
-      cutout:
-        "inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 4px 0 #075B55, 0 12px 18px rgba(8, 117, 104, 0.18)",
-      pressed:
-        "inset 0 2px 3px rgba(47, 39, 29, 0.22), inset 0 -1px 0 rgba(255, 255, 255, 0.65)",
-      sheet:
-        "inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 3px 0 #E1D7C8, 0 18px 24px rgba(35, 29, 20, 0.09)",
-      strip:
-        "inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 2px 0 #E5DBCD, 0 12px 18px rgba(35, 29, 20, 0.08)",
-      sunken:
-        "inset 0 2px 3px rgba(69, 58, 42, 0.16), inset 0 -1px 0 rgba(255, 255, 255, 0.62)",
+      cutout: "0 2px 6px rgba(13, 148, 136, 0.28), 0 10px 22px rgba(13, 148, 136, 0.16)",
+      pressed: "inset 0 1px 2px rgba(15, 23, 42, 0.1)",
+      sheet: "0 1px 2px rgba(15, 23, 42, 0.05), 0 10px 28px rgba(15, 23, 42, 0.07)",
+      strip: "0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 18px rgba(15, 23, 42, 0.06)",
+      sunken: "inset 0 1px 2px rgba(15, 23, 42, 0.07)",
     };
 
     return { boxShadow: shadows[kind] } as WebPaperStyle;
@@ -122,10 +103,10 @@ export function paperShadow(kind: "sheet" | "strip" | "pressed" | "cutout" | "su
   }
 
   return platformShadow({
-    color: kind === "cutout" ? "#0F766E" : "#3C3124",
-    offset: { height: kind === "strip" ? 7 : 10, width: 0 },
-    opacity: kind === "cutout" ? 0.18 : 0.08,
-    radius: kind === "strip" ? 13 : 18,
+    color: kind === "cutout" ? "#0D9488" : "#0F172A",
+    offset: { height: kind === "strip" ? 4 : 8, width: 0 },
+    opacity: kind === "cutout" ? 0.22 : 0.07,
+    radius: kind === "strip" ? 10 : 18,
   });
 }
 
@@ -174,10 +155,10 @@ export const styles = StyleSheet.create({
   topbar: {
     alignItems: "center",
     backgroundColor: palette.bond,
-    borderBottomColor: "#D7CBBE",
-    borderBottomWidth: 2,
-    borderColor: "#E2D9CC",
-    borderRadius: 8,
+    borderBottomColor: "#D9E0EA",
+    borderBottomWidth: 1,
+    borderColor: "#E3E9F0",
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",
     gap: 12,
@@ -209,11 +190,11 @@ export const styles = StyleSheet.create({
   },
   brandIcon: {
     alignItems: "center",
-    backgroundColor: "#087568",
-    borderBottomColor: "#075B55",
-    borderBottomWidth: 3,
-    borderColor: "#0A8A7A",
-    borderRadius: 8,
+    backgroundColor: "#0D9488",
+    borderBottomColor: "#0A7266",
+    borderBottomWidth: 1,
+    borderColor: "#2BA79A",
+    borderRadius: 12,
     borderWidth: 1,
     height: 36,
     justifyContent: "center",
@@ -230,7 +211,7 @@ export const styles = StyleSheet.create({
   brandTitle: {
     color: palette.text,
     fontSize: 18,
-    fontWeight: "800",
+    fontWeight: "700",
   },
   brandTitleCompact: {
     fontSize: 16,
@@ -256,9 +237,9 @@ export const styles = StyleSheet.create({
   },
   iconButton: {
     alignItems: "center",
-    backgroundColor: "#FAF5EC",
-    borderColor: "#DCD1C3",
-    borderRadius: 8,
+    backgroundColor: "#F6F8FB",
+    borderColor: "#DCE3EC",
+    borderRadius: 12,
     borderWidth: 1,
     height: 40,
     justifyContent: "center",
@@ -271,10 +252,10 @@ export const styles = StyleSheet.create({
   },
   rolePanel: {
     backgroundColor: palette.bond,
-    borderBottomColor: "#D6CABD",
-    borderBottomWidth: 2,
-    borderColor: "#E3DACD",
-    borderRadius: 8,
+    borderBottomColor: "#D9E0EA",
+    borderBottomWidth: 1,
+    borderColor: "#E3E9F0",
+    borderRadius: 12,
     borderWidth: 1,
     marginHorizontal: 20,
     marginTop: 12,
@@ -298,7 +279,7 @@ export const styles = StyleSheet.create({
   roleName: {
     color: palette.text,
     fontSize: 15,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   roleNameCompact: {
     fontSize: 14,
@@ -316,9 +297,9 @@ export const styles = StyleSheet.create({
     marginTop: 0,
   },
   roleSwitcher: {
-    backgroundColor: "#F5EFE5",
-    borderColor: "#D9CFC1",
-    borderRadius: 8,
+    backgroundColor: "#EEF2F7",
+    borderColor: "#DCE3EC",
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",
     gap: 6,
@@ -327,7 +308,7 @@ export const styles = StyleSheet.create({
   },
   roleButton: {
     alignItems: "center",
-    borderRadius: 7,
+    borderRadius: 10,
     flex: 1,
     flexDirection: "row",
     gap: 7,
@@ -342,7 +323,7 @@ export const styles = StyleSheet.create({
   roleButtonText: {
     color: palette.muted,
     fontSize: 14,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   roleButtonTextActive: {
     color: palette.surface,
@@ -362,10 +343,10 @@ export const styles = StyleSheet.create({
   segmentedGrid: {
     alignSelf: "center",
     backgroundColor: palette.bond,
-    borderBottomColor: "#D6CABD",
-    borderBottomWidth: 2,
-    borderColor: "#E2D9CC",
-    borderRadius: 8,
+    borderBottomColor: "#D9E0EA",
+    borderBottomWidth: 1,
+    borderColor: "#E3E9F0",
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",
     gap: 6,
@@ -381,9 +362,9 @@ export const styles = StyleSheet.create({
   },
   segmentedItem: {
     alignItems: "center",
-    backgroundColor: "#FCF7EF",
-    borderColor: "#E7DED1",
-    borderRadius: 8,
+    backgroundColor: "#F8FAFC",
+    borderColor: "#E6EBF2",
+    borderRadius: 12,
     borderWidth: 1,
     justifyContent: "center",
     minHeight: 38,
@@ -403,14 +384,14 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 3,
   },
   segmentedItemActive: {
-    backgroundColor: "#E8DECF",
-    borderColor: "#C9BAA7",
+    backgroundColor: palette.navy,
+    borderColor: palette.navy,
     ...paperShadow("pressed"),
   },
   segmentedText: {
     color: palette.muted,
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   segmentedTextCompact: {
     fontSize: 11,
@@ -421,17 +402,12 @@ export const styles = StyleSheet.create({
     lineHeight: 12,
   },
   segmentedTextActive: {
-    color: palette.charcoal,
-    ...webSafeTextShadow({
-      color: "rgba(255, 255, 255, 0.55)",
-      offset: { height: 1, width: 0 },
-      radius: 0,
-    }),
+    color: "#FFFFFF",
   },
   segmentedBadge: {
     alignItems: "center",
     backgroundColor: palette.teal,
-    borderColor: palette.tealSoft,
+    borderColor: "#FFFFFF",
     borderRadius: 9,
     borderWidth: 1,
     height: 18,
@@ -445,7 +421,7 @@ export const styles = StyleSheet.create({
   segmentedBadgeText: {
     color: palette.surface,
     fontSize: 10,
-    fontWeight: "800",
+    fontWeight: "600",
     lineHeight: 13,
   },
   content: {
@@ -488,9 +464,9 @@ export const styles = StyleSheet.create({
   statCard: {
     backgroundColor: palette.surface,
     borderColor: palette.border,
-    borderBottomColor: "#D4C8BA",
-    borderBottomWidth: 2,
-    borderRadius: 8,
+    borderBottomColor: "#D2DBE6",
+    borderBottomWidth: 1,
+    borderRadius: 12,
     borderWidth: 1,
     flex: 1,
     minWidth: 150,
@@ -499,7 +475,7 @@ export const styles = StyleSheet.create({
   },
   statIcon: {
     alignItems: "center",
-    borderRadius: 8,
+    borderRadius: 12,
     height: 38,
     justifyContent: "center",
     marginBottom: 12,
@@ -508,7 +484,7 @@ export const styles = StyleSheet.create({
   statValue: {
     color: palette.text,
     fontSize: 24,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   statLabel: {
     color: palette.muted,
@@ -531,7 +507,7 @@ export const styles = StyleSheet.create({
   sectionTitle: {
     color: palette.text,
     fontSize: 16,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   sectionAction: {
     alignItems: "center",
@@ -541,14 +517,14 @@ export const styles = StyleSheet.create({
   sectionActionText: {
     color: palette.muted,
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   card: {
     backgroundColor: palette.surface,
-    borderBottomColor: "#D0C4B5",
-    borderBottomWidth: 3,
+    borderBottomColor: "#D2DBE6",
+    borderBottomWidth: 1,
     borderColor: palette.border,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     flex: 1,
     gap: 13,
@@ -569,7 +545,7 @@ export const styles = StyleSheet.create({
   eyebrow: {
     color: palette.teal,
     fontSize: 11,
-    fontWeight: "900",
+    fontWeight: "700",
     letterSpacing: 0,
     textTransform: "uppercase",
   },
@@ -577,7 +553,7 @@ export const styles = StyleSheet.create({
     color: palette.text,
     flexShrink: 1,
     fontSize: 16,
-    fontWeight: "900",
+    fontWeight: "700",
     lineHeight: 21,
   },
   cardMeta: {
@@ -591,14 +567,14 @@ export const styles = StyleSheet.create({
   },
   metric: {
     backgroundColor: palette.surfaceAlt,
-    borderRadius: 8,
+    borderRadius: 12,
     flex: 1,
     padding: 9,
   },
   metricValue: {
     color: palette.text,
     fontSize: 14,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   metricLabel: {
     color: palette.muted,
@@ -608,7 +584,7 @@ export const styles = StyleSheet.create({
   },
   chip: {
     alignItems: "center",
-    borderRadius: 5,
+    borderRadius: 8,
     borderWidth: 1,
     minHeight: 28,
     justifyContent: "center",
@@ -617,16 +593,16 @@ export const styles = StyleSheet.create({
   },
   chipText: {
     fontSize: 11,
-    fontWeight: "900",
+    fontWeight: "700",
     textTransform: "capitalize",
   },
   listRow: {
     alignItems: "center",
     backgroundColor: palette.surface,
-    borderBottomColor: "#D7CBBE",
-    borderBottomWidth: 2,
+    borderBottomColor: "#D9E0EA",
+    borderBottomWidth: 1,
     borderColor: palette.border,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",
     gap: 12,
@@ -640,7 +616,7 @@ export const styles = StyleSheet.create({
   timeBox: {
     alignItems: "center",
     backgroundColor: palette.blueSoft,
-    borderRadius: 8,
+    borderRadius: 12,
     justifyContent: "center",
     minHeight: 48,
     width: 58,
@@ -648,18 +624,18 @@ export const styles = StyleSheet.create({
   timeText: {
     color: palette.blue,
     fontSize: 14,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   timeDay: {
     color: palette.muted,
     fontSize: 10,
-    fontWeight: "800",
+    fontWeight: "600",
     marginTop: 2,
   },
   documentIcon: {
     alignItems: "center",
     backgroundColor: palette.blueSoft,
-    borderRadius: 8,
+    borderRadius: 12,
     height: 42,
     justifyContent: "center",
     width: 42,
@@ -671,7 +647,7 @@ export const styles = StyleSheet.create({
   rowTitle: {
     color: palette.text,
     fontSize: 14,
-    fontWeight: "900",
+    fontWeight: "700",
     lineHeight: 19,
   },
   rowMeta: {
@@ -694,8 +670,8 @@ export const styles = StyleSheet.create({
   alertPanel: {
     alignItems: "center",
     backgroundColor: palette.amberSoft,
-    borderColor: "#F4D39A",
-    borderRadius: 8,
+    borderColor: "#F1D492",
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",
     gap: 12,
@@ -704,7 +680,7 @@ export const styles = StyleSheet.create({
   alertIcon: {
     alignItems: "center",
     backgroundColor: palette.surface,
-    borderRadius: 8,
+    borderRadius: 12,
     height: 40,
     justifyContent: "center",
     width: 40,
@@ -712,7 +688,7 @@ export const styles = StyleSheet.create({
   composer: {
     backgroundColor: palette.surface,
     borderColor: palette.border,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     gap: 10,
     padding: 12,
@@ -720,10 +696,10 @@ export const styles = StyleSheet.create({
   searchRow: {
     alignItems: "center",
     backgroundColor: palette.bond,
-    borderBottomColor: "#D5CABD",
-    borderBottomWidth: 2,
-    borderColor: "#DDD3C6",
-    borderRadius: 8,
+    borderBottomColor: "#D9E0EA",
+    borderBottomWidth: 1,
+    borderColor: "#DFE5EE",
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",
     gap: 10,
@@ -743,11 +719,11 @@ export const styles = StyleSheet.create({
   primaryAction: {
     alignItems: "center",
     backgroundColor: palette.teal,
-    borderBottomColor: "#075B55",
-    borderBottomWidth: 3,
-    borderColor: "#0A8A7A",
+    borderBottomColor: "#0A7266",
+    borderBottomWidth: 1,
+    borderColor: "#2BA79A",
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     flexDirection: "row",
     gap: 8,
     justifyContent: "center",
@@ -761,15 +737,15 @@ export const styles = StyleSheet.create({
   primaryActionText: {
     color: palette.surface,
     fontSize: 14,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   statePanel: {
     alignItems: "center",
     backgroundColor: palette.surface,
-    borderBottomColor: "#D7CBBE",
-    borderBottomWidth: 2,
+    borderBottomColor: "#D9E0EA",
+    borderBottomWidth: 1,
     borderColor: palette.border,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",
     flexWrap: "wrap",
@@ -781,12 +757,12 @@ export const styles = StyleSheet.create({
   },
   errorPanel: {
     backgroundColor: palette.redSoft,
-    borderColor: "#F4B9B4",
+    borderColor: "#F6C4C2",
   },
   stateIcon: {
     alignItems: "center",
     backgroundColor: palette.surfaceAlt,
-    borderRadius: 8,
+    borderRadius: 12,
     height: 42,
     justifyContent: "center",
     width: 42,
@@ -802,7 +778,7 @@ export const styles = StyleSheet.create({
     color: palette.text,
     flexShrink: 1,
     fontSize: 15,
-    fontWeight: "900",
+    fontWeight: "700",
     lineHeight: 20,
   },
   stateText: {
@@ -815,7 +791,7 @@ export const styles = StyleSheet.create({
   retryButton: {
     alignItems: "center",
     backgroundColor: palette.red,
-    borderRadius: 8,
+    borderRadius: 12,
     flexDirection: "row",
     gap: 6,
     justifyContent: "center",
@@ -825,7 +801,7 @@ export const styles = StyleSheet.create({
   retryButtonText: {
     color: palette.surface,
     fontSize: 13,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   gradeItemSelector: {
     flexDirection: "row",
@@ -835,7 +811,7 @@ export const styles = StyleSheet.create({
   gradeItemOption: {
     backgroundColor: palette.surface,
     borderColor: palette.border,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     maxWidth: 260,
     minHeight: 38,
@@ -849,7 +825,7 @@ export const styles = StyleSheet.create({
   gradeItemOptionText: {
     color: palette.muted,
     fontSize: 12,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   gradeItemOptionTextActive: {
     color: palette.surface,
@@ -858,7 +834,7 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: palette.surface,
     borderColor: palette.border,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",
     gap: 10,
@@ -873,7 +849,7 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: palette.surfaceAlt,
     borderColor: palette.border,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     height: 36,
     justifyContent: "center",
@@ -898,7 +874,7 @@ export const styles = StyleSheet.create({
   attendanceButtonText: {
     color: palette.muted,
     fontSize: 13,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   attendanceButtonTextActive: {
     color: palette.surface,
@@ -912,7 +888,7 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: palette.surfaceAlt,
     borderColor: palette.border,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     height: 34,
     justifyContent: "center",
@@ -921,18 +897,18 @@ export const styles = StyleSheet.create({
   scoreValue: {
     color: palette.text,
     fontSize: 18,
-    fontWeight: "900",
+    fontWeight: "700",
     minWidth: 34,
     textAlign: "center",
   },
   scoreInput: {
     backgroundColor: palette.surface,
     borderColor: palette.border,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     color: palette.text,
     fontSize: 16,
-    fontWeight: "900",
+    fontWeight: "700",
     height: 36,
     minWidth: 58,
     paddingHorizontal: 8,

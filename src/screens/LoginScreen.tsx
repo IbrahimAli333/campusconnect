@@ -830,7 +830,7 @@ const loginStyles = StyleSheet.create({
     alignSelf: "stretch",
     backgroundColor: "#09233D",
     borderColor: "rgba(255, 255, 255, 0.14)",
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     overflow: "hidden",
     padding: 24,
@@ -888,7 +888,7 @@ const loginStyles = StyleSheet.create({
   },
   heroDiagonalOne: {
     backgroundColor: "rgba(255, 255, 255, 0.06)",
-    borderRadius: 8,
+    borderRadius: 12,
     height: 134,
     position: "absolute",
     right: -86,
@@ -898,7 +898,7 @@ const loginStyles = StyleSheet.create({
   },
   heroDiagonalTwo: {
     backgroundColor: "rgba(15, 118, 110, 0.28)",
-    borderRadius: 8,
+    borderRadius: 12,
     bottom: 108,
     height: 92,
     left: -96,
@@ -932,7 +932,7 @@ const loginStyles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: palette.teal,
     borderColor: "rgba(255, 255, 255, 0.32)",
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     height: 58,
     justifyContent: "center",
@@ -956,7 +956,7 @@ const loginStyles = StyleSheet.create({
   heroBrandTitle: {
     color: palette.surface,
     fontSize: 28,
-    fontWeight: "900",
+    fontWeight: "700",
     lineHeight: 34,
   },
   heroBrandTitleCompact: {
@@ -966,7 +966,7 @@ const loginStyles = StyleSheet.create({
   heroBrandSubtitle: {
     color: "#E1E8EF",
     fontSize: 14,
-    fontWeight: "800",
+    fontWeight: "600",
     marginTop: 2,
   },
   heroCopy: {
@@ -976,13 +976,13 @@ const loginStyles = StyleSheet.create({
   heroEyebrow: {
     color: "#2DD4BF",
     fontSize: 12,
-    fontWeight: "900",
+    fontWeight: "700",
     textTransform: "uppercase",
   },
   heroTitle: {
     color: palette.surface,
     fontSize: 45,
-    fontWeight: "900",
+    fontWeight: "700",
     lineHeight: 53,
     ...webSafeTextShadow({
       color: "rgba(2, 6, 23, 0.36)",
@@ -997,7 +997,7 @@ const loginStyles = StyleSheet.create({
   heroBody: {
     color: "#E5ECF4",
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "600",
     lineHeight: 26,
     maxWidth: 520,
   },
@@ -1016,7 +1016,7 @@ const loginStyles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "rgba(7, 29, 51, 0.72)",
     borderColor: "rgba(255, 255, 255, 0.16)",
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",
     gap: 14,
@@ -1033,7 +1033,7 @@ const loginStyles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#0A2540",
     borderColor: "rgba(255, 255, 255, 0.16)",
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     height: 52,
     justifyContent: "center",
@@ -1042,10 +1042,10 @@ const loginStyles = StyleSheet.create({
   highlightTitle: {
     color: palette.surface,
     fontSize: 16,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   highlightBody: {
-    color: "#D9E2EE",
+    color: "#D5E0EE",
     flex: 1,
     fontSize: 13,
     fontWeight: "700",
@@ -1068,9 +1068,9 @@ const loginStyles = StyleSheet.create({
   },
   loginPanel: {
     alignSelf: "stretch",
-    backgroundColor: "#FFFDF8",
+    backgroundColor: "#FFFFFF",
     borderColor: "rgba(221, 214, 202, 0.96)",
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     gap: 16,
     minWidth: 0,
@@ -1099,14 +1099,14 @@ const loginStyles = StyleSheet.create({
   formEyebrow: {
     color: palette.teal,
     fontSize: 12,
-    fontWeight: "900",
+    fontWeight: "700",
     textTransform: "uppercase",
   },
   formTitle: {
     color: palette.text,
     flexShrink: 1,
     fontSize: 26,
-    fontWeight: "900",
+    fontWeight: "700",
     lineHeight: 32,
   },
   formTitleCompact: {
@@ -1130,9 +1130,9 @@ const loginStyles = StyleSheet.create({
     gap: 9,
   },
   modeSwitch: {
-    backgroundColor: "#F4F1EA",
+    backgroundColor: "#F1F4F8",
     borderColor: "rgba(221, 214, 202, 0.66)",
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",
     gap: 0,
@@ -1145,7 +1145,7 @@ const loginStyles = StyleSheet.create({
   },
   modeOption: {
     alignItems: "center",
-    borderRadius: 8,
+    borderRadius: 12,
     flex: 1,
     flexDirection: "row",
     gap: 8,
@@ -1171,7 +1171,7 @@ const loginStyles = StyleSheet.create({
   modeIcon: {
     alignItems: "center",
     backgroundColor: palette.tealSoft,
-    borderRadius: 8,
+    borderRadius: 12,
     height: 34,
     justifyContent: "center",
     width: 34,
@@ -1190,7 +1190,7 @@ const loginStyles = StyleSheet.create({
   modeLabel: {
     color: palette.text,
     fontSize: 13,
-    fontWeight: "900",
+    fontWeight: "700",
     lineHeight: 17,
   },
   modeLabelActive: {
@@ -1199,7 +1199,7 @@ const loginStyles = StyleSheet.create({
   modeDescription: {
     color: palette.muted,
     fontSize: 10,
-    fontWeight: "800",
+    fontWeight: "600",
     lineHeight: 14,
     marginTop: 1,
   },
@@ -1221,7 +1221,7 @@ const loginStyles = StyleSheet.create({
   sectionLabel: {
     color: palette.text,
     fontSize: 13,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   sectionLabelCompact: {
     fontSize: 12,
@@ -1230,7 +1230,7 @@ const loginStyles = StyleSheet.create({
   sectionMeta: {
     color: palette.faint,
     fontSize: 11,
-    fontWeight: "900",
+    fontWeight: "700",
     textTransform: "uppercase",
   },
   roleStack: {
@@ -1244,9 +1244,9 @@ const loginStyles = StyleSheet.create({
   roleCard: {
     alignItems: "stretch",
     alignSelf: "stretch",
-    backgroundColor: "#FFFDF8",
-    borderColor: "#DDD6CA",
-    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    borderColor: "#DFE5EE",
+    borderRadius: 12,
     borderWidth: 1,
     gap: 10,
     minHeight: 108,
@@ -1267,10 +1267,10 @@ const loginStyles = StyleSheet.create({
     padding: 8,
   },
   roleCardActive: {
-    backgroundColor: "#F7FFFC",
+    backgroundColor: "#F3FBF9",
     borderColor: palette.teal,
     ...platformShadow({
-      color: "#0F766E",
+      color: "#0D9488",
       offset: { height: 12, width: 0 },
       opacity: 0.18,
       radius: 20,
@@ -1288,9 +1288,9 @@ const loginStyles = StyleSheet.create({
   },
   roleIcon: {
     alignItems: "center",
-    backgroundColor: "#FFFDF8",
+    backgroundColor: "#FFFFFF",
     borderColor: "rgba(221, 214, 202, 0.88)",
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     height: 58,
     justifyContent: "center",
@@ -1332,7 +1332,7 @@ const loginStyles = StyleSheet.create({
     color: palette.text,
     flexShrink: 1,
     fontSize: 16,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   roleTitleCompact: {
     fontSize: 13,
@@ -1344,10 +1344,10 @@ const loginStyles = StyleSheet.create({
   },
   activeBadge: {
     backgroundColor: palette.teal,
-    borderRadius: 7,
+    borderRadius: 10,
     color: palette.surface,
     fontSize: 10,
-    fontWeight: "900",
+    fontWeight: "700",
     overflow: "hidden",
     paddingHorizontal: 7,
     paddingVertical: 3,
@@ -1368,7 +1368,7 @@ const loginStyles = StyleSheet.create({
     color: palette.muted,
     flexShrink: 1,
     fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "600",
     lineHeight: 15,
     marginTop: 2,
   },
@@ -1388,11 +1388,11 @@ const loginStyles = StyleSheet.create({
   permissionBadge: {
     backgroundColor: "#F1F5F9",
     borderColor: palette.border,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     color: palette.text,
     fontSize: 10,
-    fontWeight: "900",
+    fontWeight: "700",
     lineHeight: 13,
     overflow: "hidden",
     paddingHorizontal: 8,
@@ -1400,7 +1400,7 @@ const loginStyles = StyleSheet.create({
   },
   permissionBadgeActive: {
     backgroundColor: palette.tealSoft,
-    borderColor: "#A7D8D0",
+    borderColor: "#A5DED4",
     color: palette.teal,
   },
   field: {
@@ -1410,13 +1410,13 @@ const loginStyles = StyleSheet.create({
   label: {
     color: palette.text,
     fontSize: 13,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   inputFrame: {
     alignItems: "center",
-    backgroundColor: "#FFFDF8",
-    borderColor: "#D7D0C4",
-    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    borderColor: "#DBE2EB",
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",
     minHeight: 48,
@@ -1431,7 +1431,7 @@ const loginStyles = StyleSheet.create({
     color: palette.text,
     flex: 1,
     fontSize: 14,
-    fontWeight: "800",
+    fontWeight: "600",
     minHeight: 44,
   },
   textInputCompact: {
@@ -1439,22 +1439,22 @@ const loginStyles = StyleSheet.create({
   },
   errorPanel: {
     backgroundColor: palette.redSoft,
-    borderColor: "#F2B7B2",
-    borderRadius: 8,
+    borderColor: "#F6C4C2",
+    borderRadius: 12,
     borderWidth: 1,
     padding: 10,
   },
   slowHintPanel: {
     backgroundColor: palette.tealSoft,
-    borderColor: "#B9E5DC",
-    borderRadius: 8,
+    borderColor: "#B6E3DB",
+    borderRadius: 12,
     borderWidth: 1,
     padding: 10,
   },
   slowHintText: {
     color: palette.teal,
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
     lineHeight: 18,
   },
   passwordToggle: {
@@ -1466,7 +1466,7 @@ const loginStyles = StyleSheet.create({
   errorText: {
     color: palette.red,
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
     lineHeight: 18,
   },
   disabled: {
@@ -1475,8 +1475,8 @@ const loginStyles = StyleSheet.create({
   submitButton: {
     alignItems: "center",
     backgroundColor: palette.teal,
-    borderColor: "#0A5E57",
-    borderRadius: 8,
+    borderColor: "#0A7266",
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",
     gap: 9,
@@ -1484,7 +1484,7 @@ const loginStyles = StyleSheet.create({
     minHeight: 52,
     paddingHorizontal: 16,
     ...platformShadow({
-      color: "#0F766E",
+      color: "#0D9488",
       offset: { height: 10, width: 0 },
       opacity: 0.26,
       radius: 18,
@@ -1496,7 +1496,7 @@ const loginStyles = StyleSheet.create({
   submitButtonText: {
     color: palette.surface,
     fontSize: 14,
-    fontWeight: "900",
+    fontWeight: "700",
     textAlign: "center",
   },
   requestStack: {
@@ -1505,8 +1505,8 @@ const loginStyles = StyleSheet.create({
   requestPanel: {
     alignItems: "flex-start",
     backgroundColor: palette.tealSoft,
-    borderColor: "#B9E5DC",
-    borderRadius: 8,
+    borderColor: "#B6E3DB",
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",
     gap: 12,
@@ -1515,7 +1515,7 @@ const loginStyles = StyleSheet.create({
   requestIcon: {
     alignItems: "center",
     backgroundColor: palette.surface,
-    borderRadius: 8,
+    borderRadius: 12,
     height: 42,
     justifyContent: "center",
     width: 42,
@@ -1527,7 +1527,7 @@ const loginStyles = StyleSheet.create({
   requestTitle: {
     color: palette.text,
     fontSize: 15,
-    fontWeight: "900",
+    fontWeight: "700",
     lineHeight: 20,
   },
   requestBody: {
@@ -1545,7 +1545,7 @@ const loginStyles = StyleSheet.create({
   accessTile: {
     backgroundColor: "#F8FAFC",
     borderColor: palette.border,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     flex: 1,
     gap: 7,
@@ -1556,7 +1556,7 @@ const loginStyles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: palette.surface,
     borderColor: palette.border,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     height: 34,
     justifyContent: "center",
@@ -1565,7 +1565,7 @@ const loginStyles = StyleSheet.create({
   accessTitle: {
     color: palette.text,
     fontSize: 13,
-    fontWeight: "900",
+    fontWeight: "700",
     lineHeight: 17,
   },
   accessBody: {
@@ -1578,7 +1578,7 @@ const loginStyles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: palette.surface,
     borderColor: palette.border,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",
     gap: 8,
@@ -1589,13 +1589,13 @@ const loginStyles = StyleSheet.create({
   secondaryButtonText: {
     color: palette.text,
     fontSize: 14,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   apiHint: {
     alignItems: "center",
-    backgroundColor: "#FBF8F1",
-    borderColor: "#DDD6CA",
-    borderRadius: 8,
+    backgroundColor: "#F8FAFC",
+    borderColor: "#DFE5EE",
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",
     gap: 9,
@@ -1608,7 +1608,7 @@ const loginStyles = StyleSheet.create({
   hintLabel: {
     color: palette.muted,
     fontSize: 11,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   hintValue: {
     color: palette.text,
@@ -1637,7 +1637,7 @@ const loginStyles = StyleSheet.create({
     width: 180,
   },
   paperHillBack: {
-    backgroundColor: "#0E5F62",
+    backgroundColor: "#0D7A70",
     borderColor: "rgba(255, 255, 255, 0.14)",
     borderTopLeftRadius: 90,
     borderTopRightRadius: 120,
@@ -1663,7 +1663,7 @@ const loginStyles = StyleSheet.create({
     transform: [{ rotate: "-5deg" }],
   },
   paperTreeLeft: {
-    backgroundColor: "#1A7772",
+    backgroundColor: "#11897C",
     borderColor: "rgba(255, 255, 255, 0.16)",
     borderRadius: 46,
     borderWidth: 1,
@@ -1674,7 +1674,7 @@ const loginStyles = StyleSheet.create({
     width: 76,
   },
   paperTreeRight: {
-    backgroundColor: "#3C8B7E",
+    backgroundColor: "#2F9E90",
     borderColor: "rgba(255, 255, 255, 0.16)",
     borderRadius: 52,
     borderWidth: 1,
@@ -1686,8 +1686,8 @@ const loginStyles = StyleSheet.create({
   },
   paperBuilding: {
     alignItems: "center",
-    backgroundColor: "#F7F2E7",
-    borderColor: "#D8D1C4",
+    backgroundColor: "#F3F6FA",
+    borderColor: "#DCE3EC",
     borderRadius: 3,
     borderWidth: 1,
     bottom: 44,
@@ -1705,8 +1705,8 @@ const loginStyles = StyleSheet.create({
     }),
   },
   paperRoof: {
-    backgroundColor: "#FFFDF8",
-    borderColor: "#D8D1C4",
+    backgroundColor: "#FFFFFF",
+    borderColor: "#DCE3EC",
     borderRadius: 2,
     borderWidth: 1,
     height: 48,
@@ -1716,7 +1716,7 @@ const loginStyles = StyleSheet.create({
     width: 48,
   },
   paperFlagPole: {
-    backgroundColor: "#E7DDD0",
+    backgroundColor: "#E2E9F1",
     height: 42,
     left: 85,
     position: "absolute",
@@ -1724,8 +1724,8 @@ const loginStyles = StyleSheet.create({
     width: 3,
   },
   paperFlag: {
-    backgroundColor: "#FFFDF8",
-    borderColor: "#D8D1C4",
+    backgroundColor: "#FFFFFF",
+    borderColor: "#DCE3EC",
     borderRadius: 3,
     borderWidth: 1,
     height: 20,
@@ -1739,15 +1739,15 @@ const loginStyles = StyleSheet.create({
     gap: 11,
   },
   paperColumn: {
-    backgroundColor: "#E7DDD0",
-    borderColor: "#D8D1C4",
+    backgroundColor: "#E2E9F1",
+    borderColor: "#DCE3EC",
     borderRadius: 2,
     borderWidth: 1,
     height: 52,
     width: 18,
   },
   paperSteps: {
-    backgroundColor: "#DDD4C7",
+    backgroundColor: "#D5DDE7",
     borderRadius: 2,
     bottom: 0,
     height: 8,
@@ -1757,8 +1757,8 @@ const loginStyles = StyleSheet.create({
   },
   paperClockTower: {
     alignItems: "center",
-    backgroundColor: "#F2EBDD",
-    borderColor: "#D8D1C4",
+    backgroundColor: "#EDF1F7",
+    borderColor: "#DCE3EC",
     borderRadius: 3,
     borderWidth: 1,
     bottom: 44,
@@ -1775,8 +1775,8 @@ const loginStyles = StyleSheet.create({
     }),
   },
   paperTowerRoof: {
-    backgroundColor: "#FFFDF8",
-    borderColor: "#D8D1C4",
+    backgroundColor: "#FFFFFF",
+    borderColor: "#DCE3EC",
     borderRadius: 2,
     borderWidth: 1,
     height: 38,
@@ -1786,8 +1786,8 @@ const loginStyles = StyleSheet.create({
     width: 38,
   },
   paperClockFace: {
-    backgroundColor: "#FFFDF8",
-    borderColor: "#B9AFA1",
+    backgroundColor: "#FFFFFF",
+    borderColor: "#AFBDCD",
     borderRadius: 15,
     borderWidth: 2,
     height: 30,
@@ -1804,9 +1804,9 @@ const loginStyles = StyleSheet.create({
   },
   previewSearch: {
     alignItems: "center",
-    backgroundColor: "#FFFDF8",
-    borderColor: "#DDD6CA",
-    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    borderColor: "#DFE5EE",
+    borderRadius: 12,
     borderWidth: 1,
     flex: 1,
     flexDirection: "row",
@@ -1824,13 +1824,13 @@ const loginStyles = StyleSheet.create({
     color: palette.muted,
     flex: 1,
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   previewFilterButton: {
     alignItems: "center",
-    backgroundColor: "#FFFDF8",
-    borderColor: "#DDD6CA",
-    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    borderColor: "#DFE5EE",
+    borderRadius: 12,
     borderWidth: 1,
     height: 58,
     justifyContent: "center",
@@ -1850,12 +1850,12 @@ const loginStyles = StyleSheet.create({
   previewSectionTitle: {
     color: palette.text,
     fontSize: 16,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   previewSectionAction: {
     color: palette.navy,
     fontSize: 12,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   previewProfileRow: {
     flexDirection: "row",
@@ -1863,9 +1863,9 @@ const loginStyles = StyleSheet.create({
   },
   previewProfileCard: {
     alignItems: "flex-start",
-    backgroundColor: "#FFFDF8",
-    borderColor: "#DDD6CA",
-    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    borderColor: "#DFE5EE",
+    borderRadius: 12,
     borderWidth: 1,
     flex: 1,
     gap: 7,
@@ -1881,7 +1881,7 @@ const loginStyles = StyleSheet.create({
   },
   previewAvatar: {
     alignItems: "center",
-    borderRadius: 8,
+    borderRadius: 12,
     height: 40,
     justifyContent: "center",
     width: 40,
@@ -1895,13 +1895,13 @@ const loginStyles = StyleSheet.create({
   previewProfileName: {
     color: palette.text,
     fontSize: 13,
-    fontWeight: "900",
+    fontWeight: "700",
     lineHeight: 17,
   },
   previewRolePill: {
-    borderRadius: 7,
+    borderRadius: 10,
     fontSize: 10,
-    fontWeight: "900",
+    fontWeight: "700",
     overflow: "hidden",
     paddingHorizontal: 7,
     paddingVertical: 3,
@@ -1919,9 +1919,9 @@ const loginStyles = StyleSheet.create({
     gap: 10,
   },
   previewOpportunityCard: {
-    backgroundColor: "#FFFDF8",
-    borderColor: "#DDD6CA",
-    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    borderColor: "#DFE5EE",
+    borderRadius: 12,
     borderWidth: 1,
     flex: 1,
     gap: 8,
@@ -1938,7 +1938,7 @@ const loginStyles = StyleSheet.create({
   previewOpportunityIcon: {
     alignItems: "center",
     backgroundColor: palette.teal,
-    borderRadius: 8,
+    borderRadius: 12,
     height: 36,
     justifyContent: "center",
     width: 36,
@@ -1946,19 +1946,19 @@ const loginStyles = StyleSheet.create({
   previewOpportunityTitle: {
     color: palette.text,
     fontSize: 12,
-    fontWeight: "900",
+    fontWeight: "700",
     lineHeight: 16,
   },
   previewOpportunityMeta: {
     color: palette.muted,
     fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   previewBottomNav: {
     alignItems: "center",
-    backgroundColor: "#FFFDF8",
-    borderColor: "#DDD6CA",
-    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    borderColor: "#DFE5EE",
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",
     gap: 5,
@@ -1981,7 +1981,7 @@ const loginStyles = StyleSheet.create({
   previewNavText: {
     color: palette.navy,
     fontSize: 10,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   previewNavTextActive: {
     color: palette.teal,

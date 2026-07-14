@@ -91,7 +91,7 @@ export function SegmentedControl<T extends string>({
               >
                 {Icon ? (
                   <Icon
-                    color={isActive ? palette.charcoal : palette.muted}
+                    color={isActive ? "#FFFFFF" : palette.muted}
                     size={isPhone ? 14 : 15}
                     strokeWidth={2.5}
                   />
