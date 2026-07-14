@@ -515,11 +515,12 @@ export function SearchBox({ onChangeText, value }: { onChangeText: (value: strin
 
 export function DiscoverDashboard({ data, isCompact, isWide }: { data: DiscoverData; isCompact: boolean; isWide: boolean }) {
   const featuredProfiles = data.recommendedProfiles.slice(0, 3);
-  const stats = [
-    { label: "Profiles", value: String(data.profiles.length) },
-    { label: "Recommended", value: String(data.recommendedProfiles.length) },
-    { label: "Skills", value: String(data.myProfile.skills.length) },
-  ];
+
+  // Phones skip the dashboard entirely: the tab bar already names the screen,
+  // and the search box plus recommendations carry the content.
+  if (isCompact) {
+    return null;
+  }
 
   return (
     <View
@@ -529,45 +530,6 @@ export function DiscoverDashboard({ data, isCompact, isWide }: { data: DiscoverD
         isWide && networkStyles.discoverDashboardWide,
       ]}
     >
-      <View style={[networkStyles.discoverDashboardMain, isCompact && networkStyles.discoverDashboardMainCompact]}>
-        <View style={[networkStyles.discoverEyebrowRow, isCompact && networkStyles.discoverEyebrowRowCompact]}>
-          <View style={[networkStyles.discoverEyebrowIcon, isCompact && networkStyles.discoverEyebrowIconCompact]}>
-            <Search color={palette.surface} size={isCompact ? 15 : 16} strokeWidth={2.6} />
-          </View>
-          <Text style={networkStyles.discoverEyebrow}>Discover</Text>
-        </View>
-        <Text style={[networkStyles.discoverTitle, isCompact && networkStyles.discoverTitleCompact]}>
-          {isCompact ? "Find collaborators, mentors, and opportunities." : "Turn campus work into collaborators, mentors, and opportunities."}
-        </Text>
-        <Text style={[networkStyles.discoverBody, isCompact && networkStyles.discoverBodyCompact]}>
-          {isCompact
-            ? "Browse role-aware profiles and match signals."
-            : "Browse role-aware profiles, compare match signals, and start focused academic or professional connections."}
-        </Text>
-        <View style={[networkStyles.discoverStatsRow, isCompact && networkStyles.discoverStatsRowCompact]}>
-          {stats.map((item) => (
-            <View key={item.label} style={[networkStyles.discoverStat, isCompact && networkStyles.discoverStatCompact]}>
-              <Text
-                adjustsFontSizeToFit
-                minimumFontScale={0.76}
-                numberOfLines={1}
-                style={[networkStyles.discoverStatValue, isCompact && networkStyles.discoverStatValueCompact]}
-              >
-                {item.value}
-              </Text>
-              <Text
-                adjustsFontSizeToFit
-                minimumFontScale={0.78}
-                numberOfLines={1}
-                style={[networkStyles.discoverStatLabel, isCompact && networkStyles.discoverStatLabelCompact]}
-              >
-                {item.label}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </View>
-
       {!isCompact ? (
         <View style={networkStyles.discoverSnapshot}>
           <View style={networkStyles.snapshotHeader}>
@@ -662,22 +624,16 @@ export function MatchSlip({ score }: { score: number }) {
 }
 
 export function MatchPreview({ reasons, score }: { reasons: string[]; score: number }) {
-  const primaryReason = reasons[0] ?? "Based on profile fit";
-  const secondaryReason = reasons[1];
+  const reasonLine = (reasons.length ? reasons.slice(0, 2) : ["Based on profile fit"]).join(" · ");
 
   return (
     <View style={networkStyles.matchPanel}>
       <View style={networkStyles.matchHeader}>
         <MatchSlip score={score} />
         <Text style={networkStyles.matchSubcopy} numberOfLines={2}>
-          {primaryReason}
+          {reasonLine}
         </Text>
       </View>
-      {secondaryReason ? (
-        <Text style={networkStyles.matchReason} numberOfLines={2}>
-          {secondaryReason}
-        </Text>
-      ) : null}
     </View>
   );
 }

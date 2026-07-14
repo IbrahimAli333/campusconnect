@@ -37,8 +37,8 @@ export function PortalHeader({
           </View>
           <View style={styles.brandTextBlock}>
             <Text style={[styles.brandTitle, isCompact && styles.brandTitleCompact]}>CampusConnect</Text>
-            <Text style={[styles.brandSubtitle, isCompact && styles.brandSubtitleCompact]}>
-              Academic and professional network
+            <Text style={[styles.brandSubtitle, isCompact && styles.brandSubtitleCompact]} numberOfLines={1}>
+              {profileName} · {profileMeta}
             </Text>
           </View>
         </View>
@@ -48,22 +48,14 @@ export function PortalHeader({
         </View>
       </View>
 
-      <View style={[styles.rolePanel, isCompact && styles.rolePanelCompact]}>
-        <View style={[styles.roleHeader, isCompact && styles.roleHeaderCompact, !shouldShowRoleSwitcher && { marginBottom: 0 }]}>
-          <Text style={[styles.roleName, isCompact && styles.roleNameCompact]} numberOfLines={1}>
-            {profileName}
-          </Text>
-          <Text style={[styles.roleMeta, isCompact && styles.roleMetaCompact]} numberOfLines={1}>
-            {profileMeta}
-          </Text>
-        </View>
-        {shouldShowRoleSwitcher && onRoleChange ? (
+      {shouldShowRoleSwitcher && onRoleChange ? (
+        <View style={[styles.rolePanel, isCompact && styles.rolePanelCompact]}>
           <View style={styles.roleSwitcher}>
             <RoleButton icon={GraduationCap} label="Student" active={role === "student"} onPress={() => onRoleChange("student")} />
             <RoleButton icon={Users} label="Teacher" active={role === "teacher"} onPress={() => onRoleChange("teacher")} />
           </View>
-        ) : null}
-      </View>
+        </View>
+      ) : null}
     </>
   );
 }

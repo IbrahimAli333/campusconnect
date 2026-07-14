@@ -84,7 +84,7 @@ export default function App() {
       <View style={[styles.shell, isCompact && styles.shellCompact]}>
         <PortalHeader
           onLogout={handleLogout}
-          profileMeta={`${roleLabel(auth.user.role)} profile - CampusConnect`}
+          profileMeta={roleLabel(auth.user.role)}
           profileName={auth.user.full_name}
           role={auth.user.role === "teacher" ? "teacher" : auth.user.role === "member" ? "member" : "student"}
         />
