@@ -8,12 +8,14 @@ export const networkStyles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     lineHeight: 17,
+    marginTop: 8,
   },
   actionRow: {
     alignItems: "center",
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
+    marginTop: 10,
   },
   applicationCard: {
     minWidth: 0,
@@ -770,9 +772,9 @@ export const networkStyles = StyleSheet.create({
     borderLeftWidth: 3,
     borderRadius: 12,
     borderWidth: 1,
-    marginTop: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
   },
   requestNoteText: {
     color: palette.muted,

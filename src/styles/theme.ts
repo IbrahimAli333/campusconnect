@@ -606,12 +606,12 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: "row",
     gap: 12,
-    padding: 12,
+    padding: 14,
     ...paperTexture("sheet"),
     ...paperShadow("strip"),
   },
   listRowCompact: {
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   timeBox: {
     alignItems: "center",
