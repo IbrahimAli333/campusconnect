@@ -16,7 +16,7 @@ services:
     healthCheckPath: /health
     envVars:
       - key: UNIVERSITY_PORTAL_APP_NAME
-        value: CampusConnect API
+        value: Unibridge API
       - key: UNIVERSITY_PORTAL_API_V1_PREFIX
         value: /api/v1
       - key: UNIVERSITY_PORTAL_DATABASE_URL

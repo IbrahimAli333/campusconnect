@@ -94,10 +94,10 @@ def account_specs_from_env(
             values,
             email_var=ADMIN_EMAIL_ENV,
             password_var=ADMIN_PASSWORD_ENV,
-            full_name="CampusConnect Admin",
+            full_name="Unibridge Admin",
             role=UserRole.admin,
             profile_role="member",
-            headline="CampusConnect moderation",
+            headline="Unibridge moderation",
             # Keep the moderation account out of Discover feeds.
             visibility="private",
         ),

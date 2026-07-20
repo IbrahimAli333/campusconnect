@@ -1121,7 +1121,7 @@ def test_network_responses_do_not_include_password_fields(
             json={
                 "entry_type": "award",
                 "title": "Portfolio Review Finalist",
-                "organization": "CampusConnect Lab",
+                "organization": "Unibridge Lab",
                 "description": "Recognized for a compact research portfolio.",
                 "start_date": "2026-06-01",
                 "end_date": None,

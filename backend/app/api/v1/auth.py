@@ -73,7 +73,7 @@ def _verify_google_reauth(id_token: str, current_user: User) -> None:
     if identity.email != current_user.email.strip().lower():
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Google account does not match this CampusConnect account",
+            detail="Google account does not match this Unibridge account",
         )
 
 

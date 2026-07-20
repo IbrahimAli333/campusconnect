@@ -1,9 +1,9 @@
-# App Store Connect App Privacy questionnaire - answers for CampusConnect
+# App Store Connect App Privacy questionnaire - answers for Unibridge
 
 Apple's questionnaire covers the same facts as the Play Data Safety form
 (data-safety.md) but with different categories. Source of truth: no
 analytics SDK, no ads, no tracking, no third-party sharing; all data is
-user-entered and served over HTTPS from the CampusConnect backend.
+user-entered and served over HTTPS from the Unibridge backend.
 
 ## Top-level questions
 

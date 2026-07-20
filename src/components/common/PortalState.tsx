@@ -6,7 +6,7 @@ import type { IconComponent } from "./types";
 
 export function LoadingState({
   body,
-  label = "Loading CampusConnect data",
+  label = "Loading Unibridge data",
 }: {
   body?: string;
   label?: string;
@@ -27,7 +27,7 @@ export function LoadingState({
 export function ErrorState({
   message,
   onRetry,
-  title = "Could not load CampusConnect data",
+  title = "Could not load Unibridge data",
 }: {
   message: string;
   onRetry: () => void;

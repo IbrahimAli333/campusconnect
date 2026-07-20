@@ -1,17 +1,17 @@
-# Google Play listing - CampusConnect
+# Google Play listing - Unibridge
 
 Everything below is ready to paste into the Play Console. Items marked YOU
 require actions only the account owner can do.
 
 ## App details
 
-- **App name:** CampusConnect
+- **App name:** Unibridge
 - **Short description (max 80 chars):**
   `Campus networking: research, startups, applications, and mentorship.`
 - **Full description:**
 
 ```
-CampusConnect is an academic and professional network for campus communities.
+Unibridge is an academic and professional network for campus communities.
 
 Built for members, students, and faculty:
 - Discover people by skills, role, faculty, and university, with match scores that explain why someone is recommended.

@@ -1,4 +1,4 @@
-# CampusConnect MVP Release QA
+# Unibridge MVP Release QA
 
 Use this checklist before producing Android preview APKs or iOS internal
 preview/TestFlight builds. Work against local services first, then repeat the
@@ -204,7 +204,7 @@ editing, skills, and resume entries.
 Run these checks on an iPhone SE or similarly small iPhone-sized viewport,
 approximately 375 x 667 points:
 
-- [ ] Login screen `CampusConnect` brand/title stays on one line without
+- [ ] Login screen `Unibridge` brand/title stays on one line without
       clipped letters or awkward character wrapping.
 - [ ] Login screen role presets, email, password, sign-in button, error panel,
       and API hint fit without horizontal clipping.

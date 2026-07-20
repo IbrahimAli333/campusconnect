@@ -1,9 +1,9 @@
 # Backend
 
-FastAPI backend for CampusConnect, the university-based academic and
+FastAPI backend for Unibridge, the university-based academic and
 professional networking ecosystem.
 
-CampusConnect supports professional student/teacher/mentor/employer profiles,
+Unibridge supports professional student/teacher/mentor/employer profiles,
 skills, portfolio/resume entries, research and startup opportunities,
 internships, applications, saved opportunities, and connection requests. Legacy
 academic tables and routes remain for compatibility and regression tests, but
@@ -41,7 +41,7 @@ python3 -m app.scripts.seed_dev
 uvicorn app.main:app --reload
 ```
 
-The dev seed creates Azerbaijani university-flavored CampusConnect profiles,
+The dev seed creates Azerbaijani university-flavored Unibridge profiles,
 skills, portfolio/resume entries, and sample startup, research, internship, and
 project opportunities. It is idempotent and refuses to run when `ENVIRONMENT` or
 `UNIVERSITY_PORTAL_ENVIRONMENT` is `production`.

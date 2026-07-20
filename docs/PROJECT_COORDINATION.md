@@ -1,6 +1,6 @@
-# CampusConnect Project Coordination
+# Unibridge Project Coordination
 
-This chat is the project coordinator for CampusConnect.
+This chat is the project coordinator for Unibridge.
 
 ## Product Goal
 
@@ -8,21 +8,21 @@ Build a mobile-first university-based academic and professional networking
 ecosystem for students, teachers, professors, mentors, researchers, startup
 builders, and employers.
 
-English short explanation: CampusConnect helps university communities build
+English short explanation: Unibridge helps university communities build
 professional profiles, showcase academic portfolios, discover collaborators and
 mentors, and apply to research, startup, internship, and project opportunities.
 
-Azerbaijani short explanation: CampusConnect universitet icmalarına peşəkar
+Azerbaijani short explanation: Unibridge universitet icmalarına peşəkar
 profil və portfolio qurmaq, bacarıqları göstərmək, tələbə, müəllim, professor,
 mentor və əməkdaş tapmaq, həmçinin tədqiqat, startap, təcrübə və layihə
 imkanlarına müraciət etmək üçün akademik və peşəkar şəbəkədir.
 
-CampusConnect is not a normal social app, not an attendance product, and not a
+Unibridge is not a normal social app, not an attendance product, and not a
 grades or university-management product.
 
 ## Working Name
 
-CampusConnect
+Unibridge
 
 ## Stack Decision
 
@@ -33,7 +33,7 @@ CampusConnect
 - EAS Build for production iOS and Android builds
 - Expo Go for early phone testing
 - Development builds when native modules become necessary
-- Store build identifiers are currently `com.ibrahimalikhudiyev.campusconnect`
+- Store build identifiers are currently `com.unibridge.app`
   for both iOS and Android.
 
 Reason: one codebase for iOS and Android, fast iteration, strong ecosystem, and
@@ -63,8 +63,8 @@ visibility, applications, saved opportunities, and collaboration ownership.
 - Expo app exists at `/Users/ibrahimalikhudiyev/university-portal`
 - Current phone-test-compatible Expo SDK: `54`
 - Auth exists and must keep working
-- Active authenticated mobile surface is CampusConnect networking
-- CampusConnect backend domain exists alongside legacy academic tables
+- Active authenticated mobile surface is Unibridge networking
+- Unibridge backend domain exists alongside legacy academic tables
 - Current MVP includes an early deterministic matching preview for recommended
   profiles and opportunities
 - Publishing preparation exists in `docs/PUBLISHING.md`
@@ -122,7 +122,7 @@ visibility, applications, saved opportunities, and collaboration ownership.
 
 ### Profile And Applications
 
-- View and edit the current user's basic CampusConnect profile fields
+- View and edit the current user's basic Unibridge profile fields
 - View skills and portfolio/resume entries
 - Track submitted applications
 - View sent and received connection requests
@@ -164,7 +164,7 @@ maintenance.
 ## Milestones
 
 1. Preserve auth and legacy academic regression behavior during the pivot.
-2. Add CampusConnect backend domain models, schemas, migrations, seed data, and
+2. Add Unibridge backend domain models, schemas, migrations, seed data, and
    tests.
 3. Add minimal authenticated network endpoints.
 4. Add mobile API client/types for networking as needed.

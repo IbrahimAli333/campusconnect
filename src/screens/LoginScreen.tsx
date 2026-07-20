@@ -492,7 +492,7 @@ export function LoginScreen({
                     numberOfLines={1}
                     style={[loginStyles.heroBrandTitle, isCompact && loginStyles.heroBrandTitleCompact]}
                   >
-                    CampusConnect
+                    Unibridge
                   </Text>
                   <Text style={loginStyles.heroBrandSubtitle}>Academic and professional network</Text>
                 </View>
@@ -501,7 +501,7 @@ export function LoginScreen({
               <View style={loginStyles.heroCopy}>
                 <Text style={loginStyles.heroEyebrow}>University access portal</Text>
                 <Text style={[loginStyles.heroTitle, isCompact && loginStyles.heroTitleCompact]}>
-                  {isCompact ? "CampusConnect access for campus roles." : "Connect classroom work to real campus opportunity."}
+                  {isCompact ? "Unibridge access for campus roles." : "Connect classroom work to real campus opportunity."}
                 </Text>
                 <Text style={[loginStyles.heroBody, isCompact && loginStyles.heroBodyCompact]}>
                   {DEMO_LOGINS_ENABLED
@@ -548,7 +548,7 @@ export function LoginScreen({
                   numberOfLines={isCompact ? 1 : 2}
                   style={[loginStyles.formTitle, isCompact && loginStyles.formTitleCompact]}
                 >
-                  {authMode === "login" ? (isCompact ? "CampusConnect login" : "Log in to CampusConnect") : "Create account"}
+                  {authMode === "login" ? (isCompact ? "Unibridge login" : "Log in to Unibridge") : "Create account"}
                 </Text>
                 <Text style={[loginStyles.formIntro, isCompact && loginStyles.formIntroCompact]}>
                   {authMode === "login"
@@ -556,10 +556,10 @@ export function LoginScreen({
                       ? isCompact
                         ? "Use a demo role preset or working credentials."
                         : "Use a demo role preset or enter working credentials manually."
-                      : "Sign in with your CampusConnect credentials."
+                      : "Sign in with your Unibridge credentials."
                     : DEMO_LOGINS_ENABLED
-                      ? "CampusConnect account creation is currently managed by invite and demo access."
-                      : "CampusConnect account creation is currently managed by campus invite."}
+                      ? "Unibridge account creation is currently managed by invite and demo access."
+                      : "Unibridge account creation is currently managed by campus invite."}
                 </Text>
               </View>
 

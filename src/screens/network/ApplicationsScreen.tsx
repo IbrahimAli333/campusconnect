@@ -293,7 +293,7 @@ export function ApplicationsScreen({ token }: { token: string | null }) {
   if (!applicationsState.data) {
     return (
       <ErrorState
-        message={applicationsState.error?.message ?? "Your CampusConnect applications are not available."}
+        message={applicationsState.error?.message ?? "Your Unibridge applications are not available."}
         onRetry={applicationsState.retry}
         title="Could not load applications"
       />

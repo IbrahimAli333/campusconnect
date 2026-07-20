@@ -2,7 +2,7 @@ const STORE_BUILD_PROFILES = new Set(["preview", "production"]);
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "10.0.2.2"]);
 
 const baseConfig = {
-  name: "CampusConnect",
+  name: "Unibridge",
   slug: "campusconnect",
   version: "1.0.0",
   orientation: "portrait",
@@ -15,7 +15,7 @@ const baseConfig = {
     backgroundColor: "#F8FAFC",
   },
   ios: {
-    bundleIdentifier: "com.ibrahimalikhudiyev.campusconnect",
+    bundleIdentifier: "com.unibridge.app",
     buildNumber: "1",
     supportsTablet: true,
     infoPlist: {
@@ -25,7 +25,7 @@ const baseConfig = {
     },
   },
   android: {
-    package: "com.ibrahimalikhudiyev.campusconnect",
+    package: "com.unibridge.app",
     versionCode: 1,
     googleServicesFile: "./google-services.json",
     adaptiveIcon: {
@@ -41,7 +41,7 @@ const baseConfig = {
   },
   plugins: ["expo-web-browser", "expo-notifications"],
   extra: {
-    productName: "CampusConnect",
+    productName: "Unibridge",
     eas: {
       projectId: "c351705a-ec41-4b43-9a35-bac8a0e80a26",
     },

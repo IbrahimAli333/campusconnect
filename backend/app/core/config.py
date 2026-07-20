@@ -17,7 +17,7 @@ DEVELOPMENT_CORS_ORIGIN_REGEX = (
 
 
 class Settings(BaseSettings):
-    app_name: str = "CampusConnect API"
+    app_name: str = "Unibridge API"
     api_v1_prefix: str = "/api/v1"
     database_url: str = (
         "postgresql+psycopg://postgres:postgres@localhost:5432/university_portal"

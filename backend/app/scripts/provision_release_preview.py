@@ -427,7 +427,7 @@ def provision_release_preview(
         profile=member_profile,
         entry_type="project",
         title="Community Product Feedback Circle",
-        organization="CampusConnect Community",
+        organization="Unibridge Community",
         description=(
             "Reviews student project briefs, joins discovery calls, and shares "
             "structured feedback for early campus ventures."
@@ -529,7 +529,7 @@ def provision_release_preview(
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Provision the minimum CampusConnect Render preview smoke data."
+        description="Provision the minimum Unibridge Render preview smoke data."
     )
     parser.add_argument(
         CONFIRM_FLAG,

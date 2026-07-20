@@ -282,13 +282,13 @@ export function DiscoverScreen({ token }: { token: string | null }) {
   }
 
   if (discoverState.loading && !data) {
-    return <LoadingState body="Fetching recommended profiles and the public CampusConnect directory." label="Loading profiles" />;
+    return <LoadingState body="Fetching recommended profiles and the public Unibridge directory." label="Loading profiles" />;
   }
 
   if (!data) {
     return (
       <ErrorState
-        message={discoverState.error?.message ?? "CampusConnect profiles are not available."}
+        message={discoverState.error?.message ?? "Unibridge profiles are not available."}
         onRetry={discoverState.retry}
         title="Could not load Discover"
       />
@@ -442,7 +442,7 @@ export function DiscoverScreen({ token }: { token: string | null }) {
               : "Student, mentor, professor, employer, and collaborator profiles will appear here."
           }
           icon={Inbox}
-          title={query.trim() || universityFilter !== "all" ? "No matching profiles" : "No CampusConnect profiles"}
+          title={query.trim() || universityFilter !== "all" ? "No matching profiles" : "No Unibridge profiles"}
         />
       )}
     </View>

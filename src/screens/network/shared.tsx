@@ -186,7 +186,7 @@ export function opportunityOwner(opportunity: { owner_profile: ProfileSummary })
 
 export function profileMeta(profile: ProfileSummary): string {
   const parts = [profile.university, profile.faculty, profile.location].filter(Boolean);
-  return parts.length ? parts.join(" - ") : "CampusConnect member";
+  return parts.length ? parts.join(" - ") : "Unibridge member";
 }
 
 export function formatDate(value: string | null): string {

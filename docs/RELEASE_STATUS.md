@@ -1,4 +1,4 @@
-# CampusConnect Release Status
+# Unibridge Release Status
 
 Last audited: 2026-06-30
 
@@ -131,7 +131,7 @@ Latest screenshot set:
 
 - Mobile login first viewport is usable: role presets, email, password, sign-in,
   and API endpoint are reachable quickly.
-- `CampusConnect` no longer wraps awkwardly in the mobile login screenshot.
+- `Unibridge` no longer wraps awkwardly in the mobile login screenshot.
 - Request-access mode is clearly invite-based and does not present a real signup
   submit flow.
 - Mobile Discover header and navigation are compact enough.

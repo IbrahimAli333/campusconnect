@@ -1,4 +1,4 @@
-# App Store listing - CampusConnect
+# App Store listing - Unibridge
 
 Everything below is ready to paste into App Store Connect. Items marked YOU
 require actions only the account owner can do. Companion file:
@@ -6,9 +6,9 @@ app-privacy.md (Apple App Privacy questionnaire answers).
 
 ## App details
 
-- **App name (max 30 chars):** `CampusConnect`
+- **App name (max 30 chars):** `Unibridge`
   - Name availability is only checked when the app record is created in App
-    Store Connect. If taken, fallback: `CampusConnect: Uni Network` (26).
+    Store Connect. If taken, fallback: `Unibridge: Uni Network` (26).
 - **Subtitle (max 30 chars):** `Campus research & networking` (28)
 - **Promotional text (max 170 chars, editable without review):**
 
@@ -77,7 +77,7 @@ The existing Android captures (1080x1920) are NOT accepted.
 - [ ] YOU: accept agreements in App Store Connect (Agreements, Tax, Banking -
       free apps still need the free-app agreement accepted).
 - [ ] Create the app record in App Store Connect (bundle ID
-      com.ibrahimalikhudiyev.campusconnect - must match app.config.js, do not change it).
+      com.unibridge.app - must match app.config.js, do not change it).
 - [ ] First iOS build: `EXPO_PUBLIC_API_URL=https://campusconnect-api-u7tq.onrender.com npm run build:ios:production`
       (cloud build; EAS prompts for the Apple ID login once and then creates
       the distribution certificate, provisioning profile, and APNs key

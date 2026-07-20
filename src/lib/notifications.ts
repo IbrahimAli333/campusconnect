@@ -35,7 +35,7 @@ async function ensureAndroidChannel(): Promise<void> {
   }
 
   await Notifications.setNotificationChannelAsync("default", {
-    name: "CampusConnect",
+    name: "Unibridge",
     importance: Notifications.AndroidImportance.DEFAULT,
   });
 }

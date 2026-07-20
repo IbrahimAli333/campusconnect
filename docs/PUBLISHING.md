@@ -1,4 +1,4 @@
-# CampusConnect Publishing Checklist
+# Unibridge Publishing Checklist
 
 This repository is configured for production mobile builds, but store release
 still needs external accounts and a hosted backend.
@@ -18,8 +18,8 @@ submission.
 Current app identifiers:
 
 ```text
-iOS bundle identifier: com.ibrahimalikhudiyev.campusconnect
-Android package:        com.ibrahimalikhudiyev.campusconnect
+iOS bundle identifier: com.unibridge.app
+Android package:        com.unibridge.app
 Expo slug:              campusconnect
 URL scheme:             campusconnect
 ```
@@ -64,7 +64,7 @@ Render setup:
 The Blueprint sets these environment variables on the API service:
 
 ```text
-UNIVERSITY_PORTAL_APP_NAME=CampusConnect API
+UNIVERSITY_PORTAL_APP_NAME=Unibridge API
 UNIVERSITY_PORTAL_API_V1_PREFIX=/api/v1
 UNIVERSITY_PORTAL_DATABASE_URL=<Render campusconnect-postgres connectionString>
 UNIVERSITY_PORTAL_ENVIRONMENT=production

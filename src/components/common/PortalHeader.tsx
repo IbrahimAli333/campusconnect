@@ -36,7 +36,7 @@ export function PortalHeader({
             <Users color={palette.surface} size={isCompact ? 20 : 24} strokeWidth={2.4} />
           </View>
           <View style={styles.brandTextBlock}>
-            <Text style={[styles.brandTitle, isCompact && styles.brandTitleCompact]}>CampusConnect</Text>
+            <Text style={[styles.brandTitle, isCompact && styles.brandTitleCompact]}>Unibridge</Text>
             <Text style={[styles.brandSubtitle, isCompact && styles.brandSubtitleCompact]} numberOfLines={1}>
               {profileName} · {profileMeta}
             </Text>

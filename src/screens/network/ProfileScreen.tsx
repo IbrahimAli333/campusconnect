@@ -478,7 +478,7 @@ export function ProfileScreen({
   if (!profile || !draft) {
     return (
       <ErrorState
-        message={profileState.error?.message ?? "Your CampusConnect portfolio is not available."}
+        message={profileState.error?.message ?? "Your Unibridge portfolio is not available."}
         onRetry={profileState.retry}
         title="Could not load portfolio"
       />

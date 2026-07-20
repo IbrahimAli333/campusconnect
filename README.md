@@ -1,20 +1,20 @@
-# CampusConnect
+# Unibridge
 
-CampusConnect is a university-based academic and professional networking
+Unibridge is a university-based academic and professional networking
 ecosystem. It connects students, teachers, professors, mentors, researchers,
 startup builders, and employers around profiles, portfolios, skills, research,
 projects, internships, and cofounder discovery.
 
-English short explanation: CampusConnect helps university communities build
+English short explanation: Unibridge helps university communities build
 professional profiles, showcase academic portfolios, discover collaborators and
 mentors, and apply to research, startup, internship, and project opportunities.
 
-Azerbaijani short explanation: CampusConnect universitet icmalarına peşəkar
+Azerbaijani short explanation: Unibridge universitet icmalarına peşəkar
 profil və portfolio qurmaq, bacarıqları göstərmək, tələbə, müəllim, professor,
 mentor və əməkdaş tapmaq, həmçinin tədqiqat, startap, təcrübə və layihə
 imkanlarına müraciət etmək üçün akademik və peşəkar şəbəkədir.
 
-CampusConnect is not a normal social app, not an attendance product, and not a
+Unibridge is not a normal social app, not an attendance product, and not a
 grades or university-management product.
 
 Project coordination, stack decisions, and milestone ownership live in
@@ -55,9 +55,9 @@ Publishing and deployment steps live in
 - Messaging after the core network workflows are stable
 - Moderation and admin tooling for institutional controls
 
-## Mobile CampusConnect Flow
+## Mobile Unibridge Flow
 
-The authenticated Expo app opens directly into the CampusConnect networking
+The authenticated Expo app opens directly into the Unibridge networking
 shell. It uses custom segmented tabs and does not add React Navigation yet.
 
 - **Discover** loads `/api/v1/network/recommendations/profiles` for an early
@@ -117,7 +117,7 @@ uvicorn app.main:app --reload
 ```
 
 The dev seed is idempotent and refuses to run when `ENVIRONMENT=production` or
-`UNIVERSITY_PORTAL_ENVIRONMENT=production`. It creates CampusConnect profiles,
+`UNIVERSITY_PORTAL_ENVIRONMENT=production`. It creates Unibridge profiles,
 skills, resume entries, and sample startup, research, internship, and project
 opportunities with Azerbaijani university-flavored examples.
 
@@ -143,7 +143,7 @@ student@example.edu / student-password
 teacher@example.edu / teacher-password
 ```
 
-CampusConnect network endpoints are available under `/api/v1/network/*`,
+Unibridge network endpoints are available under `/api/v1/network/*`,
 including `/api/v1/network/applications/me`,
 `/api/v1/network/applications/{application_id}`,
 `/api/v1/network/recommendations/opportunities`,
@@ -165,7 +165,7 @@ skills and resume entries for discovery and profile-detail testing.
 The repository still contains older academic tables, seed fixtures, tests, and
 API routes for schedules, materials, attendance, and grades. They are retained
 as historical compatibility/regression context during the pivot and are not the
-current CampusConnect product surface.
+current Unibridge product surface.
 
 Backend tests use SQLite for lightweight local checks:
 

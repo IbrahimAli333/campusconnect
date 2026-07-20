@@ -1,4 +1,4 @@
-# CampusConnect Render Preview Deployment Checklist
+# Unibridge Render Preview Deployment Checklist
 
 Last prepared: 2026-06-30
 
@@ -86,7 +86,7 @@ Perform these steps only after explicit deployment approval:
 2. Open the Render dashboard.
 3. Select **New +**.
 4. Select **Blueprint**.
-5. Connect the GitHub account or organization that owns the CampusConnect repo.
+5. Connect the GitHub account or organization that owns the Unibridge repo.
 6. Select the repository containing this `render.yaml`.
 7. Select the preview branch or commit approved by the coordinator.
 8. Confirm Render detects the Blueprint file at repository root:
@@ -117,7 +117,7 @@ https://preview.campusconnect.example
 The Blueprint sets these values on the `campusconnect-api` service:
 
 ```text
-UNIVERSITY_PORTAL_APP_NAME=CampusConnect API
+UNIVERSITY_PORTAL_APP_NAME=Unibridge API
 UNIVERSITY_PORTAL_API_V1_PREFIX=/api/v1
 UNIVERSITY_PORTAL_DATABASE_URL=<from campusconnect-postgres connectionString>
 UNIVERSITY_PORTAL_ENVIRONMENT=production

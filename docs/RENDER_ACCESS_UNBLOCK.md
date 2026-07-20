@@ -1,4 +1,4 @@
-# CampusConnect Render Access Unblock
+# Unibridge Render Access Unblock
 
 Last prepared: 2026-06-29
 
@@ -14,7 +14,7 @@ commit, or push unless explicitly approved.
   does not have approved Render access, a Render CLI, a Render MCP/tool, or an
   in-app browser Render session.
 - The placeholder URL `https://campusconnect-api.onrender.com` returned 404 and
-  must not be treated as the deployed CampusConnect API.
+  must not be treated as the deployed Unibridge API.
 - Render hosted smoke tests cannot run until a real Render Blueprint deployment
   creates the API service and returns the final public HTTPS service URL.
 
@@ -31,7 +31,7 @@ main
 
 Because there is no local Git remote, the user must choose one of these paths:
 
-- Create a new GitHub repository for CampusConnect.
+- Create a new GitHub repository for Unibridge.
 - Connect this local repository to an existing GitHub repository.
 
 Do not invent a repository URL. Use only the GitHub repository selected by the
@@ -85,7 +85,7 @@ approved branch has been pushed to GitHub:
 2. Choose **New +**.
 3. Choose **Blueprint**.
 4. Connect or select the GitHub account or organization that owns the
-   CampusConnect repository.
+   Unibridge repository.
 5. Select the repository containing `render.yaml`.
 6. Select the approved branch, currently expected to be `main` unless the user
    chooses a different branch.

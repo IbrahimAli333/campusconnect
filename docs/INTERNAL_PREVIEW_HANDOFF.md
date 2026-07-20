@@ -1,4 +1,4 @@
-# CampusConnect Internal Preview Handoff
+# Unibridge Internal Preview Handoff
 
 Last prepared: 2026-06-30
 
@@ -81,7 +81,7 @@ Do not run Android or iOS EAS preview builds until all of these are true:
    repository.
 2. In Render, choose **New +** then **Blueprint**.
 3. Connect or select the GitHub account or organization that owns the repo.
-4. Select the CampusConnect repo and approved preview branch or commit.
+4. Select the Unibridge repo and approved preview branch or commit.
 5. Confirm Render detects `render.yaml` at the repository root.
 6. Review generated resources before creating them:
    - Web service: `campusconnect-api` on the paid `starter` plan
@@ -222,7 +222,7 @@ npx eas init
 ```
 
 5. Confirm the EAS project owner and project ID match the intended
-   CampusConnect preview project.
+   Unibridge preview project.
 6. Create or update the public preview environment variable:
 
 ```bash

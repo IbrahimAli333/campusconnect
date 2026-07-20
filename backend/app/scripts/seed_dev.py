@@ -470,7 +470,7 @@ def seed_dev(
             "normal",
         ),
         (
-            "CampusConnect Profile Sprint",
+            "Unibridge Profile Sprint",
             "Update your portfolio, skills, research interests, and project links.",
             "student",
             "high",
@@ -797,7 +797,7 @@ def seed_dev(
             member_network_profile,
             "project",
             "Community Product Feedback Circle",
-            "CampusConnect Community",
+            "Unibridge Community",
             (
                 "Reviews student project ideas, joins discovery calls, and "
                 "connects active builders with useful campus contacts."

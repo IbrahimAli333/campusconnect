@@ -1,4 +1,4 @@
-# CampusConnect EAS Internal Preview Build Checklist
+# Unibridge EAS Internal Preview Build Checklist
 
 Last prepared: 2026-06-29
 
@@ -50,7 +50,7 @@ Findings:
 - iOS preview builds use EAS internal distribution, not TestFlight, with the
   current `preview` profile.
 - `app.config.js` defines app identifiers:
-  `com.ibrahimalikhudiyev.campusconnect` for both iOS and Android.
+  `com.unibridge.app` for both iOS and Android.
 - Required visual assets exist:
   `assets/icon.png`, `assets/splash-icon.png`,
   `assets/android-icon-foreground.png`, `assets/android-icon-background.png`,

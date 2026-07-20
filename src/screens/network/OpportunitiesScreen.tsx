@@ -560,7 +560,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
   if (!opportunitiesState.data) {
     return (
       <ErrorState
-        message={opportunitiesState.error?.message ?? "CampusConnect opportunities are not available."}
+        message={opportunitiesState.error?.message ?? "Unibridge opportunities are not available."}
         onRetry={opportunitiesState.retry}
         title="Could not load opportunities"
       />

@@ -1,4 +1,4 @@
-# CampusConnect Git Publication Plan
+# Unibridge Git Publication Plan
 
 Date: 2026-06-29
 
@@ -94,7 +94,7 @@ Run these only after the user approves the commit scope:
 git status --short
 git add .gitignore App.tsx app.json package.json package-lock.json .env.example .env.production.example README.md app.config.js backend docs eas.json render.yaml scripts src
 git diff --cached --stat
-git commit -m "Prepare CampusConnect for publication"
+git commit -m "Prepare Unibridge for publication"
 ```
 
 After the user creates or chooses the GitHub repository and provides the confirmed repository URL, add the remote:
