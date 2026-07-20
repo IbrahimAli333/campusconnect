@@ -96,7 +96,7 @@ const authModes: Array<{
   },
   {
     compactLabel: "New account",
-    description: "New campus access",
+    description: "Join as a member",
     icon: UserPlus,
     label: "Create account",
     value: "signup",
@@ -275,54 +275,6 @@ function DashboardPreview({ compact }: { compact: boolean }) {
   );
 }
 
-function RequestAccessPanel({ onUseDemoLogin }: { onUseDemoLogin: () => void }) {
-  return (
-    <View style={loginStyles.requestStack}>
-      <View style={loginStyles.requestPanel}>
-        <View style={loginStyles.requestIcon}>
-          <UserPlus color={palette.teal} size={22} strokeWidth={2.5} />
-        </View>
-        <View style={loginStyles.requestCopy}>
-          <Text style={loginStyles.requestTitle}>Account creation is invite-based right now.</Text>
-          <Text style={loginStyles.requestBody}>
-            {DEMO_LOGINS_ENABLED
-              ? "This API does not expose public registration. New accounts should come from a campus invite or admin setup; demo access is available through the role presets."
-              : "New accounts are provisioned by campus or program administrators. Ask your faculty coordinator for an invite, then log in with the credentials you receive."}
-          </Text>
-        </View>
-      </View>
-
-      <View style={loginStyles.accessGrid}>
-        <View style={loginStyles.accessTile}>
-          <View style={loginStyles.accessIcon}>
-            <Building2 color={palette.blue} size={18} strokeWidth={2.5} />
-          </View>
-          <Text style={loginStyles.accessTitle}>Campus invite</Text>
-          <Text style={loginStyles.accessBody}>Faculty or program admins provision new users for the MVP.</Text>
-        </View>
-        {DEMO_LOGINS_ENABLED ? (
-          <View style={loginStyles.accessTile}>
-            <View style={loginStyles.accessIcon}>
-              <CheckCircle2 color={palette.green} size={18} strokeWidth={2.5} />
-            </View>
-            <Text style={loginStyles.accessTitle}>Demo roles</Text>
-            <Text style={loginStyles.accessBody}>Member, Student, and Teacher presets remain ready to test.</Text>
-          </View>
-        ) : null}
-      </View>
-
-      <Pressable
-        accessibilityRole="button"
-        onPress={onUseDemoLogin}
-        style={({ pressed }) => [loginStyles.secondaryButton, pressed && styles.pressed]}
-      >
-        <LogIn color={palette.text} size={18} strokeWidth={2.6} />
-        <Text style={loginStyles.secondaryButtonText}>{DEMO_LOGINS_ENABLED ? "Use demo login" : "Back to log in"}</Text>
-      </Pressable>
-    </View>
-  );
-}
-
 // Mounted only when GOOGLE_OAUTH_CLIENT_ID exists so the auth-request hook
 // never runs with an empty client ID.
 function GoogleSsoButton({
@@ -360,12 +312,15 @@ function GoogleSsoButton({
 export function LoginScreen({
   onLogin,
   onGoogleLogin,
+  onRegister,
 }: {
   onLogin: (email: string, password: string) => Promise<unknown>;
   onGoogleLogin?: (idToken: string) => Promise<unknown>;
+  onRegister: (email: string, password: string, fullName: string) => Promise<unknown>;
 }) {
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState<LoginRole | null>(null);
@@ -422,6 +377,38 @@ export function LoginScreen({
     } catch (loginError) {
       if (loginError instanceof AuthApiError) {
         setError(loginError.message);
+      } else {
+        setError("Could not connect to the API. Check the backend URL and try again.");
+      }
+    } finally {
+      clearTimeout(slowHintTimer);
+      setShowSlowHint(false);
+      setLoading(false);
+    }
+  }
+
+  async function submitSignup() {
+    const normalizedEmail = email.trim();
+    const normalizedName = fullName.trim();
+    if (!normalizedName || !normalizedEmail || !password) {
+      setError("Enter your name, email, and a password.");
+      return;
+    }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    const slowHintTimer = setTimeout(() => setShowSlowHint(true), SLOW_LOGIN_HINT_MS);
+
+    try {
+      await onRegister(normalizedEmail, password, normalizedName);
+    } catch (registerError) {
+      if (registerError instanceof AuthApiError) {
+        setError(registerError.message);
       } else {
         setError("Could not connect to the API. Check the backend URL and try again.");
       }
@@ -506,10 +493,10 @@ export function LoginScreen({
                 <Text style={[loginStyles.heroBody, isCompact && loginStyles.heroBodyCompact]}>
                   {DEMO_LOGINS_ENABLED
                     ? isCompact
-                      ? "Log in with a demo role or check invite-based account access."
+                      ? "Log in with a demo role or create a member account."
                       : "Sign in as a member, student, or teacher to test a role-specific network for projects, applications, mentorship, and academic review."
                     : isCompact
-                      ? "Log in or request invite-based account access."
+                      ? "Log in or create a member account."
                       : "Sign in to a role-aware campus network for projects, applications, mentorship, and academic review."}
                 </Text>
               </View>
@@ -557,9 +544,7 @@ export function LoginScreen({
                         ? "Use a demo role preset or working credentials."
                         : "Use a demo role preset or enter working credentials manually."
                       : "Sign in with your Unibridge credentials."
-                    : DEMO_LOGINS_ENABLED
-                      ? "Unibridge account creation is currently managed by invite and demo access."
-                      : "Unibridge account creation is currently managed by campus invite."}
+                    : "Member accounts can browse, save, apply, and connect. Students and faculty join with their university Google account."}
                 </Text>
               </View>
 
@@ -773,7 +758,122 @@ export function LoginScreen({
                   ) : null}
                 </>
               ) : (
-                <RequestAccessPanel onUseDemoLogin={() => switchAuthMode("login")} />
+                <>
+                  <View style={[loginStyles.formStack, isCompact && loginStyles.formStackCompact]}>
+                    <View style={loginStyles.field}>
+                      <Text style={loginStyles.label}>Full name</Text>
+                      <View style={[loginStyles.inputFrame, isCompact && loginStyles.inputFrameCompact]}>
+                        <TextInput
+                          autoComplete="name"
+                          autoCorrect={false}
+                          onChangeText={setFullName}
+                          placeholder="Your name"
+                          placeholderTextColor={palette.faint}
+                          returnKeyType="next"
+                          style={[loginStyles.textInput, isCompact && loginStyles.textInputCompact]}
+                          textContentType="name"
+                          value={fullName}
+                        />
+                      </View>
+                    </View>
+
+                    <View style={loginStyles.field}>
+                      <Text style={loginStyles.label}>Email</Text>
+                      <View style={[loginStyles.inputFrame, isCompact && loginStyles.inputFrameCompact]}>
+                        <TextInput
+                          autoCapitalize="none"
+                          autoComplete="email"
+                          autoCorrect={false}
+                          keyboardType="email-address"
+                          onChangeText={setEmail}
+                          placeholder="you@university.edu"
+                          placeholderTextColor={palette.faint}
+                          returnKeyType="next"
+                          style={[loginStyles.textInput, isCompact && loginStyles.textInputCompact]}
+                          textContentType="emailAddress"
+                          value={email}
+                        />
+                      </View>
+                    </View>
+
+                    <View style={loginStyles.field}>
+                      <Text style={loginStyles.label}>Password</Text>
+                      <View style={[loginStyles.inputFrame, isCompact && loginStyles.inputFrameCompact]}>
+                        <TextInput
+                          autoCapitalize="none"
+                          autoComplete="password-new"
+                          onChangeText={setPassword}
+                          onSubmitEditing={submitSignup}
+                          placeholder="At least 8 characters"
+                          placeholderTextColor={palette.faint}
+                          returnKeyType="go"
+                          secureTextEntry={!showPassword}
+                          style={[loginStyles.textInput, isCompact && loginStyles.textInputCompact]}
+                          textContentType="newPassword"
+                          value={password}
+                        />
+                        <Pressable
+                          accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+                          accessibilityRole="button"
+                          hitSlop={8}
+                          onPress={() => setShowPassword((visible) => !visible)}
+                          style={({ pressed }) => [loginStyles.passwordToggle, pressed && styles.pressed]}
+                        >
+                          {showPassword ? (
+                            <EyeOff color={palette.muted} size={18} strokeWidth={2.4} />
+                          ) : (
+                            <Eye color={palette.muted} size={18} strokeWidth={2.4} />
+                          )}
+                        </Pressable>
+                      </View>
+                    </View>
+                  </View>
+
+                  {error ? (
+                    <View style={loginStyles.errorPanel}>
+                      <Text style={loginStyles.errorText}>{error}</Text>
+                    </View>
+                  ) : null}
+
+                  {loading && showSlowHint ? (
+                    <View style={loginStyles.slowHintPanel}>
+                      <Text style={loginStyles.slowHintText}>
+                        Still connecting - the campus server may be waking up. The first signup after a quiet period can
+                        take up to a minute.
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={loading}
+                    onPress={submitSignup}
+                    style={({ pressed }) => [
+                      loginStyles.submitButton,
+                      isCompact && loginStyles.submitButtonCompact,
+                      loading && loginStyles.disabled,
+                      pressed && !loading && styles.pressed,
+                    ]}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color={palette.surface} size="small" />
+                    ) : (
+                      <UserPlus color={palette.surface} size={18} strokeWidth={2.6} />
+                    )}
+                    <Text style={loginStyles.submitButtonText}>
+                      {loading ? "Creating account" : "Create member account"}
+                    </Text>
+                  </Pressable>
+
+                  {GOOGLE_OAUTH_CLIENT_ID && onGoogleLogin ? (
+                    <GoogleSsoButton
+                      clientId={GOOGLE_OAUTH_CLIENT_ID}
+                      disabled={loading}
+                      onError={setError}
+                      onIdToken={(idToken) => void submitGoogleToken(idToken)}
+                    />
+                  ) : null}
+                </>
               )}
 
               {DEMO_LOGINS_ENABLED ? (
@@ -1498,81 +1598,6 @@ const loginStyles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     textAlign: "center",
-  },
-  requestStack: {
-    gap: 12,
-  },
-  requestPanel: {
-    alignItems: "flex-start",
-    backgroundColor: palette.tealSoft,
-    borderColor: "#B6E3DB",
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 12,
-    padding: 14,
-  },
-  requestIcon: {
-    alignItems: "center",
-    backgroundColor: palette.surface,
-    borderRadius: 12,
-    height: 42,
-    justifyContent: "center",
-    width: 42,
-  },
-  requestCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
-  requestTitle: {
-    color: palette.text,
-    fontSize: 15,
-    fontWeight: "700",
-    lineHeight: 20,
-  },
-  requestBody: {
-    color: palette.muted,
-    fontSize: 12,
-    fontWeight: "700",
-    lineHeight: 18,
-    marginTop: 4,
-  },
-  accessGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  accessTile: {
-    backgroundColor: "#F8FAFC",
-    borderColor: palette.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    flex: 1,
-    gap: 7,
-    minWidth: 142,
-    padding: 12,
-  },
-  accessIcon: {
-    alignItems: "center",
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    height: 34,
-    justifyContent: "center",
-    width: 34,
-  },
-  accessTitle: {
-    color: palette.text,
-    fontSize: 13,
-    fontWeight: "700",
-    lineHeight: 17,
-  },
-  accessBody: {
-    color: palette.muted,
-    fontSize: 11,
-    fontWeight: "700",
-    lineHeight: 16,
   },
   secondaryButton: {
     alignItems: "center",

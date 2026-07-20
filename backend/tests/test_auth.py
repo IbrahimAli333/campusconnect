@@ -3,7 +3,7 @@ from collections.abc import Iterator
 import pytest
 from fastapi import Depends
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -426,3 +426,121 @@ def test_bootstrap_admin_is_gated_in_production(
         assert response.status_code == 201
     finally:
         get_settings.cache_clear()
+
+
+def test_register_creates_member_with_profile(
+    client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+) -> None:
+    client, testing_session_local = client_and_sessionmaker
+
+    response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "  New.Member@BSU.edu.az ",
+            "password": "fresh-password-1",
+            "full_name": "  Nigar Aliyeva  ",
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["user"]["email"] == "new.member@bsu.edu.az"
+    assert body["user"]["full_name"] == "Nigar Aliyeva"
+    assert body["user"]["role"] == "member"
+
+    me = client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {body['access_token']}"},
+    )
+    assert me.status_code == 200
+
+    with testing_session_local() as db:
+        user = db.scalar(select(User).where(User.email == "new.member@bsu.edu.az"))
+        assert user is not None
+        profile = user.network_profile
+        assert profile is not None
+        assert profile.role == "member"
+        assert profile.university == "Baku State University"
+        assert profile.visibility == "public"
+
+
+def test_register_without_university_domain_leaves_university_unset(
+    client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+) -> None:
+    client, testing_session_local = client_and_sessionmaker
+
+    response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "tester@gmail.com",
+            "password": "fresh-password-1",
+            "full_name": "Gmail Tester",
+        },
+    )
+
+    assert response.status_code == 201
+    with testing_session_local() as db:
+        user = db.scalar(select(User).where(User.email == "tester@gmail.com"))
+        assert user is not None
+        assert user.network_profile is not None
+        assert user.network_profile.university is None
+
+
+def test_register_duplicate_email_conflicts(
+    client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+) -> None:
+    client, _ = client_and_sessionmaker
+    payload = {
+        "email": "taken@example.edu",
+        "password": "fresh-password-1",
+        "full_name": "First Claimant",
+    }
+    assert client.post("/api/v1/auth/register", json=payload).status_code == 201
+
+    duplicate = client.post(
+        "/api/v1/auth/register",
+        json={**payload, "email": "  TAKEN@example.edu "},
+    )
+    assert duplicate.status_code == 409
+
+
+def test_register_rejects_short_password(
+    client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+) -> None:
+    client, _ = client_and_sessionmaker
+    response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "short@example.edu",
+            "password": "seven77",
+            "full_name": "Short Password",
+        },
+    )
+    assert response.status_code == 422
+
+
+def test_register_rate_limits_per_ip(
+    client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+) -> None:
+    client, _ = client_and_sessionmaker
+
+    for index in range(10):
+        response = client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": f"bulk-{index}@example.edu",
+                "password": "fresh-password-1",
+                "full_name": f"Bulk {index}",
+            },
+        )
+        assert response.status_code == 201
+
+    blocked = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "bulk-final@example.edu",
+            "password": "fresh-password-1",
+            "full_name": "Bulk Final",
+        },
+    )
+    assert blocked.status_code == 429

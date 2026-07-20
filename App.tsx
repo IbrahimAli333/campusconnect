@@ -73,7 +73,7 @@ export default function App() {
     return (
       <SafeAreaView style={styles.safeArea}>
         <StatusBar style="dark" />
-        <LoginScreen onGoogleLogin={auth.loginWithGoogle} onLogin={auth.login} />
+        <LoginScreen onGoogleLogin={auth.loginWithGoogle} onLogin={auth.login} onRegister={auth.register} />
       </SafeAreaView>
     );
   }

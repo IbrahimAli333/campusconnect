@@ -7,7 +7,11 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_active_user
 from app.core.config import get_settings
-from app.core.login_rate_limit import ip_rate_limiter, login_rate_limiter
+from app.core.login_rate_limit import (
+    ip_rate_limiter,
+    login_rate_limiter,
+    registration_rate_limiter,
+)
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -27,6 +31,7 @@ from app.schemas.auth import (
     GoogleSsoRequest,
     LoginRequest,
     RefreshRequest,
+    RegisterRequest,
     TokenResponse,
 )
 from app.schemas.user import UserRead
@@ -129,6 +134,60 @@ def _client_ip(http_request: Request) -> str:
     # request.client already reflects the X-Forwarded-For client address.
     client = http_request.client
     return client.host if client is not None else "unknown"
+
+
+@router.post(
+    "/register",
+    response_model=TokenResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def register(
+    request: RegisterRequest,
+    http_request: Request,
+    db: Session = Depends(get_db),
+) -> TokenResponse:
+    """Public self-service signup. Always creates a member account.
+
+    Posting roles (student, teacher, ...) are never self-declared here; they
+    arrive through university SSO or admin provisioning.
+    """
+    client_ip = _client_ip(http_request)
+    if registration_rate_limiter.is_blocked(client_ip):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many signup attempts. Try again later.",
+            headers={"Retry-After": str(registration_rate_limiter.window_seconds)},
+        )
+    # Every attempt counts against the window, not just rejected ones.
+    registration_rate_limiter.record_failure(client_ip)
+
+    existing = db.scalar(select(User).where(User.email == request.email))
+    if existing is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An account with this email already exists",
+        )
+
+    user = User(
+        email=request.email,
+        hashed_password=hash_password(request.password),
+        full_name=request.full_name,
+        role=UserRole.member.value,
+        is_active=True,
+    )
+    db.add(user)
+    db.flush()
+    db.add(
+        UserProfile(
+            user_id=user.id,
+            role="member",
+            university=university_for_email(request.email),
+            visibility="public",
+        )
+    )
+    db.commit()
+    db.refresh(user)
+    return _token_response(user)
 
 
 @router.post("/login", response_model=TokenResponse)

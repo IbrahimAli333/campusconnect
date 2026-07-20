@@ -60,3 +60,8 @@ login_rate_limiter = LoginRateLimiter()
 # is deliberately generous because campus NAT can put a whole building behind
 # one IP; the per-(IP, email) limiter above stays the tight one.
 ip_rate_limiter = LoginRateLimiter(max_attempts=50, window_seconds=900)
+
+# Bulk account creation: every registration attempt from an address counts,
+# successful or not, so one host cannot flood the user table while a shared
+# campus IP still has room for a handful of real signups.
+registration_rate_limiter = LoginRateLimiter(max_attempts=10, window_seconds=3600)

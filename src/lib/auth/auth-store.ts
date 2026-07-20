@@ -6,6 +6,7 @@ import {
   login as requestLogin,
   loginWithGoogle as requestGoogleLogin,
   refreshSession as requestRefreshSession,
+  register as requestRegister,
   type AuthUser,
   type TokenResponse,
 } from "../api/auth";
@@ -22,6 +23,7 @@ export interface AuthStore {
   isAuthenticated: boolean;
   isRestoring: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
+  register: (email: string, password: string, fullName: string) => Promise<AuthUser>;
   loginWithGoogle: (idToken: string) => Promise<AuthUser>;
   refreshCurrentUser: () => Promise<AuthUser | null>;
   logout: () => void;
@@ -44,6 +46,15 @@ export function useAuthStore(): AuthStore {
   const login = useCallback(
     async (email: string, password: string) => {
       const response = await requestLogin(email, password);
+      applySession(response);
+      return response.user;
+    },
+    [applySession],
+  );
+
+  const register = useCallback(
+    async (email: string, password: string, fullName: string) => {
+      const response = await requestRegister(email, password, fullName);
       applySession(response);
       return response.user;
     },
@@ -175,10 +186,11 @@ export function useAuthStore(): AuthStore {
       isAuthenticated: Boolean(token && user),
       isRestoring,
       login,
+      register,
       loginWithGoogle,
       refreshCurrentUser,
       logout,
     }),
-    [isRestoring, login, loginWithGoogle, logout, refreshCurrentUser, token, user],
+    [isRestoring, login, loginWithGoogle, logout, refreshCurrentUser, register, token, user],
   );
 }

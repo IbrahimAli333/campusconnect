@@ -95,6 +95,18 @@ export function login(email: string, password: string): Promise<TokenResponse> {
   });
 }
 
+// Public signup always creates a member account; posting roles come from
+// university SSO or admin provisioning.
+export function register(email: string, password: string, fullName: string): Promise<TokenResponse> {
+  return requestJson<TokenResponse>("/api/v1/auth/register", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, password, full_name: fullName }),
+  });
+}
+
 export function refreshSession(refreshToken: string): Promise<TokenResponse> {
   return requestJson<TokenResponse>("/api/v1/auth/refresh", {
     method: "POST",
