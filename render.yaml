@@ -12,7 +12,7 @@ services:
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    preDeployCommand: alembic upgrade head && python -m app.scripts.provision_admin_accounts
+    preDeployCommand: python -m app.scripts.predeploy
     healthCheckPath: /health
     envVars:
       - key: UNIVERSITY_PORTAL_APP_NAME
