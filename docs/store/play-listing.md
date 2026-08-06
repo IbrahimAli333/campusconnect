@@ -7,15 +7,15 @@ require actions only the account owner can do.
 
 - **App name:** Unibridge
 - **Short description (max 80 chars):**
-  `Campus networking: research, startups, applications, and mentorship.`
+  `University networking: research, startups, applications, and mentorship.`
 - **Full description:**
 
 ```
-Unibridge is an academic and professional network for campus communities.
+Unibridge is an academic and professional network for university communities.
 
 Built for members, students, and faculty:
 - Discover people by skills, role, faculty, and university, with match scores that explain why someone is recommended.
-- Browse research, startup, project, internship, and job opportunities posted by your campus community.
+- Browse research, startup, project, internship, and job opportunities posted by your university community.
 - Apply in one tap and track every application from submission to decision.
 - Post opportunities (students post startups and projects, faculty post research) and review applicants with their skills and portfolio in one place.
 - Build a portfolio profile with skills and resume entries, and control who can see it (public, university-only, or private).
@@ -26,7 +26,7 @@ Safety and control:
 - Block users to hide their content from you and yours from them.
 - Delete your account (and all your data) at any time from the Me tab.
 
-Access is invite-based: accounts are provisioned by campus or program administrators.
+Create your own member account in the app, or sign in with credentials provided by your university program.
 ```
 
 - **Category:** Social (alternative: Education)
