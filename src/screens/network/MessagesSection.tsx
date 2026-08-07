@@ -4,6 +4,7 @@ import { MessageCircle, Send } from "lucide-react-native";
 
 import { EmptyState } from "../../components/common/PortalState";
 import { SectionHeader } from "../../components/common/SectionHeader";
+import { useI18n } from "../../lib/i18n";
 import {
   getMyProfile,
   getThreadMessages,
@@ -13,7 +14,7 @@ import {
 import { palette, styles } from "../../styles/theme";
 import type { MessageRead, MessageThreadRead, ProfileSummary } from "../../types/network";
 
-import { InlineAction, PanelHeader, formatFullDate, profileMeta, toErrorMessage } from "./shared";
+import { InitialsAvatar, InlineAction, PanelHeader, formatFullDate, profileMeta, toErrorMessage } from "./shared";
 import { networkStyles } from "./styles";
 
 const THREADS_POLL_MS = 15000;
@@ -33,6 +34,7 @@ function ChatPanel({
   profile: ProfileSummary;
   token: string;
 }) {
+  const { t } = useI18n();
   const [messages, setMessages] = useState<MessageRead[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -89,14 +91,14 @@ function ChatPanel({
 
   return (
     <View style={[styles.card, styles.compactCard, networkStyles.networkCard]}>
-      <PanelHeader eyebrow={profileMeta(profile)} icon={MessageCircle} onClose={onClose} title={profile.user.full_name} />
+      <PanelHeader eyebrow={profileMeta(profile, t)} icon={MessageCircle} onClose={onClose} title={profile.user.full_name} />
 
       {loadError && !messages ? (
         <Text style={[networkStyles.actionMessage, networkStyles.errorText]}>{loadError}</Text>
       ) : null}
 
       {messages && messages.length === 0 ? (
-        <Text style={styles.smallText}>No messages yet. Say hello!</Text>
+        <Text style={styles.smallText}>{t("No messages yet. Say hello!")}</Text>
       ) : null}
 
       {messages && messages.length > 0 ? (
@@ -107,7 +109,7 @@ function ChatPanel({
               <View key={message.id} style={[networkStyles.chatBubble, isMine && networkStyles.chatBubbleMine]}>
                 <Text style={networkStyles.chatBubbleText}>{message.body}</Text>
                 <Text style={networkStyles.chatBubbleMeta}>
-                  {(isMine ? "You" : profile.user.full_name.split(" ")[0]) + " - " + formatFullDate(message.created_at)}
+                  {(isMine ? t("You") : profile.user.full_name.split(" ")[0]) + " - " + formatFullDate(message.created_at)}
                 </Text>
               </View>
             );
@@ -117,10 +119,10 @@ function ChatPanel({
 
       <View style={networkStyles.chatComposer}>
         <TextInput
-          accessibilityLabel={`Message ${profile.user.full_name}`}
+          accessibilityLabel={t("Message {name}", { name: profile.user.full_name })}
           multiline
           onChangeText={setDraft}
-          placeholder="Write a message"
+          placeholder={t("Write a message")}
           placeholderTextColor={palette.faint}
           style={[styles.textInput, networkStyles.chatComposerInput]}
           value={draft}
@@ -128,7 +130,7 @@ function ChatPanel({
         <InlineAction
           disabled={!draft.trim()}
           icon={Send}
-          label="Send"
+          label={t("Send")}
           loading={sending}
           onPress={() => void send()}
         />
@@ -147,6 +149,7 @@ export function MessagesSection({
   openThreadProfile: ProfileSummary | null;
   token: string | null;
 }) {
+  const { t } = useI18n();
   const [threads, setThreads] = useState<MessageThreadRead[] | null>(null);
   const [threadsError, setThreadsError] = useState<string | null>(null);
   const [myProfileId, setMyProfileId] = useState<number | null>(null);
@@ -220,9 +223,9 @@ export function MessagesSection({
   return (
     <>
       <SectionHeader
-        action={sortedThreads.length ? `${sortedThreads.length} threads` : "Empty"}
+        action={sortedThreads.length ? t("{n} threads", { n: sortedThreads.length }) : t("Empty")}
         icon={MessageCircle}
-        title="Messages"
+        title={t("Messages")}
       />
 
       {openThreadProfile ? (
@@ -248,23 +251,25 @@ export function MessagesSection({
             <Pressable
               accessibilityLabel={
                 thread.unread_count > 0
-                  ? `Open conversation with ${thread.profile.user.full_name}, ${thread.unread_count} unread`
-                  : `Open conversation with ${thread.profile.user.full_name}`
+                  ? t("Open conversation with {name}, {n} unread", {
+                      name: thread.profile.user.full_name,
+                      n: thread.unread_count,
+                    })
+                  : t("Open conversation with {name}", { name: thread.profile.user.full_name })
               }
               accessibilityRole="button"
               key={thread.profile.id}
               onPress={() => onOpenThread(thread.profile)}
               style={({ pressed }) => [styles.listRow, pressed && styles.pressed]}
             >
-              <View style={networkStyles.resumeIcon}>
-                <MessageCircle color={palette.blue} size={18} strokeWidth={2.4} />
-              </View>
+              <InitialsAvatar name={thread.profile.user.full_name} size={38} />
               <View style={styles.rowBody}>
                 <Text style={styles.rowTitle} numberOfLines={1}>
                   {thread.profile.user.full_name}
                 </Text>
                 <Text style={styles.rowMeta} numberOfLines={2}>
-                  {(thread.last_message.sender_profile_id === myProfileId ? "You: " : "") + thread.last_message.body}
+                  {(thread.last_message.sender_profile_id === myProfileId ? t("You") + ": " : "") +
+                    thread.last_message.body}
                 </Text>
               </View>
               {thread.unread_count > 0 ? (
@@ -279,9 +284,9 @@ export function MessagesSection({
         </View>
       ) : (
         <EmptyState
-          body="Conversations open after a connection or application is accepted."
+          body={t("Conversations open after a connection or application is accepted.")}
           icon={MessageCircle}
-          title="No messages yet"
+          title={t("No messages yet")}
         />
       )}
     </>

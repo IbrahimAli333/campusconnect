@@ -32,6 +32,7 @@ import {
 
 import { API_BASE_URL } from "../lib/api/config";
 import { AuthApiError } from "../lib/api/auth";
+import { useI18n } from "../lib/i18n";
 import { GOOGLE_OAUTH_CLIENT_ID } from "../lib/google-oauth";
 import { GoogleIdTokenGate } from "../components/common/GoogleIdTokenGate";
 import { palette, platformShadow, styles, webSafeTextShadow } from "../styles/theme";
@@ -183,6 +184,8 @@ function HeroPaperScene({ compact }: { compact: boolean }) {
 }
 
 function DashboardPreview({ compact }: { compact: boolean }) {
+  const { t } = useI18n();
+
   if (compact) {
     return null;
   }
@@ -193,7 +196,7 @@ function DashboardPreview({ compact }: { compact: boolean }) {
         <View style={loginStyles.previewSearch}>
           <Search color={palette.navy} size={18} strokeWidth={2.5} />
           <Text style={loginStyles.previewSearchText} numberOfLines={1}>
-            Search people, skills, or universities
+            {t("Search people, skills, or universities")}
           </Text>
         </View>
         <View style={loginStyles.previewFilterButton}>
@@ -202,8 +205,8 @@ function DashboardPreview({ compact }: { compact: boolean }) {
       </View>
 
       <View style={loginStyles.previewSectionHeader}>
-        <Text style={loginStyles.previewSectionTitle}>Recommended for you</Text>
-        <Text style={loginStyles.previewSectionAction}>See all</Text>
+        <Text style={loginStyles.previewSectionTitle}>{t("Recommended for you")}</Text>
+        <Text style={loginStyles.previewSectionAction}>{t("See all")}</Text>
       </View>
       <View style={loginStyles.previewProfileRow}>
         {previewProfiles.map((profile) => (
@@ -230,15 +233,15 @@ function DashboardPreview({ compact }: { compact: boolean }) {
               ]}
               numberOfLines={1}
             >
-              {profile.role}
+              {t(profile.role)}
             </Text>
           </View>
         ))}
       </View>
 
       <View style={loginStyles.previewSectionHeader}>
-        <Text style={loginStyles.previewSectionTitle}>Top opportunities</Text>
-        <Text style={loginStyles.previewSectionAction}>See all</Text>
+        <Text style={loginStyles.previewSectionTitle}>{t("Top opportunities")}</Text>
+        <Text style={loginStyles.previewSectionAction}>{t("See all")}</Text>
       </View>
       <View style={loginStyles.previewOpportunityRow}>
         {previewOpportunities.map((item) => {
@@ -250,9 +253,9 @@ function DashboardPreview({ compact }: { compact: boolean }) {
                 <Icon color={palette.surface} size={16} strokeWidth={2.5} />
               </View>
               <Text style={loginStyles.previewOpportunityTitle} numberOfLines={2}>
-                {item.title}
+                {t(item.title)}
               </Text>
-              <Text style={loginStyles.previewOpportunityMeta}>{item.label}</Text>
+              <Text style={loginStyles.previewOpportunityMeta}>{t(item.label)}</Text>
             </View>
           );
         })}
@@ -266,7 +269,7 @@ function DashboardPreview({ compact }: { compact: boolean }) {
           return (
             <View key={item.label} style={loginStyles.previewNavItem}>
               <Icon color={active ? palette.teal : palette.navy} size={18} strokeWidth={2.5} />
-              <Text style={[loginStyles.previewNavText, active && loginStyles.previewNavTextActive]}>{item.label}</Text>
+              <Text style={[loginStyles.previewNavText, active && loginStyles.previewNavTextActive]}>{t(item.label)}</Text>
             </View>
           );
         })}
@@ -288,6 +291,8 @@ function GoogleSsoButton({
   onError: (message: string) => void;
   onIdToken: (idToken: string) => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <GoogleIdTokenGate clientId={clientId} onError={onError} onIdToken={onIdToken}>
       {(promptGoogleSignIn, ready) => (
@@ -302,7 +307,7 @@ function GoogleSsoButton({
           ]}
         >
           <GraduationCap color={palette.text} size={18} strokeWidth={2.6} />
-          <Text style={loginStyles.secondaryButtonText}>Continue with university Google account</Text>
+          <Text style={loginStyles.secondaryButtonText}>{t("Continue with university Google account")}</Text>
         </Pressable>
       )}
     </GoogleIdTokenGate>
@@ -318,6 +323,7 @@ export function LoginScreen({
   onGoogleLogin?: (idToken: string) => Promise<unknown>;
   onRegister: (email: string, password: string, fullName: string) => Promise<unknown>;
 }) {
+  const { t } = useI18n();
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
@@ -363,7 +369,7 @@ export function LoginScreen({
   async function submit() {
     const normalizedEmail = email.trim();
     if (!normalizedEmail || !password) {
-      setError("Enter your university email and password.");
+      setError(t("Enter your university email and password."));
       return;
     }
 
@@ -378,7 +384,7 @@ export function LoginScreen({
       if (loginError instanceof AuthApiError) {
         setError(loginError.message);
       } else {
-        setError("Could not connect to the API. Check the backend URL and try again.");
+        setError(t("Could not connect to the API. Check the backend URL and try again."));
       }
     } finally {
       clearTimeout(slowHintTimer);
@@ -391,11 +397,11 @@ export function LoginScreen({
     const normalizedEmail = email.trim();
     const normalizedName = fullName.trim();
     if (!normalizedName || !normalizedEmail || !password) {
-      setError("Enter your name, email, and a password.");
+      setError(t("Enter your name, email, and a password."));
       return;
     }
     if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError(t("Password must be at least 8 characters."));
       return;
     }
 
@@ -410,7 +416,7 @@ export function LoginScreen({
       if (registerError instanceof AuthApiError) {
         setError(registerError.message);
       } else {
-        setError("Could not connect to the API. Check the backend URL and try again.");
+        setError(t("Could not connect to the API. Check the backend URL and try again."));
       }
     } finally {
       clearTimeout(slowHintTimer);
@@ -433,7 +439,7 @@ export function LoginScreen({
       if (loginError instanceof AuthApiError) {
         setError(loginError.message);
       } else {
-        setError("Could not connect to the API. Check the backend URL and try again.");
+        setError(t("Could not connect to the API. Check the backend URL and try again."));
       }
     } finally {
       setLoading(false);
@@ -481,14 +487,14 @@ export function LoginScreen({
                   >
                     Unibridge
                   </Text>
-                  <Text style={loginStyles.heroBrandSubtitle}>Academic and professional network</Text>
+                  <Text style={loginStyles.heroBrandSubtitle}>{t("Academic and professional network")}</Text>
                 </View>
               </View>
 
               <View style={loginStyles.heroCopy}>
-                <Text style={loginStyles.heroEyebrow}>University access portal</Text>
+                <Text style={loginStyles.heroEyebrow}>{t("University access portal")}</Text>
                 <Text style={[loginStyles.heroTitle, isCompact && loginStyles.heroTitleCompact]}>
-                  {isCompact ? "Unibridge access for campus roles." : "Connect classroom work to real campus opportunity."}
+                  {isCompact ? t("Unibridge access for campus roles.") : t("Connect classroom work to real campus opportunity.")}
                 </Text>
                 <Text style={[loginStyles.heroBody, isCompact && loginStyles.heroBodyCompact]}>
                   {DEMO_LOGINS_ENABLED
@@ -496,8 +502,8 @@ export function LoginScreen({
                       ? "Log in with a demo role or create a member account."
                       : "Sign in as a member, student, or teacher to test a role-specific network for projects, applications, mentorship, and academic review."
                     : isCompact
-                      ? "Log in or create a member account."
-                      : "Sign in to a role-aware campus network for projects, applications, mentorship, and academic review."}
+                      ? t("Log in or create a member account.")
+                      : t("Sign in to a role-aware campus network for projects, applications, mentorship, and academic review.")}
                 </Text>
               </View>
 
@@ -514,8 +520,8 @@ export function LoginScreen({
                           <Icon color="#7DD3FC" size={18} strokeWidth={2.5} />
                         </View>
                         <View style={loginStyles.highlightCopy}>
-                          <Text style={loginStyles.highlightTitle}>{item.title}</Text>
-                          <Text style={loginStyles.highlightBody}>{item.body}</Text>
+                          <Text style={loginStyles.highlightTitle}>{t(item.title)}</Text>
+                          <Text style={loginStyles.highlightBody}>{t(item.body)}</Text>
                         </View>
                       </View>
                     );
@@ -528,14 +534,14 @@ export function LoginScreen({
           <View style={[loginStyles.authColumn, isWide && loginStyles.authColumnWide]}>
             <View style={[loginStyles.loginPanel, isWide && loginStyles.loginPanelWide, isCompact && loginStyles.loginPanelCompact]}>
               <View style={[loginStyles.formHeader, isCompact && loginStyles.formHeaderCompact]}>
-                <Text style={loginStyles.formEyebrow}>{authMode === "login" ? "Existing users" : "New users"}</Text>
+                <Text style={loginStyles.formEyebrow}>{authMode === "login" ? t("Existing users") : t("New users")}</Text>
                 <Text
                   adjustsFontSizeToFit
                   minimumFontScale={0.84}
                   numberOfLines={isCompact ? 1 : 2}
                   style={[loginStyles.formTitle, isCompact && loginStyles.formTitleCompact]}
                 >
-                  {authMode === "login" ? (isCompact ? "Unibridge login" : "Log in to Unibridge") : "Create account"}
+                  {authMode === "login" ? (isCompact ? t("Unibridge login") : t("Log in to Unibridge")) : t("Create account")}
                 </Text>
                 <Text style={[loginStyles.formIntro, isCompact && loginStyles.formIntroCompact]}>
                   {authMode === "login"
@@ -543,8 +549,8 @@ export function LoginScreen({
                       ? isCompact
                         ? "Use a demo role preset or working credentials."
                         : "Use a demo role preset or enter working credentials manually."
-                      : "Sign in with your Unibridge credentials."
-                    : "Member accounts can browse, save, apply, and connect. Students and faculty join with their university Google account."}
+                      : t("Sign in with your Unibridge credentials.")
+                    : t("Member accounts can browse, save, apply, and connect. Students and faculty join with their university Google account.")}
                 </Text>
               </View>
 
@@ -570,11 +576,11 @@ export function LoginScreen({
                       </View>
                       <View style={loginStyles.modeCopy}>
                         <Text style={[loginStyles.modeLabel, active && loginStyles.modeLabelActive]} numberOfLines={1}>
-                          {isCompact ? mode.compactLabel ?? mode.label : mode.label}
+                          {t(isCompact ? mode.compactLabel ?? mode.label : mode.label)}
                         </Text>
                         {!isCompact ? (
                           <Text style={[loginStyles.modeDescription, active && loginStyles.modeDescriptionActive]}>
-                            {mode.description}
+                            {t(mode.description)}
                           </Text>
                         ) : null}
                       </View>
@@ -657,7 +663,7 @@ export function LoginScreen({
 
                   <View style={[loginStyles.formStack, isCompact && loginStyles.formStackCompact]}>
                     <View style={loginStyles.field}>
-                      <Text style={loginStyles.label}>Email</Text>
+                      <Text style={loginStyles.label}>{t("Email")}</Text>
                       <View style={[loginStyles.inputFrame, isCompact && loginStyles.inputFrameCompact]}>
                         <TextInput
                           autoCapitalize="none"
@@ -668,7 +674,7 @@ export function LoginScreen({
                             setEmail(value);
                             setSelectedRole(null);
                           }}
-                          placeholder={DEMO_LOGINS_ENABLED ? "member@example.edu" : "you@university.edu"}
+                          placeholder={DEMO_LOGINS_ENABLED ? "member@example.edu" : t("you@university.edu")}
                           placeholderTextColor={palette.faint}
                           returnKeyType="next"
                           style={[loginStyles.textInput, isCompact && loginStyles.textInputCompact]}
@@ -679,7 +685,7 @@ export function LoginScreen({
                     </View>
 
                     <View style={loginStyles.field}>
-                      <Text style={loginStyles.label}>Password</Text>
+                      <Text style={loginStyles.label}>{t("Password")}</Text>
                       <View style={[loginStyles.inputFrame, isCompact && loginStyles.inputFrameCompact]}>
                         <TextInput
                           autoCapitalize="none"
@@ -689,7 +695,7 @@ export function LoginScreen({
                             setSelectedRole(null);
                           }}
                           onSubmitEditing={submit}
-                          placeholder="Password"
+                          placeholder={t("Password")}
                           placeholderTextColor={palette.faint}
                           returnKeyType="go"
                           secureTextEntry={!showPassword}
@@ -698,7 +704,7 @@ export function LoginScreen({
                           value={password}
                         />
                         <Pressable
-                          accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+                          accessibilityLabel={showPassword ? t("Hide password") : t("Show password")}
                           accessibilityRole="button"
                           hitSlop={8}
                           onPress={() => setShowPassword((visible) => !visible)}
@@ -723,8 +729,7 @@ export function LoginScreen({
                   {loading && showSlowHint ? (
                     <View style={loginStyles.slowHintPanel}>
                       <Text style={loginStyles.slowHintText}>
-                        Still connecting - the campus server may be waking up. The first login after a quiet period can
-                        take up to a minute.
+                        {t("Still connecting - the campus server may be waking up. The first login after a quiet period can take up to a minute.")}
                       </Text>
                     </View>
                   ) : null}
@@ -745,7 +750,7 @@ export function LoginScreen({
                     ) : (
                       <LogIn color={palette.surface} size={18} strokeWidth={2.6} />
                     )}
-                    <Text style={loginStyles.submitButtonText}>{loading ? "Logging in" : "Log in"}</Text>
+                    <Text style={loginStyles.submitButtonText}>{loading ? t("Logging in") : t("Log in")}</Text>
                   </Pressable>
 
                   {GOOGLE_OAUTH_CLIENT_ID && onGoogleLogin ? (
@@ -761,13 +766,13 @@ export function LoginScreen({
                 <>
                   <View style={[loginStyles.formStack, isCompact && loginStyles.formStackCompact]}>
                     <View style={loginStyles.field}>
-                      <Text style={loginStyles.label}>Full name</Text>
+                      <Text style={loginStyles.label}>{t("Full name")}</Text>
                       <View style={[loginStyles.inputFrame, isCompact && loginStyles.inputFrameCompact]}>
                         <TextInput
                           autoComplete="name"
                           autoCorrect={false}
                           onChangeText={setFullName}
-                          placeholder="Your name"
+                          placeholder={t("Your name")}
                           placeholderTextColor={palette.faint}
                           returnKeyType="next"
                           style={[loginStyles.textInput, isCompact && loginStyles.textInputCompact]}
@@ -778,7 +783,7 @@ export function LoginScreen({
                     </View>
 
                     <View style={loginStyles.field}>
-                      <Text style={loginStyles.label}>Email</Text>
+                      <Text style={loginStyles.label}>{t("Email")}</Text>
                       <View style={[loginStyles.inputFrame, isCompact && loginStyles.inputFrameCompact]}>
                         <TextInput
                           autoCapitalize="none"
@@ -786,7 +791,7 @@ export function LoginScreen({
                           autoCorrect={false}
                           keyboardType="email-address"
                           onChangeText={setEmail}
-                          placeholder="you@university.edu"
+                          placeholder={t("you@university.edu")}
                           placeholderTextColor={palette.faint}
                           returnKeyType="next"
                           style={[loginStyles.textInput, isCompact && loginStyles.textInputCompact]}
@@ -797,14 +802,14 @@ export function LoginScreen({
                     </View>
 
                     <View style={loginStyles.field}>
-                      <Text style={loginStyles.label}>Password</Text>
+                      <Text style={loginStyles.label}>{t("Password")}</Text>
                       <View style={[loginStyles.inputFrame, isCompact && loginStyles.inputFrameCompact]}>
                         <TextInput
                           autoCapitalize="none"
                           autoComplete="password-new"
                           onChangeText={setPassword}
                           onSubmitEditing={submitSignup}
-                          placeholder="At least 8 characters"
+                          placeholder={t("At least 8 characters")}
                           placeholderTextColor={palette.faint}
                           returnKeyType="go"
                           secureTextEntry={!showPassword}
@@ -813,7 +818,7 @@ export function LoginScreen({
                           value={password}
                         />
                         <Pressable
-                          accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+                          accessibilityLabel={showPassword ? t("Hide password") : t("Show password")}
                           accessibilityRole="button"
                           hitSlop={8}
                           onPress={() => setShowPassword((visible) => !visible)}
@@ -838,8 +843,7 @@ export function LoginScreen({
                   {loading && showSlowHint ? (
                     <View style={loginStyles.slowHintPanel}>
                       <Text style={loginStyles.slowHintText}>
-                        Still connecting - the campus server may be waking up. The first signup after a quiet period can
-                        take up to a minute.
+                        {t("Still connecting - the campus server may be waking up. The first signup after a quiet period can take up to a minute.")}
                       </Text>
                     </View>
                   ) : null}
@@ -861,7 +865,7 @@ export function LoginScreen({
                       <UserPlus color={palette.surface} size={18} strokeWidth={2.6} />
                     )}
                     <Text style={loginStyles.submitButtonText}>
-                      {loading ? "Creating account" : "Create member account"}
+                      {loading ? t("Creating account") : t("Create member account")}
                     </Text>
                   </Pressable>
 

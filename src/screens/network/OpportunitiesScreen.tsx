@@ -61,6 +61,7 @@ import {
   withdrawApplication,
 } from "../../lib/api/network";
 import { usePortalData } from "../../lib/api/usePortalData";
+import { useI18n } from "../../lib/i18n";
 import { universityFilterOptions, universityKey } from "../../lib/universities";
 import { palette, styles } from "../../styles/theme";
 import type {
@@ -143,6 +144,7 @@ import type {
 import { networkStyles } from "./styles";
 
 export function OpportunitiesScreen({ token }: { token: string | null }) {
+  const { t } = useI18n();
   const [filter, setFilter] = useState<OpportunityFilter>("all");
   const [universityFilter, setUniversityFilter] = useState("all");
   const [createOpen, setCreateOpen] = useState(false);
@@ -207,10 +209,10 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
 
     return getMyProfile(token);
   }, [token]);
-  const opportunitiesState = usePortalData(Boolean(token), loadOpportunities);
-  const recommendedOpportunitiesState = usePortalData(Boolean(token), loadRecommendedOpportunities);
-  const ownedOpportunitiesState = usePortalData(Boolean(token), loadOwnedOpportunities);
-  const myProfileState = usePortalData(Boolean(token), loadMyProfile);
+  const opportunitiesState = usePortalData(Boolean(token), loadOpportunities, "opportunities");
+  const recommendedOpportunitiesState = usePortalData(Boolean(token), loadRecommendedOpportunities, "opportunities.recommended");
+  const ownedOpportunitiesState = usePortalData(Boolean(token), loadOwnedOpportunities, "opportunities.owned");
+  const myProfileState = usePortalData(Boolean(token), loadMyProfile, "opportunities.myProfile");
   const opportunities = opportunitiesState.data ?? [];
   const recommendedOpportunities = recommendedOpportunitiesState.data ?? [];
   const ownedOpportunities = ownedOpportunitiesState.data ?? [];
@@ -354,7 +356,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
 
     try {
       await updateApplicationStatus(token, application.id, status);
-      setOwnerApplicationMessages((current) => ({ ...current, [application.id]: "Application status saved." }));
+      setOwnerApplicationMessages((current) => ({ ...current, [application.id]: t("Application status saved.") }));
       setOwnerApplicationMessageErrors((current) => ({ ...current, [application.id]: false }));
       await loadOwnerApplications(selectedOwnedOpportunityId, false);
     } catch (error) {
@@ -413,12 +415,12 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
     try {
       await applyToOpportunity(token, opportunity.id);
       setApplyState((current) => ({ ...current, [opportunity.id]: "sent" }));
-      setActionMessages((current) => ({ ...current, [key]: "Application submitted." }));
+      setActionMessages((current) => ({ ...current, [key]: t("Application submitted.") }));
       setOpportunityDetail((current) => (current?.id === opportunity.id ? { ...current, has_applied: true } : current));
     } catch (error) {
       if (isConflict(error)) {
         setApplyState((current) => ({ ...current, [opportunity.id]: "sent" }));
-        setActionMessages((current) => ({ ...current, [key]: "Application already exists." }));
+        setActionMessages((current) => ({ ...current, [key]: t("Application already exists.") }));
         setOpportunityDetail((current) => (current?.id === opportunity.id ? { ...current, has_applied: true } : current));
         return;
       }
@@ -449,7 +451,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
       }
 
       setSaveState((current) => ({ ...current, [opportunity.id]: "idle" }));
-      setActionMessages((current) => ({ ...current, [key]: "Removed from saved." }));
+      setActionMessages((current) => ({ ...current, [key]: t("Removed from saved.") }));
       setOpportunityDetail((current) => (current?.id === opportunity.id ? { ...current, has_saved: false } : current));
       return;
     }
@@ -457,12 +459,12 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
     try {
       await saveOpportunity(token, opportunity.id);
       setSaveState((current) => ({ ...current, [opportunity.id]: "sent" }));
-      setActionMessages((current) => ({ ...current, [key]: "Opportunity saved." }));
+      setActionMessages((current) => ({ ...current, [key]: t("Opportunity saved.") }));
       setOpportunityDetail((current) => (current?.id === opportunity.id ? { ...current, has_saved: true } : current));
     } catch (error) {
       if (isConflict(error)) {
         setSaveState((current) => ({ ...current, [opportunity.id]: "sent" }));
-        setActionMessages((current) => ({ ...current, [key]: "Opportunity already saved." }));
+        setActionMessages((current) => ({ ...current, [key]: t("Opportunity already saved.") }));
         setOpportunityDetail((current) => (current?.id === opportunity.id ? { ...current, has_saved: true } : current));
         return;
       }
@@ -487,7 +489,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
       await updateOpportunity(token, opportunity.id, { status: nextStatus });
       setActionMessages((current) => ({
         ...current,
-        [key]: nextStatus === "closed" ? "Post closed to new applicants." : "Post reopened.",
+        [key]: nextStatus === "closed" ? t("Post closed to new applicants.") : t("Post reopened."),
       }));
       ownedOpportunitiesState.retry();
       opportunitiesState.retry();
@@ -507,7 +509,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
 
     if (!allowedCreateTypes.includes(createType)) {
       setCreateState("error");
-      setCreateMessage(opportunityAuthoringCopy(myProfile?.role));
+      setCreateMessage(t(opportunityAuthoringCopy(myProfile?.role)));
       return;
     }
 
@@ -516,7 +518,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
 
     if (!title || !description) {
       setCreateState("error");
-      setCreateMessage("Add a title and description for the opportunity.");
+      setCreateMessage(t("Add a title and description for the opportunity."));
       return;
     }
 
@@ -535,7 +537,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
         status: "open",
       });
       setCreateState("saved");
-      setCreateMessage("Opportunity posted.");
+      setCreateMessage(t("Opportunity posted."));
       setCreateTitle("");
       setCreateDescription("");
       setCreateSkills("");
@@ -551,8 +553,8 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
   if (opportunitiesState.loading && !opportunitiesState.data) {
     return (
       <LoadingState
-        body="Fetching recommendations, open opportunities, and any posts you own."
-        label="Loading posts and opportunities"
+        body={t("Fetching recommendations, open opportunities, and any posts you own.")}
+        label={t("Loading posts and opportunities")}
       />
     );
   }
@@ -560,9 +562,9 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
   if (!opportunitiesState.data) {
     return (
       <ErrorState
-        message={opportunitiesState.error?.message ?? "Unibridge opportunities are not available."}
+        message={opportunitiesState.error?.message ?? t("Unibridge opportunities are not available.")}
         onRetry={opportunitiesState.retry}
-        title="Could not load opportunities"
+        title={t("Could not load opportunities")}
       />
     );
   }
@@ -573,7 +575,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
         <ErrorState
           message={opportunitiesState.error.message}
           onRetry={opportunitiesState.retry}
-          title="Could not refresh opportunities"
+          title={t("Could not refresh opportunities")}
         />
       ) : null}
 
@@ -583,7 +585,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
             <FilterChip
               active={filter === item}
               key={item}
-              label={item === "all" ? "All" : titleCase(item)}
+              label={item === "all" ? t("All") : t(titleCase(item))}
               onPress={setFilter}
               value={item}
             />
@@ -592,7 +594,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
         <InlineAction
           disabled={!canCreateOpportunity}
           icon={Plus}
-          label={createOpen ? "Close" : "Post"}
+          label={createOpen ? t("Close") : t("Post")}
           onPress={() => {
             if (!canCreateOpportunity) {
               return;
@@ -609,7 +611,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
         <View style={networkStyles.filterRow}>
           <FilterChip
             active={universityFilter === "all"}
-            label="All Universities"
+            label={t("All Universities")}
             onPress={setUniversityFilter}
             value="all"
           />
@@ -626,19 +628,19 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
       ) : null}
 
       <Text style={networkStyles.permissionText}>
-        {myProfileState.loading && !myProfile ? "Checking posting permissions." : opportunityAuthoringCopy(myProfile?.role)}
+        {myProfileState.loading && !myProfile ? t("Checking posting permissions.") : t(opportunityAuthoringCopy(myProfile?.role))}
       </Text>
 
       {createOpen && canCreateOpportunity ? (
         <View style={networkStyles.formPanel}>
-          <SectionHeader action="Network post" icon={Pencil} title="Post Opportunity" />
-          <FormField label="Opportunity type">
+          <SectionHeader action={t("Network post")} icon={Pencil} title={t("Post Opportunity")} />
+          <FormField label={t("Opportunity type")}>
             <View style={networkStyles.filterRow}>
               {allowedCreateTypes.map((item) => (
                 <FilterChip
                   active={createType === item}
                   key={item}
-                  label={titleCase(item)}
+                  label={t(titleCase(item))}
                   onPress={setCreateType}
                   value={item}
                 />
@@ -646,25 +648,25 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
             </View>
           </FormField>
           <LabeledInput
-            label="Title"
+            label={t("Title")}
             onChangeText={setCreateTitle}
-            placeholder="Opportunity title"
+            placeholder={t("Opportunity title")}
             value={createTitle}
           />
           <LabeledInput
-            label="Description"
+            label={t("Description")}
             multiline
             onChangeText={setCreateDescription}
-            placeholder="Describe the role, project, research goal, or team need"
+            placeholder={t("Describe the role, project, research goal, or team need")}
             style={networkStyles.textArea}
             textAlignVertical="top"
             value={createDescription}
           />
           <LabeledInput
             autoCapitalize="words"
-            label="Useful skills"
+            label={t("Useful skills")}
             onChangeText={setCreateSkills}
-            placeholder="Comma separated"
+            placeholder={t("Comma separated")}
             value={createSkills}
           />
           {createMessage ? (
@@ -674,7 +676,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
           ) : null}
           <InlineAction
             icon={Send}
-            label={createState === "saving" ? "Posting" : "Post Opportunity"}
+            label={createState === "saving" ? t("Posting") : t("Post Opportunity")}
             loading={createState === "saving"}
             onPress={submitCreate}
           />
@@ -687,20 +689,20 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
             <ErrorState
               message={ownedOpportunitiesState.error.message}
               onRetry={ownedOpportunitiesState.retry}
-              title="Could not refresh My Posts"
+              title={t("Could not refresh My Posts")}
             />
           ) : null}
 
           <SectionHeader
-            action={ownedOpportunities.length ? `${ownedOpportunities.length} owned` : "Empty"}
+            action={ownedOpportunities.length ? t("{n} owned", { n: ownedOpportunities.length }) : t("Empty")}
             icon={FileText}
-            title="My Posts"
+            title={t("My Posts")}
           />
 
           {ownedOpportunitiesState.loading && !ownedOpportunitiesState.data ? (
             <View style={networkStyles.inlineLoadingPanel}>
               <ActivityIndicator color={palette.teal} size="small" />
-              <Text style={styles.smallText}>Loading My Posts</Text>
+              <Text style={styles.smallText}>{t("Loading My Posts")}</Text>
             </View>
           ) : null}
 
@@ -739,8 +741,8 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
                           </Text>
                         </View>
                         <View style={networkStyles.statusStack}>
-                          <StatusChip label={titleCase(opportunity.type)} tone={opportunityTone(opportunity.type)} />
-                          <StatusChip label={titleCase(opportunity.status)} tone={statusTone(opportunity.status)} />
+                          <StatusChip label={t(titleCase(opportunity.type))} tone={opportunityTone(opportunity.type)} />
+                          <StatusChip label={t(titleCase(opportunity.status))} tone={statusTone(opportunity.status)} />
                         </View>
                       </View>
 
@@ -750,22 +752,22 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
                       <View style={networkStyles.metaRow}>
                         <CalendarDays color={palette.faint} size={15} strokeWidth={2.4} />
                         <Text style={networkStyles.metaText} numberOfLines={1}>
-                          Posted {formatFullDate(opportunity.created_at)}
+                          {t("Posted {date}", { date: formatFullDate(opportunity.created_at) })}
                         </Text>
                       </View>
-                      <SkillList emptyLabel="No required skills listed." items={opportunity.required_skills} />
+                      <SkillList emptyLabel={t("No required skills listed.")} items={opportunity.required_skills} />
                     </Pressable>
                     <View style={networkStyles.actionRow}>
                       <InlineAction
                         icon={OwnedActionIcon}
-                        label={canReviewApplicants ? "Review Applicants" : "View Post"}
+                        label={canReviewApplicants ? t("Review Applicants") : t("View Post")}
                         onPress={openOwnedPost}
                         wide
                       />
                       {opportunity.status === "open" || opportunity.status === "closed" ? (
                         <InlineAction
                           icon={opportunity.status === "open" ? X : RefreshCw}
-                          label={opportunity.status === "open" ? "Close Post" : "Reopen Post"}
+                          label={opportunity.status === "open" ? t("Close Post") : t("Reopen Post")}
                           loading={Boolean(ownedStatusUpdating[opportunity.id])}
                           onPress={() => void toggleOpportunityStatus(opportunity)}
                           secondary
@@ -789,9 +791,9 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
             </View>
           ) : !ownedOpportunitiesState.loading ? (
             <EmptyState
-              body="Opportunities you create will appear here for applicant review."
+              body={t("Opportunities you create will appear here for applicant review.")}
               icon={FileText}
-              title="No posts yet"
+              title={t("No posts yet")}
             />
           ) : null}
         </>
@@ -853,17 +855,17 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
         />
       ) : ownerProfileLoading || ownerProfileError ? (
         <View style={networkStyles.detailPanel}>
-          <PanelHeader icon={Users} onClose={closeOwnerProfile} title="Profile detail" />
+          <PanelHeader icon={Users} onClose={closeOwnerProfile} title={t("Profile detail")} />
           {ownerProfileLoading ? (
             <View style={networkStyles.inlineLoadingPanel}>
               <ActivityIndicator color={palette.teal} size="small" />
-              <Text style={styles.smallText}>Loading profile</Text>
+              <Text style={styles.smallText}>{t("Loading profile")}</Text>
             </View>
           ) : null}
           {ownerProfileError ? (
             <View style={networkStyles.panelList}>
               <Text style={networkStyles.errorText}>{ownerProfileError}</Text>
-              <InlineAction icon={RefreshCw} label="Retry" onPress={retryOwnerProfile} secondary />
+              <InlineAction icon={RefreshCw} label={t("Retry")} onPress={retryOwnerProfile} secondary />
             </View>
           ) : null}
         </View>
@@ -873,20 +875,20 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
         <ErrorState
           message={recommendedOpportunitiesState.error.message}
           onRetry={recommendedOpportunitiesState.retry}
-          title="Could not refresh recommendations"
+          title={t("Could not refresh recommendations")}
         />
       ) : null}
 
       <SectionHeader
-        action={recommendedOpportunities.length ? `${recommendedOpportunities.length} shown` : "Empty"}
+        action={recommendedOpportunities.length ? t("{n} shown", { n: recommendedOpportunities.length }) : t("Empty")}
         icon={CheckCircle2}
-        title="Recommended for you"
+        title={t("Recommended for you")}
       />
 
       {recommendedOpportunitiesState.loading && !recommendedOpportunitiesState.data ? (
         <View style={networkStyles.inlineLoadingPanel}>
           <ActivityIndicator color={palette.teal} size="small" />
-          <Text style={styles.smallText}>Loading recommendations</Text>
+          <Text style={styles.smallText}>{t("Loading recommendations")}</Text>
         </View>
       ) : null}
 
@@ -917,16 +919,16 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
         </View>
       ) : !recommendedOpportunitiesState.loading ? (
         <EmptyState
-          body="Recommended opportunities will appear as open posts match your skills and profile."
+          body={t("Recommended opportunities will appear as open posts match your skills and profile.")}
           icon={Briefcase}
-          title="No recommended opportunities"
+          title={t("No recommended opportunities")}
         />
       ) : null}
 
       <SectionHeader
-        action={filteredOpportunities.length ? `${filteredOpportunities.length} shown` : "Empty"}
+        action={filteredOpportunities.length ? t("{n} shown", { n: filteredOpportunities.length }) : t("Empty")}
         icon={Briefcase}
-        title="Opportunities"
+        title={t("Opportunities")}
       />
 
       {filteredOpportunities.length ? (
@@ -956,11 +958,11 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
         <EmptyState
           body={
             filter === "all" && universityFilter === "all"
-              ? "Startup cofounder, research, internship, job, project teammate, and hackathon team posts will appear here."
-              : "No open posts match the selected filters right now."
+              ? t("Startup cofounder, research, internship, job, project teammate, and hackathon team posts will appear here.")
+              : t("No open posts match the selected filters right now.")
           }
           icon={Briefcase}
-          title="No open opportunities"
+          title={t("No open opportunities")}
         />
       )}
     </View>

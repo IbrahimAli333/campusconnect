@@ -61,6 +61,7 @@ import {
   withdrawApplication,
 } from "../../lib/api/network";
 import { usePortalData } from "../../lib/api/usePortalData";
+import { useI18n } from "../../lib/i18n";
 import { palette, styles } from "../../styles/theme";
 import type {
   ConnectionRequestDecision,
@@ -142,6 +143,7 @@ import type {
 import { networkStyles } from "./styles";
 
 export function ApplicationsScreen({ token }: { token: string | null }) {
+  const { t } = useI18n();
   const [selectedOpportunityId, setSelectedOpportunityId] = useState<number | null>(null);
   const [opportunityDetail, setOpportunityDetail] = useState<OpportunityDetailRead | null>(null);
   const [opportunityDetailLoading, setOpportunityDetailLoading] = useState(false);
@@ -155,12 +157,12 @@ export function ApplicationsScreen({ token }: { token: string | null }) {
   const isWide = width >= 760;
   const loadApplications = useCallback(() => {
     if (!token) {
-      return Promise.reject(new Error("Missing authentication token"));
+      return Promise.reject(new Error(t("Missing authentication token")));
     }
 
     return getMyApplications(token);
-  }, [token]);
-  const applicationsState = usePortalData(Boolean(token), loadApplications);
+  }, [token, t]);
+  const applicationsState = usePortalData(Boolean(token), loadApplications, "applications");
   const applications = applicationsState.data ?? [];
 
   async function openOpportunityDetail(opportunityId: number) {
@@ -207,13 +209,13 @@ export function ApplicationsScreen({ token }: { token: string | null }) {
     try {
       await applyToOpportunity(token, opportunity.id);
       setApplyState((current) => ({ ...current, [opportunity.id]: "sent" }));
-      setActionMessages((current) => ({ ...current, [key]: "Application submitted." }));
+      setActionMessages((current) => ({ ...current, [key]: t("Application submitted.") }));
       setOpportunityDetail((current) => (current?.id === opportunity.id ? { ...current, has_applied: true } : current));
       applicationsState.retry();
     } catch (error) {
       if (isConflict(error)) {
         setApplyState((current) => ({ ...current, [opportunity.id]: "sent" }));
-        setActionMessages((current) => ({ ...current, [key]: "Application already exists." }));
+        setActionMessages((current) => ({ ...current, [key]: t("Application already exists.") }));
         setOpportunityDetail((current) => (current?.id === opportunity.id ? { ...current, has_applied: true } : current));
         applicationsState.retry();
         return;
@@ -245,7 +247,7 @@ export function ApplicationsScreen({ token }: { token: string | null }) {
       }
 
       setSaveState((current) => ({ ...current, [opportunity.id]: "idle" }));
-      setActionMessages((current) => ({ ...current, [key]: "Removed from saved." }));
+      setActionMessages((current) => ({ ...current, [key]: t("Removed from saved.") }));
       setOpportunityDetail((current) => (current?.id === opportunity.id ? { ...current, has_saved: false } : current));
       return;
     }
@@ -253,12 +255,12 @@ export function ApplicationsScreen({ token }: { token: string | null }) {
     try {
       await saveOpportunity(token, opportunity.id);
       setSaveState((current) => ({ ...current, [opportunity.id]: "sent" }));
-      setActionMessages((current) => ({ ...current, [key]: "Opportunity saved." }));
+      setActionMessages((current) => ({ ...current, [key]: t("Opportunity saved.") }));
       setOpportunityDetail((current) => (current?.id === opportunity.id ? { ...current, has_saved: true } : current));
     } catch (error) {
       if (isConflict(error)) {
         setSaveState((current) => ({ ...current, [opportunity.id]: "sent" }));
-        setActionMessages((current) => ({ ...current, [key]: "Opportunity already saved." }));
+        setActionMessages((current) => ({ ...current, [key]: t("Opportunity already saved.") }));
         setOpportunityDetail((current) => (current?.id === opportunity.id ? { ...current, has_saved: true } : current));
         return;
       }
@@ -287,15 +289,15 @@ export function ApplicationsScreen({ token }: { token: string | null }) {
   }
 
   if (applicationsState.loading && !applicationsState.data) {
-    return <LoadingState label="Loading applications" />;
+    return <LoadingState label={t("Loading applications")} />;
   }
 
   if (!applicationsState.data) {
     return (
       <ErrorState
-        message={applicationsState.error?.message ?? "Your Unibridge applications are not available."}
+        message={applicationsState.error?.message ?? t("Your Unibridge applications are not available.")}
         onRetry={applicationsState.retry}
-        title="Could not load applications"
+        title={t("Could not load applications")}
       />
     );
   }
@@ -306,7 +308,7 @@ export function ApplicationsScreen({ token }: { token: string | null }) {
         <ErrorState
           message={applicationsState.error.message}
           onRetry={applicationsState.retry}
-          title="Could not refresh applications"
+          title={t("Could not refresh applications")}
         />
       ) : null}
 
@@ -338,9 +340,9 @@ export function ApplicationsScreen({ token }: { token: string | null }) {
       ) : null}
 
       <SectionHeader
-        action={applications.length ? `${applications.length} tracked` : "Empty"}
+        action={applications.length ? t("{n} tracked", { n: applications.length }) : t("Empty")}
         icon={FileText}
-        title="Applications"
+        title={t("Applications")}
       />
 
       {applications.length ? (
@@ -365,8 +367,8 @@ export function ApplicationsScreen({ token }: { token: string | null }) {
                   </Text>
                 </View>
                 <View style={networkStyles.statusStack}>
-                  <StatusChip label={titleCase(application.opportunity.type)} tone={opportunityTone(application.opportunity.type)} />
-                  <StatusChip label={titleCase(application.status)} tone={statusTone(application.status)} />
+                  <StatusChip label={t(titleCase(application.opportunity.type))} tone={opportunityTone(application.opportunity.type)} />
+                  <StatusChip label={t(titleCase(application.status))} tone={statusTone(application.status)} />
                 </View>
               </View>
 
@@ -379,13 +381,13 @@ export function ApplicationsScreen({ token }: { token: string | null }) {
               <View style={networkStyles.metaRow}>
                 <CalendarDays color={palette.faint} size={15} strokeWidth={2.4} />
                 <Text style={networkStyles.metaText} numberOfLines={1}>
-                  Applied {formatFullDate(application.created_at)}
+                  {t("Applied {date}", { date: formatFullDate(application.created_at) })}
                 </Text>
               </View>
               {application.status === "submitted" || application.status === "reviewing" ? (
                 <InlineAction
                   icon={Trash2}
-                  label="Withdraw"
+                  label={t("Withdraw")}
                   loading={withdrawState[application.id] === "sending"}
                   onPress={() => void withdraw(application)}
                   secondary
@@ -407,9 +409,9 @@ export function ApplicationsScreen({ token }: { token: string | null }) {
         </View>
       ) : (
         <EmptyState
-          body="Research, startup, internship, job, and project applications will appear here after you apply."
+          body={t("Research, startup, internship, job, and project applications will appear here after you apply.")}
           icon={FileText}
-          title="No submitted applications"
+          title={t("No submitted applications")}
         />
       )}
     </View>

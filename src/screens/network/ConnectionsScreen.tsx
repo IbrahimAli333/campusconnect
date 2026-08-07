@@ -65,6 +65,7 @@ import {
   withdrawApplication,
 } from "../../lib/api/network";
 import { usePortalData } from "../../lib/api/usePortalData";
+import { useI18n } from "../../lib/i18n";
 import { palette, styles } from "../../styles/theme";
 import type {
   ConnectionRequestDecision,
@@ -148,6 +149,7 @@ import { MessagesSection } from "./MessagesSection";
 import { networkStyles } from "./styles";
 
 export function ConnectionsScreen({ token }: { token: string | null }) {
+  const { t } = useI18n();
   const [openThreadProfile, setOpenThreadProfile] = useState<ProfileSummary | null>(null);
   const [decisionPending, setDecisionPending] = useState<Record<number, ConnectionRequestDecision | undefined>>({});
   const [decisionMessages, setDecisionMessages] = useState<Record<number, string>>({});
@@ -159,7 +161,7 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
 
     return getMyConnections(token);
   }, [token]);
-  const connectionsState = usePortalData(Boolean(token), loadConnections);
+  const connectionsState = usePortalData(Boolean(token), loadConnections, "connections");
   const connections = connectionsState.data;
   const sent = connections?.sent ?? [];
   const received = connections?.received ?? [];
@@ -171,7 +173,7 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
 
     return listMyBlocks(token);
   }, [token]);
-  const blocksState = usePortalData(Boolean(token), loadBlocks);
+  const blocksState = usePortalData(Boolean(token), loadBlocks, "blocks");
   const blockedProfiles = blocksState.data ?? [];
   const [unblockingProfileId, setUnblockingProfileId] = useState<number | null>(null);
   const [unblockError, setUnblockError] = useState<string | null>(null);
@@ -210,10 +212,10 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
         ...current,
         [connection.id]:
           decision === "accepted"
-            ? "Connection accepted."
+            ? t("Connection accepted.")
             : decision === "declined"
-              ? "Request declined."
-              : "Request canceled.",
+              ? t("Request declined.")
+              : t("Request canceled."),
       }));
       connectionsState.retry();
     } catch (error) {
@@ -225,15 +227,15 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
   }
 
   if (connectionsState.loading && !connections) {
-    return <LoadingState label="Loading connections" />;
+    return <LoadingState label={t("Loading connections")} />;
   }
 
   if (!connections) {
     return (
       <ErrorState
-        message={connectionsState.error?.message ?? "Your academic network is not available."}
+        message={connectionsState.error?.message ?? t("Your academic network is not available.")}
         onRetry={connectionsState.retry}
-        title="Could not load network"
+        title={t("Could not load network")}
       />
     );
   }
@@ -244,7 +246,7 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
         <ErrorState
           message={connectionsState.error.message}
           onRetry={connectionsState.retry}
-          title="Could not refresh network"
+          title={t("Could not refresh network")}
         />
       ) : null}
 
@@ -252,20 +254,18 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
 
       {hasConnections ? (
         <>
-          <SectionHeader action={sent.length ? `${sent.length} sent` : "Empty"} icon={Send} title="Sent Connections" />
+          <SectionHeader action={sent.length ? t("{n} sent", { n: sent.length }) : t("Empty")} icon={Send} title={t("Sent Connections")} />
           {sent.length ? (
             <View style={networkStyles.panelList}>
               {sent.map((connection) => (
                 <View key={connection.id} style={styles.listRow}>
-                  <View style={networkStyles.resumeIcon}>
-                    <UserPlus color={palette.blue} size={18} strokeWidth={2.4} />
-                  </View>
+                  <InitialsAvatar name={connection.receiver_profile.user.full_name} size={38} />
                   <View style={styles.rowBody}>
                     <Text style={styles.rowTitle} numberOfLines={1}>
                       {connection.receiver_profile.user.full_name}
                     </Text>
                     <Text style={styles.rowMeta} numberOfLines={2}>
-                      {[profileMeta(connection.receiver_profile), formatFullDate(connection.created_at)].join(" - ")}
+                      {[profileMeta(connection.receiver_profile, t), formatFullDate(connection.created_at)].join(" - ")}
                     </Text>
                     {connection.message ? (
                       <View style={networkStyles.requestNote}>
@@ -276,7 +276,7 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
                       <View style={networkStyles.actionRow}>
                         <InlineAction
                           icon={X}
-                          label="Cancel Request"
+                          label={t("Cancel Request")}
                           loading={decisionPending[connection.id] === "canceled"}
                           onPress={() => void decide(connection, "canceled")}
                           secondary
@@ -287,7 +287,7 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
                       <View style={networkStyles.actionRow}>
                         <InlineAction
                           icon={MessageCircle}
-                          label="Message"
+                          label={t("Message")}
                           onPress={() => setOpenThreadProfile(connection.receiver_profile)}
                           secondary
                         />
@@ -304,15 +304,15 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
                       </Text>
                     ) : null}
                   </View>
-                  <StatusChip label={titleCase(connection.status)} tone={statusTone(connection.status)} />
+                  <StatusChip label={t(titleCase(connection.status))} tone={statusTone(connection.status)} />
                 </View>
               ))}
             </View>
           ) : (
-            <EmptyState body="Use Discover to connect with mentors, professors, collaborators, and employers." icon={Send} title="No sent connections" />
+            <EmptyState body={t("Use Discover to connect with mentors, professors, collaborators, and employers.")} icon={Send} title={t("No sent connections")} />
           )}
 
-          <SectionHeader action={received.length ? `${received.length} received` : "Empty"} icon={Inbox} title="Received Connections" />
+          <SectionHeader action={received.length ? t("{n} received", { n: received.length }) : t("Empty")} icon={Inbox} title={t("Received Connections")} />
           {received.length ? (
             <View style={networkStyles.panelList}>
               {received.map((connection) => (
@@ -323,7 +323,7 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
                       {connection.requester_profile.user.full_name}
                     </Text>
                     <Text style={styles.rowMeta} numberOfLines={2}>
-                      {[profileMeta(connection.requester_profile), formatFullDate(connection.created_at)].join(" - ")}
+                      {[profileMeta(connection.requester_profile, t), formatFullDate(connection.created_at)].join(" - ")}
                     </Text>
                     {connection.message ? (
                       <View style={networkStyles.requestNote}>
@@ -334,13 +334,13 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
                       <View style={networkStyles.actionRow}>
                         <InlineAction
                           icon={CheckCircle2}
-                          label="Accept"
+                          label={t("Accept")}
                           loading={decisionPending[connection.id] === "accepted"}
                           onPress={() => void decide(connection, "accepted")}
                         />
                         <InlineAction
                           icon={X}
-                          label="Decline"
+                          label={t("Decline")}
                           loading={decisionPending[connection.id] === "declined"}
                           onPress={() => void decide(connection, "declined")}
                           secondary
@@ -351,7 +351,7 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
                       <View style={networkStyles.actionRow}>
                         <InlineAction
                           icon={MessageCircle}
-                          label="Message"
+                          label={t("Message")}
                           onPress={() => setOpenThreadProfile(connection.requester_profile)}
                           secondary
                         />
@@ -368,25 +368,25 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
                       </Text>
                     ) : null}
                   </View>
-                  <StatusChip label={titleCase(connection.status)} tone={statusTone(connection.status)} />
+                  <StatusChip label={t(titleCase(connection.status))} tone={statusTone(connection.status)} />
                 </View>
               ))}
             </View>
           ) : (
-            <EmptyState body="Incoming academic and professional requests will appear here." icon={Inbox} title="No received connections" />
+            <EmptyState body={t("Incoming academic and professional requests will appear here.")} icon={Inbox} title={t("No received connections")} />
           )}
         </>
       ) : (
         <EmptyState
-          body="Use Discover to start building your academic and professional network."
+          body={t("Use Discover to start building your academic and professional network.")}
           icon={Users}
-          title="No connections yet"
+          title={t("No connections yet")}
         />
       )}
 
       {blockedProfiles.length ? (
         <>
-          <SectionHeader action={`${blockedProfiles.length} blocked`} icon={Ban} title="Blocked Users" />
+          <SectionHeader action={t("{n} blocked", { n: blockedProfiles.length })} icon={Ban} title={t("Blocked Users")} />
           <View style={networkStyles.panelList}>
             {blockedProfiles.map((profile) => (
               <View key={profile.id} style={styles.listRow}>
@@ -398,12 +398,12 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
                     {profile.user.full_name}
                   </Text>
                   <Text style={styles.rowMeta} numberOfLines={2}>
-                    {profileMeta(profile)}
+                    {profileMeta(profile, t)}
                   </Text>
                 </View>
                 <InlineAction
                   icon={X}
-                  label="Unblock"
+                  label={t("Unblock")}
                   loading={unblockingProfileId === profile.id}
                   onPress={() => void unblock(profile.id)}
                   secondary

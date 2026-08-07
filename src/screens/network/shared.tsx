@@ -63,6 +63,17 @@ import type {
 
 import { networkStyles } from "./styles";
 
+type Translate = (source: string, vars?: Record<string, string | number>) => string;
+
+// English passthrough used when a helper is called without a translator; it
+// mirrors the i18n fallback (source string + {var} interpolation).
+const englishT: Translate = (source, vars) => {
+  if (!vars) {
+    return source;
+  }
+  return source.replace(/\{(\w+)\}/g, (match, name: string) => (name in vars ? String(vars[name]) : match));
+};
+
 export type ActionState = "idle" | "sending" | "sent" | "error";
 export type OpportunityFilter = OpportunityType | "all";
 export type PortfolioSaveState = "idle" | "saving" | "saved" | "error";
@@ -127,29 +138,32 @@ export function allowedOpportunityTypes(role: NetworkRole | undefined): Opportun
   return opportunityAuthorTypesByRole[role] ?? [];
 }
 
-export function opportunityAuthoringCopy(role: NetworkRole | undefined): string {
+export function opportunityAuthoringCopy(role: NetworkRole | undefined, t: Translate = englishT): string {
   if (!role) {
-    return "Loading posting permissions.";
+    return t("Loading posting permissions.");
   }
 
   if (role === "student") {
-    return "Student can post Startup and Project opportunities. Browse, connect, save, and apply are available.";
+    return t("Student can post Startup and Project opportunities. Browse, connect, save, and apply are available.");
   }
 
   if (role === "member") {
-    return "Member can browse, save, apply, and connect. Posting is not available for this role.";
+    return t("Member can browse, save, apply, and connect. Posting is not available for this role.");
   }
 
   if (role === "teacher") {
-    return "Teacher can post Research opportunities and review applicants.";
+    return t("Teacher can post Research opportunities and review applicants.");
   }
 
   const allowedTypes = allowedOpportunityTypes(role);
   if (!allowedTypes.length) {
-    return "This profile can browse, save, apply, and connect. Posting is not available for this role.";
+    return t("This profile can browse, save, apply, and connect. Posting is not available for this role.");
   }
 
-  return `${titleCase(role)} can post: ${allowedTypes.map(titleCase).join(", ")}.`;
+  return t("{role} can post: {types}.", {
+    role: t(titleCase(role)),
+    types: allowedTypes.map((type) => t(titleCase(type))).join(", "),
+  });
 }
 
 export function titleCase(value: string): string {
@@ -161,12 +175,12 @@ export function titleCase(value: string): string {
     .join(" ");
 }
 
-export function toErrorMessage(error: unknown): string {
+export function toErrorMessage(error: unknown, t: Translate = englishT): string {
   if (error instanceof Error) {
     return error.message;
   }
 
-  return "Request failed";
+  return t("Request failed");
 }
 
 export function isConflict(error: unknown): boolean {
@@ -204,19 +218,19 @@ export function universityShortName(name: string): string {
     .toUpperCase();
 }
 
-export function profileMeta(profile: ProfileSummary): string {
+export function profileMeta(profile: ProfileSummary, t: Translate = englishT): string {
   const faculty = profile.faculty?.replace(/^Faculty of\s+/i, "");
   const parts = [
     profile.university ? universityShortName(profile.university) : null,
     faculty,
     profile.location,
   ].filter(Boolean);
-  return parts.length ? parts.join(" · ") : "Unibridge member";
+  return parts.length ? parts.join(" · ") : t("Unibridge member");
 }
 
-export function formatDate(value: string | null): string {
+export function formatDate(value: string | null, t: Translate = englishT): string {
   if (!value) {
-    return "Present";
+    return t("Present");
   }
 
   const date = new Date(value);
@@ -236,9 +250,9 @@ export function formatFullDate(value: string): string {
   return date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
 
-export function resumeDateRange(entry: ResumeEntryRead): string {
-  const start = formatDate(entry.start_date);
-  const end = entry.is_current ? "Present" : formatDate(entry.end_date);
+export function resumeDateRange(entry: ResumeEntryRead, t: Translate = englishT): string {
+  const start = formatDate(entry.start_date, t);
+  const end = entry.is_current ? t("Present") : formatDate(entry.end_date, t);
   return `${start} - ${end}`;
 }
 
@@ -299,28 +313,28 @@ export function resumeToDraft(entry: ResumeEntryRead): ResumeDraft {
   };
 }
 
-export function normalizeDateInput(value: string, label: string): string | null {
+export function normalizeDateInput(value: string, label: string, t: Translate = englishT): string | null {
   const trimmed = value.trim();
   if (!trimmed) {
     return null;
   }
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-    throw new Error(`${label} must use YYYY-MM-DD.`);
+    throw new Error(t("{label} must use YYYY-MM-DD.", { label }));
   }
 
   const date = new Date(`${trimmed}T00:00:00Z`);
   if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== trimmed) {
-    throw new Error(`${label} must be a valid date.`);
+    throw new Error(t("{label} must be a valid date.", { label }));
   }
 
   return trimmed;
 }
 
-export function resumeDraftToPayload(draft: ResumeDraft) {
+export function resumeDraftToPayload(draft: ResumeDraft, t: Translate = englishT) {
   const title = draft.title.trim();
   if (!title) {
-    throw new Error("Add a title for the resume entry.");
+    throw new Error(t("Add a title for the resume entry."));
   }
 
   return {
@@ -328,8 +342,8 @@ export function resumeDraftToPayload(draft: ResumeDraft) {
     title,
     organization: emptyToNull(draft.organization),
     description: emptyToNull(draft.description),
-    start_date: normalizeDateInput(draft.start_date, "Start date"),
-    end_date: draft.is_current ? null : normalizeDateInput(draft.end_date, "End date"),
+    start_date: normalizeDateInput(draft.start_date, t("Start date"), t),
+    end_date: draft.is_current ? null : normalizeDateInput(draft.end_date, t("End date"), t),
     is_current: draft.is_current,
     url: emptyToNull(draft.url),
   };
@@ -518,6 +532,7 @@ export function FilterChip<T extends string>({
 }
 
 export function SearchBox({ onChangeText, value }: { onChangeText: (value: string) => void; value: string }) {
+  const { t } = useI18n();
   const { width } = useWindowDimensions();
   const isCompact = width < 520;
 
@@ -528,7 +543,7 @@ export function SearchBox({ onChangeText, value }: { onChangeText: (value: strin
         autoCapitalize="none"
         autoCorrect={false}
         onChangeText={onChangeText}
-        placeholder="Search people, skills, roles, or university"
+        placeholder={t("Search people, skills, roles, or university")}
         placeholderTextColor={palette.faint}
         returnKeyType="search"
         style={styles.textInput}
@@ -539,6 +554,7 @@ export function SearchBox({ onChangeText, value }: { onChangeText: (value: strin
 }
 
 export function DiscoverDashboard({ data, isCompact, isWide }: { data: DiscoverData; isCompact: boolean; isWide: boolean }) {
+  const { t } = useI18n();
   const featuredProfiles = data.recommendedProfiles.slice(0, 3);
 
   // Phones skip the dashboard entirely: the tab bar already names the screen,
@@ -558,8 +574,10 @@ export function DiscoverDashboard({ data, isCompact, isWide }: { data: DiscoverD
       {!isCompact ? (
         <View style={networkStyles.discoverSnapshot}>
           <View style={networkStyles.snapshotHeader}>
-            <Text style={networkStyles.snapshotTitle}>Recommended profiles</Text>
-            <Text style={networkStyles.snapshotAction}>{featuredProfiles.length ? `${featuredProfiles.length} shown` : "Empty"}</Text>
+            <Text style={networkStyles.snapshotTitle}>{t("Recommended profiles")}</Text>
+            <Text style={networkStyles.snapshotAction}>
+              {featuredProfiles.length ? t("{n} shown", { n: featuredProfiles.length }) : t("Empty")}
+            </Text>
           </View>
           {featuredProfiles.length ? (
             <View style={networkStyles.snapshotList}>
@@ -571,7 +589,7 @@ export function DiscoverDashboard({ data, isCompact, isWide }: { data: DiscoverD
                       {profile.user.full_name}
                     </Text>
                     <Text style={networkStyles.snapshotMeta} numberOfLines={1}>
-                      {profile.headline ?? profileMeta(profile)}
+                      {profile.headline ?? profileMeta(profile, t)}
                     </Text>
                   </View>
                   <MatchSlip score={profile.match_score} />
@@ -579,7 +597,7 @@ export function DiscoverDashboard({ data, isCompact, isWide }: { data: DiscoverD
               ))}
             </View>
           ) : (
-            <Text style={networkStyles.snapshotEmpty}>Recommendations appear as your profile gains usable skills.</Text>
+            <Text style={networkStyles.snapshotEmpty}>{t("Recommendations appear as your profile gains usable skills.")}</Text>
           )}
         </View>
       ) : null}
@@ -647,9 +665,46 @@ export function MatchSlip({ score }: { score: number }) {
   );
 }
 
+// Backend match reasons are English templates with dynamic parts (skill
+// lists, role names), so exact-key lookup only covers the static ones.
+// Recognize the known shapes and re-emit them through translatable keys.
+const MATCH_REASON_LIST_PATTERNS: { pattern: RegExp; key: string }[] = [
+  { key: "Matches skills: {list}", pattern: /^Matches skills: (.+)$/ },
+  { key: "Shared skills: {list}", pattern: /^Shared skills: (.+)$/ },
+  { key: "Shared keywords: {list}", pattern: /^Shared keywords: (.+)$/ },
+  { key: "Shared interests: {list}", pattern: /^Shared interests: (.+)$/ },
+];
+
+export function translateMatchReason(t: Translate, reason: string): string {
+  for (const { key, pattern } of MATCH_REASON_LIST_PATTERNS) {
+    const match = pattern.exec(reason);
+    if (match) {
+      return t(key, { list: match[1] });
+    }
+  }
+  const fits = /^(\w+) opportunity fits (\w+) profile$/.exec(reason);
+  if (fits) {
+    return t("{type} opportunity fits {role} profile", { role: t(titleCase(fits[2])), type: t(fits[1]) });
+  }
+  const shared = /^Shared (\w+) role$/.exec(reason);
+  if (shared) {
+    return t("Shared {role} role", { role: t(titleCase(shared[1])) });
+  }
+  const complementary = /^Complementary (\w+)-(\w+) roles$/.exec(reason);
+  if (complementary) {
+    return t("Complementary {a}-{b} roles", {
+      a: t(titleCase(complementary[1])),
+      b: t(titleCase(complementary[2])),
+    });
+  }
+  return t(reason);
+}
+
 export function MatchPreview({ reasons, score }: { reasons: string[]; score: number }) {
   const { t } = useI18n();
-  const reasonLine = (reasons.length ? reasons.slice(0, 2).map((reason) => t(reason)) : [t("Based on profile fit")]).join(" · ");
+  const reasonLine = (
+    reasons.length ? reasons.slice(0, 2).map((reason) => translateMatchReason(t, reason)) : [t("Based on profile fit")]
+  ).join(" · ");
 
   return (
     <View style={networkStyles.matchPanel}>
@@ -735,6 +790,7 @@ export function ProfileCard({
   onOpen: () => void;
   profile: ProfileRead;
 }) {
+  const { t } = useI18n();
   const { width } = useWindowDimensions();
   const isWideCard = width >= 760;
 
@@ -764,7 +820,7 @@ export function ProfileCard({
               </Text>
             ) : null}
           </View>
-          <StatusChip label={titleCase(profile.role)} tone={roleTone(profile.role)} />
+          <StatusChip label={t(titleCase(profile.role))} tone={roleTone(profile.role)} />
         </View>
 
         {matchScore !== undefined ? <MatchPreview reasons={matchReasons ?? []} score={matchScore} /> : null}
@@ -772,11 +828,11 @@ export function ProfileCard({
         <View style={networkStyles.metaRow}>
           <Building2 color={palette.faint} size={15} strokeWidth={2.4} />
           <Text style={networkStyles.metaText} numberOfLines={2}>
-            {profileMeta(profile)}
+            {profileMeta(profile, t)}
           </Text>
         </View>
 
-        <SkillList emptyLabel="No skills listed yet." items={profileSkills(profile)} />
+        <SkillList emptyLabel={t("No skills listed yet.")} items={profileSkills(profile)} />
       </Pressable>
 
       <InlineAction
@@ -821,6 +877,7 @@ export function OpportunityCard({
   saveMessage?: string;
   saveState: ActionState;
 }) {
+  const { t } = useI18n();
   const { width } = useWindowDimensions();
   const isWideCard = width >= 760;
 
@@ -845,8 +902,8 @@ export function OpportunityCard({
             </Text>
           </View>
           <View style={networkStyles.statusStack}>
-            <StatusChip label={titleCase(opportunity.type)} tone={opportunityTone(opportunity.type)} />
-            <StatusChip label={titleCase(opportunity.status)} tone={statusTone(opportunity.status)} />
+            <StatusChip label={t(titleCase(opportunity.type))} tone={opportunityTone(opportunity.type)} />
+            <StatusChip label={t(titleCase(opportunity.status))} tone={statusTone(opportunity.status)} />
           </View>
         </View>
 
@@ -861,21 +918,21 @@ export function OpportunityCard({
             {opportunityOwner(opportunity)}
           </Text>
         </View>
-        <SkillList emptyLabel="No required skills listed." items={opportunity.required_skills} />
+        <SkillList emptyLabel={t("No required skills listed.")} items={opportunity.required_skills} />
       </Pressable>
 
       <View style={networkStyles.actionRow}>
         <InlineAction
           disabled={applyState === "sent"}
           icon={Send}
-          label={applyState === "sent" ? "Applied" : "Apply"}
+          label={applyState === "sent" ? t("Applied") : t("Apply")}
           loading={applyState === "sending"}
           onPress={onApply}
           wide
         />
         <InlineAction
           icon={Save}
-          label={saveState === "sent" ? "Unsave" : "Save"}
+          label={saveState === "sent" ? t("Unsave") : t("Save")}
           loading={saveState === "sending"}
           onPress={onSave}
           secondary
@@ -909,6 +966,7 @@ export function ModerationActions({
   targetType: ContentReportTargetType;
   token?: string | null;
 }) {
+  const { t } = useI18n();
   const [reportState, setReportState] = useState<"idle" | "saving" | "sent" | "error">("idle");
   const [blockSaving, setBlockSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -925,17 +983,17 @@ export function ModerationActions({
       await reportContent(token as string, { target_type: targetType, target_id: targetId });
       setReportState("sent");
       setIsError(false);
-      setMessage("Reported. Our team will review this content.");
+      setMessage(t("Reported. Our team will review this content."));
     } catch (error) {
       if (isConflict(error)) {
         setReportState("sent");
         setIsError(false);
-        setMessage("You already reported this content.");
+        setMessage(t("You already reported this content."));
         return;
       }
       setReportState("error");
       setIsError(true);
-      setMessage(toErrorMessage(error));
+      setMessage(toErrorMessage(error, t));
     }
   }
 
@@ -951,7 +1009,7 @@ export function ModerationActions({
     } catch (error) {
       setBlockSaving(false);
       setIsError(true);
-      setMessage(toErrorMessage(error));
+      setMessage(toErrorMessage(error, t));
     }
   }
 
@@ -961,7 +1019,7 @@ export function ModerationActions({
         <InlineAction
           disabled={reportState === "sent"}
           icon={Flag}
-          label={reportState === "sent" ? "Reported" : "Report"}
+          label={reportState === "sent" ? t("Reported") : t("Report")}
           loading={reportState === "saving"}
           onPress={() => void report()}
           secondary
@@ -970,7 +1028,7 @@ export function ModerationActions({
         {blockProfileId !== undefined ? (
           <InlineAction
             icon={Ban}
-            label="Block user"
+            label={t("Block user")}
             loading={blockSaving}
             onPress={() => void block()}
             secondary
@@ -997,6 +1055,7 @@ export function PanelHeader({
   onClose: () => void;
   title: string;
 }) {
+  const { t } = useI18n();
   // Detail panels render below the fold in the shared ScrollView; without
   // this scroll the panel opens invisibly and the tap looks like a no-op.
   const anchorRef = useScrollIntoViewOnMount();
@@ -1015,7 +1074,7 @@ export function PanelHeader({
         </View>
       </View>
       <Pressable
-        accessibilityLabel="Close"
+        accessibilityLabel={t("Close")}
         accessibilityRole="button"
         onPress={onClose}
         style={({ pressed }) => [networkStyles.closeButton, pressed && styles.pressed]}
@@ -1037,34 +1096,39 @@ export function ProfileDetailPanel({
   profile: ProfileRead;
   token?: string | null;
 }) {
+  const { t } = useI18n();
   return (
     <View style={networkStyles.detailPanel}>
-      <PanelHeader eyebrow={titleCase(profile.role)} icon={Users} onClose={onClose} title={profile.user.full_name} />
-      <Text style={styles.cardMeta}>{profile.headline ?? "Portfolio headline not added yet"}</Text>
-      <Text style={networkStyles.bodyText}>{profile.bio ?? "Portfolio bio not added yet."}</Text>
+      <PanelHeader eyebrow={t(titleCase(profile.role))} icon={Users} onClose={onClose} title={profile.user.full_name} />
+      <Text style={styles.cardMeta}>{profile.headline ?? t("Portfolio headline not added yet")}</Text>
+      <Text style={networkStyles.bodyText}>{profile.bio ?? t("Portfolio bio not added yet.")}</Text>
 
       <View style={networkStyles.profileMetaGrid}>
         <View style={networkStyles.profileMetaItem}>
           <GraduationCap color={palette.teal} size={18} strokeWidth={2.4} />
           <Text style={networkStyles.metaText} numberOfLines={2}>
-            {[profile.university, profile.faculty].filter(Boolean).join(" - ") || "University affiliation not set"}
+            {[profile.university, profile.faculty].filter(Boolean).join(" - ") || t("University affiliation not set")}
           </Text>
         </View>
         <View style={networkStyles.profileMetaItem}>
           <MapPin color={palette.teal} size={18} strokeWidth={2.4} />
           <Text style={networkStyles.metaText} numberOfLines={1}>
-            {profile.location ?? "Location not set"}
+            {profile.location ?? t("Location not set")}
           </Text>
         </View>
       </View>
 
-      <SectionHeader action={profile.skills.length ? `${profile.skills.length} skills` : "Empty"} icon={CheckCircle2} title="Skills" />
-      <SkillList emptyLabel="No portfolio skills listed yet." items={profileSkills(profile)} />
+      <SectionHeader
+        action={profile.skills.length ? t("{n} skills", { n: profile.skills.length }) : t("Empty")}
+        icon={CheckCircle2}
+        title={t("Skills")}
+      />
+      <SkillList emptyLabel={t("No portfolio skills listed yet.")} items={profileSkills(profile)} />
 
       <SectionHeader
-        action={profile.resume_entries.length ? `${profile.resume_entries.length} entries` : "Empty"}
+        action={profile.resume_entries.length ? t("{n} entries", { n: profile.resume_entries.length }) : t("Empty")}
         icon={FileText}
-        title="Portfolio / Resume"
+        title={t("Portfolio / Resume")}
       />
       {profile.resume_entries.length ? (
         <View style={networkStyles.panelList}>
@@ -1078,14 +1142,14 @@ export function ProfileDetailPanel({
                   {entry.title}
                 </Text>
                 <Text style={styles.rowMeta} numberOfLines={2}>
-                  {[titleCase(entry.entry_type), entry.organization, resumeDateRange(entry)].filter(Boolean).join(" - ")}
+                  {[t(titleCase(entry.entry_type)), entry.organization, resumeDateRange(entry, t)].filter(Boolean).join(" - ")}
                 </Text>
               </View>
             </View>
           ))}
         </View>
       ) : (
-        <Text style={styles.smallText}>No portfolio or resume entries yet.</Text>
+        <Text style={styles.smallText}>{t("No portfolio or resume entries yet.")}</Text>
       )}
 
       <ModerationActions
@@ -1128,39 +1192,40 @@ export function OpportunityDetailPanel({
   saveState: ActionState;
   token?: string | null;
 }) {
+  const { t } = useI18n();
   const applied = detail ? detail.has_applied || applyState === "sent" : false;
   const saved = detail ? detail.has_saved || saveState === "sent" : false;
 
   return (
     <View style={networkStyles.detailPanel}>
       <PanelHeader
-        eyebrow={detail ? titleCase(detail.type) : "Opportunity"}
+        eyebrow={detail ? t(titleCase(detail.type)) : t("Opportunity")}
         icon={Briefcase}
         onClose={onClose}
-        title={detail?.title ?? "Opportunity detail"}
+        title={detail?.title ?? t("Opportunity detail")}
       />
 
       {loading ? (
         <View style={networkStyles.inlineState}>
           <ActivityIndicator color={palette.teal} size="small" />
-          <Text style={styles.smallText}>Loading opportunity</Text>
+          <Text style={styles.smallText}>{t("Loading opportunity")}</Text>
         </View>
       ) : null}
 
       {error ? (
         <View style={networkStyles.panelList}>
           <Text style={networkStyles.errorText}>{error}</Text>
-          <InlineAction icon={RefreshCw} label="Retry" onPress={onRetry} secondary />
+          <InlineAction icon={RefreshCw} label={t("Retry")} onPress={onRetry} secondary />
         </View>
       ) : null}
 
       {detail ? (
         <>
           <View style={networkStyles.statusRow}>
-            <StatusChip label={titleCase(detail.type)} tone={opportunityTone(detail.type)} />
-            <StatusChip label={titleCase(detail.status)} tone={statusTone(detail.status)} />
-            <StatusChip label={applied ? "Applied" : "Not applied"} tone={applied ? "green" : "slate"} />
-            <StatusChip label={saved ? "Saved" : "Not saved"} tone={saved ? "green" : "slate"} />
+            <StatusChip label={t(titleCase(detail.type))} tone={opportunityTone(detail.type)} />
+            <StatusChip label={t(titleCase(detail.status))} tone={statusTone(detail.status)} />
+            <StatusChip label={applied ? t("Applied") : t("Not applied")} tone={applied ? "green" : "slate"} />
+            <StatusChip label={saved ? t("Saved") : t("Not saved")} tone={saved ? "green" : "slate"} />
           </View>
 
           <Text style={networkStyles.bodyText}>{detail.description}</Text>
@@ -1173,35 +1238,35 @@ export function OpportunityDetailPanel({
           >
             <InitialsAvatar name={opportunityOwner(detail)} size={36} />
             <View style={networkStyles.cardTitleBlock}>
-              <Text style={styles.eyebrow}>Posted by</Text>
+              <Text style={styles.eyebrow}>{t("Posted by")}</Text>
               <Text style={networkStyles.ownerName} numberOfLines={1}>
                 {opportunityOwner(detail)}
               </Text>
               <Text style={styles.rowMeta} numberOfLines={2}>
-                {profileMeta(detail.owner_profile)}
+                {profileMeta(detail.owner_profile, t)}
               </Text>
             </View>
           </Pressable>
 
           <SectionHeader
-            action={detail.required_skills.length ? `${detail.required_skills.length} skills` : "Empty"}
+            action={detail.required_skills.length ? t("{n} skills", { n: detail.required_skills.length }) : t("Empty")}
             icon={CheckCircle2}
-            title="Required Skills"
+            title={t("Required Skills")}
           />
-          <SkillList emptyLabel="No required skills listed." items={detail.required_skills} />
+          <SkillList emptyLabel={t("No required skills listed.")} items={detail.required_skills} />
 
           <View style={networkStyles.actionRow}>
             <InlineAction
               disabled={applied}
               icon={Send}
-              label={applied ? "Applied" : "Apply"}
+              label={applied ? t("Applied") : t("Apply")}
               loading={applyState === "sending"}
               onPress={() => onApply(detail)}
               wide
             />
             <InlineAction
               icon={Save}
-              label={saved ? "Unsave" : "Save"}
+              label={saved ? t("Unsave") : t("Save")}
               loading={saveState === "sending"}
               onPress={() => onSave(detail)}
               secondary
@@ -1249,15 +1314,16 @@ export function OwnerApplicationsPanel({
   opportunity: OpportunityRead;
   savingStatuses: Record<number, OwnerApplicationStatusUpdate | undefined>;
 }) {
+  const { t } = useI18n();
   return (
     <View style={networkStyles.detailPanel}>
-      <PanelHeader eyebrow="My Post" icon={FileText} onClose={onClose} title={opportunity.title} />
+      <PanelHeader eyebrow={t("My Post")} icon={FileText} onClose={onClose} title={opportunity.title} />
 
       <View style={networkStyles.statusRow}>
-        <StatusChip label={titleCase(opportunity.type)} tone={opportunityTone(opportunity.type)} />
-        <StatusChip label={titleCase(opportunity.status)} tone={statusTone(opportunity.status)} />
+        <StatusChip label={t(titleCase(opportunity.type))} tone={opportunityTone(opportunity.type)} />
+        <StatusChip label={t(titleCase(opportunity.status))} tone={statusTone(opportunity.status)} />
         <StatusChip
-          label={applications.length === 1 ? "1 applicant" : `${applications.length} applicants`}
+          label={applications.length === 1 ? t("1 applicant") : t("{n} applicants", { n: applications.length })}
           tone={applications.length ? "green" : "slate"}
         />
       </View>
@@ -1269,22 +1335,22 @@ export function OwnerApplicationsPanel({
       {loading ? (
         <View style={networkStyles.inlineState}>
           <ActivityIndicator color={palette.teal} size="small" />
-          <Text style={styles.smallText}>Loading applicants</Text>
+          <Text style={styles.smallText}>{t("Loading applicants")}</Text>
         </View>
       ) : null}
 
       {error ? (
         <View style={networkStyles.panelList}>
           <Text style={networkStyles.errorText}>{error}</Text>
-          <InlineAction icon={RefreshCw} label="Retry" onPress={onRetry} secondary />
+          <InlineAction icon={RefreshCw} label={t("Retry")} onPress={onRetry} secondary />
         </View>
       ) : null}
 
       {!loading && !error && applications.length === 0 ? (
         <EmptyState
-          body="Applicants will appear here after students apply to this opportunity."
+          body={t("Applicants will appear here after students apply to this opportunity.")}
           icon={Inbox}
-          title="No applicants yet"
+          title={t("No applicants yet")}
         />
       ) : null}
 
@@ -1300,27 +1366,27 @@ export function OwnerApplicationsPanel({
               <View key={application.id} style={[styles.card, networkStyles.applicationCard]}>
                 <View style={styles.cardTop}>
                   <View style={networkStyles.cardTitleBlock}>
-                    <Text style={styles.eyebrow}>{application.applicant_profile.role}</Text>
+                    <Text style={styles.eyebrow}>{t(titleCase(application.applicant_profile.role))}</Text>
                     <Text style={styles.cardTitle} numberOfLines={2}>
                       {application.applicant_profile.user.full_name}
                     </Text>
                     <Text style={styles.cardMeta} numberOfLines={2}>
-                      {application.applicant_profile.headline ?? "Portfolio headline not added yet"}
+                      {application.applicant_profile.headline ?? t("Portfolio headline not added yet")}
                     </Text>
                   </View>
-                  <StatusChip label={titleCase(application.status)} tone={statusTone(application.status)} />
+                  <StatusChip label={t(titleCase(application.status))} tone={statusTone(application.status)} />
                 </View>
 
                 <View style={networkStyles.metaRow}>
                   <Building2 color={palette.faint} size={15} strokeWidth={2.4} />
                   <Text style={networkStyles.metaText} numberOfLines={2}>
-                    {profileMeta(application.applicant_profile)}
+                    {profileMeta(application.applicant_profile, t)}
                   </Text>
                 </View>
                 <View style={networkStyles.metaRow}>
                   <CalendarDays color={palette.faint} size={15} strokeWidth={2.4} />
                   <Text style={networkStyles.metaText} numberOfLines={1}>
-                    Applied {formatFullDate(application.created_at)}
+                    {t("Applied {date}", { date: formatFullDate(application.created_at) })}
                   </Text>
                 </View>
 
@@ -1331,19 +1397,23 @@ export function OwnerApplicationsPanel({
                 ) : null}
 
                 <SectionHeader
-                  action={application.applicant_skills.length ? `${application.applicant_skills.length} skills` : "Empty"}
+                  action={application.applicant_skills.length ? t("{n} skills", { n: application.applicant_skills.length }) : t("Empty")}
                   icon={CheckCircle2}
-                  title="Applicant Skills"
+                  title={t("Applicant Skills")}
                 />
                 <SkillList
-                  emptyLabel="Applicant has not listed portfolio skills."
+                  emptyLabel={t("Applicant has not listed portfolio skills.")}
                   items={application.applicant_skills.map((item) => item.skill.name)}
                 />
 
                 <SectionHeader
-                  action={application.applicant_resume_entries.length ? `${application.applicant_resume_entries.length} shown` : "Empty"}
+                  action={
+                    application.applicant_resume_entries.length
+                      ? t("{n} shown", { n: application.applicant_resume_entries.length })
+                      : t("Empty")
+                  }
                   icon={FileText}
-                  title="Resume Highlights"
+                  title={t("Resume Highlights")}
                 />
                 {application.applicant_resume_entries.length ? (
                   <View style={networkStyles.highlightList}>
@@ -1353,7 +1423,7 @@ export function OwnerApplicationsPanel({
                           {entry.title}
                         </Text>
                         <Text style={styles.rowMeta} numberOfLines={2}>
-                          {[titleCase(entry.entry_type), entry.organization, resumeDateRange(entry)].filter(Boolean).join(" - ")}
+                          {[t(titleCase(entry.entry_type)), entry.organization, resumeDateRange(entry, t)].filter(Boolean).join(" - ")}
                         </Text>
                         {entry.description ? (
                           <Text style={styles.rowMeta} numberOfLines={2}>
@@ -1364,7 +1434,7 @@ export function OwnerApplicationsPanel({
                     ))}
                   </View>
                 ) : (
-                  <Text style={styles.smallText}>No project or resume highlights listed.</Text>
+                  <Text style={styles.smallText}>{t("No project or resume highlights listed.")}</Text>
                 )}
 
                 <View style={networkStyles.actionRow}>
@@ -1373,7 +1443,7 @@ export function OwnerApplicationsPanel({
                       disabled={!canReview || Boolean(savingStatus) || application.status === status}
                       icon={reviewStatusIcon(status)}
                       key={status}
-                      label={titleCase(status)}
+                      label={t(titleCase(status))}
                       loading={savingStatus === status}
                       onPress={() => onUpdateStatus(application, status)}
                       secondary={status !== "accepted"}

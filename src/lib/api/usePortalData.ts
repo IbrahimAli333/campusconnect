@@ -7,6 +7,14 @@ export interface PortalDataState<TData> {
   retry: () => void;
 }
 
+// Screens unmount on every tab switch; keyed entries let a remounted screen
+// show its last data instantly while a background refresh replaces it.
+const portalDataCache = new Map<string, unknown>();
+
+export function clearPortalDataCache(): void {
+  portalDataCache.clear();
+}
+
 function toError(error: unknown): Error {
   if (error instanceof Error) {
     return error;
@@ -15,8 +23,14 @@ function toError(error: unknown): Error {
   return new Error("Unable to load portal data");
 }
 
-export function usePortalData<TData>(enabled: boolean, load: () => Promise<TData>): PortalDataState<TData> {
-  const [data, setData] = useState<TData | null>(null);
+export function usePortalData<TData>(
+  enabled: boolean,
+  load: () => Promise<TData>,
+  cacheKey?: string,
+): PortalDataState<TData> {
+  const [data, setData] = useState<TData | null>(() =>
+    enabled && cacheKey && portalDataCache.has(cacheKey) ? (portalDataCache.get(cacheKey) as TData) : null,
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [retryKey, setRetryKey] = useState(0);
@@ -34,18 +48,25 @@ export function usePortalData<TData>(enabled: boolean, load: () => Promise<TData
     }
 
     let cancelled = false;
-    setLoading(true);
+    const hasCached = Boolean(cacheKey && portalDataCache.has(cacheKey));
+    if (!hasCached) {
+      setLoading(true);
+    }
     setError(null);
 
     load()
       .then((nextData) => {
+        if (cacheKey) {
+          portalDataCache.set(cacheKey, nextData);
+        }
         if (!cancelled) {
           setData(nextData);
           setError(null);
         }
       })
       .catch((nextError: unknown) => {
-        if (!cancelled) {
+        // A failed background refresh keeps showing the cached data.
+        if (!cancelled && !hasCached) {
           setError(toError(nextError));
         }
       })

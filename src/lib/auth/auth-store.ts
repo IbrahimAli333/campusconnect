@@ -11,6 +11,7 @@ import {
   type TokenResponse,
 } from "../api/auth";
 import { setUnauthorizedHandler } from "../api/network";
+import { clearPortalDataCache } from "../api/usePortalData";
 import { clearStoredSession, loadStoredSession, storeSession } from "./token-storage";
 
 // Access tokens live 30 minutes; refreshing well inside that window keeps a
@@ -84,6 +85,7 @@ export function useAuthStore(): AuthStore {
     refreshTokenRef.current = null;
     setToken(null);
     setUser(null);
+    clearPortalDataCache();
     void clearStoredSession();
   }, []);
 

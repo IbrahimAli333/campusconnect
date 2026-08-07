@@ -61,6 +61,7 @@ import {
   withdrawApplication,
 } from "../../lib/api/network";
 import { usePortalData } from "../../lib/api/usePortalData";
+import { useI18n } from "../../lib/i18n";
 import { universityFilterOptions, universityKey } from "../../lib/universities";
 import { palette, styles } from "../../styles/theme";
 import type {
@@ -143,6 +144,7 @@ import type {
 import { networkStyles } from "./styles";
 
 export function DiscoverScreen({ token }: { token: string | null }) {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [universityFilter, setUniversityFilter] = useState("all");
   const [selectedProfile, setSelectedProfile] = useState<ProfileRead | null>(null);
@@ -165,7 +167,7 @@ export function DiscoverScreen({ token }: { token: string | null }) {
     ]);
     return { myProfile, profiles, recommendedProfiles };
   }, [token]);
-  const discoverState = usePortalData(Boolean(token), loadDiscover);
+  const discoverState = usePortalData(Boolean(token), loadDiscover, "discover");
   const data = discoverState.data;
   const universityOptions = useMemo(
     () =>
@@ -232,12 +234,12 @@ export function DiscoverScreen({ token }: { token: string | null }) {
       setComposeKey(null);
       setComposeMessage("");
       setConnectState((current) => ({ ...current, [profile.id]: "sent" }));
-      setConnectMessages((current) => ({ ...current, [profile.id]: "Request sent." }));
+      setConnectMessages((current) => ({ ...current, [profile.id]: t("Request sent.") }));
     } catch (error) {
       if (isConflict(error)) {
         setComposeKey(null);
         setConnectState((current) => ({ ...current, [profile.id]: "sent" }));
-        setConnectMessages((current) => ({ ...current, [profile.id]: "Request already sent." }));
+        setConnectMessages((current) => ({ ...current, [profile.id]: t("Request already sent.") }));
         return;
       }
 
@@ -255,24 +257,24 @@ export function DiscoverScreen({ token }: { token: string | null }) {
     return (
       <View style={networkStyles.formField}>
         <LabeledInput
-          label="Message (Optional)"
+          label={t("Message (Optional)")}
           maxLength={500}
           multiline
           onChangeText={setComposeMessage}
-          placeholder="Add a short note to introduce yourself"
+          placeholder={t("Add a short note to introduce yourself")}
           value={composeMessage}
         />
         <View style={networkStyles.actionRow}>
           <InlineAction
             icon={Send}
-            label="Send Request"
+            label={t("Send Request")}
             loading={sending}
             onPress={() => void connect(profile)}
           />
           <InlineAction
             disabled={sending}
             icon={X}
-            label="Cancel"
+            label={t("Cancel")}
             onPress={() => setComposeKey(null)}
             secondary
           />
@@ -282,15 +284,15 @@ export function DiscoverScreen({ token }: { token: string | null }) {
   }
 
   if (discoverState.loading && !data) {
-    return <LoadingState body="Fetching recommended profiles and the public Unibridge directory." label="Loading profiles" />;
+    return <LoadingState body={t("Fetching recommended profiles and the public Unibridge directory.")} label={t("Loading profiles")} />;
   }
 
   if (!data) {
     return (
       <ErrorState
-        message={discoverState.error?.message ?? "Unibridge profiles are not available."}
+        message={discoverState.error?.message ?? t("Unibridge profiles are not available.")}
         onRetry={discoverState.retry}
-        title="Could not load Discover"
+        title={t("Could not load Discover")}
       />
     );
   }
@@ -301,7 +303,7 @@ export function DiscoverScreen({ token }: { token: string | null }) {
         <ErrorState
           message={discoverState.error.message}
           onRetry={discoverState.retry}
-          title="Could not refresh profiles"
+          title={t("Could not refresh profiles")}
         />
       ) : null}
 
@@ -313,7 +315,7 @@ export function DiscoverScreen({ token }: { token: string | null }) {
         <View style={networkStyles.filterRow}>
           <FilterChip
             active={universityFilter === "all"}
-            label="All Universities"
+            label={t("All Universities")}
             onPress={setUniversityFilter}
             value="all"
           />
@@ -342,9 +344,9 @@ export function DiscoverScreen({ token }: { token: string | null }) {
       ) : null}
 
       <SectionHeader
-        action={filteredRecommended.length ? `${filteredRecommended.length} shown` : "Empty"}
+        action={filteredRecommended.length ? t("{n} shown", { n: filteredRecommended.length }) : t("Empty")}
         icon={CheckCircle2}
-        title="Recommended"
+        title={t("Recommended")}
       />
 
       {filteredRecommended.length ? (
@@ -360,14 +362,14 @@ export function DiscoverScreen({ token }: { token: string | null }) {
               composeKey === `recommended:${profile.id}`;
             const connectionLabel =
               actionState === "sent"
-                ? "Requested"
+                ? t("Requested")
                 : profile.connection_status === "pending"
-                  ? "Requested"
+                  ? t("Requested")
                   : profile.connection_status === "accepted"
-                    ? "Connected"
+                    ? t("Connected")
                     : profile.connection_status
-                      ? titleCase(profile.connection_status)
-                      : "Connect";
+                      ? t(titleCase(profile.connection_status))
+                      : t("Connect");
 
             return (
               <ProfileCard
@@ -393,18 +395,18 @@ export function DiscoverScreen({ token }: { token: string | null }) {
         <EmptyState
           body={
             universityFilter !== "all"
-              ? "No recommended profiles at this university yet."
-              : "Recommended profiles will appear as public profiles match your skills and profile."
+              ? t("No recommended profiles at this university yet.")
+              : t("Recommended profiles will appear as public profiles match your skills and profile.")
           }
           icon={Users}
-          title="No recommended profiles"
+          title={t("No recommended profiles")}
         />
       )}
 
       <SectionHeader
-        action={filteredProfiles.length ? `${filteredProfiles.length} shown` : "Empty"}
+        action={filteredProfiles.length ? t("{n} shown", { n: filteredProfiles.length }) : t("Empty")}
         icon={Users}
-        title="Discover"
+        title={t("Discover")}
       />
 
       {filteredProfiles.length ? (
@@ -420,7 +422,7 @@ export function DiscoverScreen({ token }: { token: string | null }) {
               <ProfileCard
                 actionDisabled={disabled}
                 actionIcon={isSelf || actionState === "sent" ? CheckCircle2 : UserPlus}
-                actionLabel={isSelf ? "Your Profile" : actionState === "sent" ? "Requested" : "Connect"}
+                actionLabel={isSelf ? t("Your Profile") : actionState === "sent" ? t("Requested") : t("Connect")}
                 actionLoading={actionState === "sending"}
                 actionSecondary={isSelf || actionState === "sent"}
                 footer={connectComposer("directory", profile)}
@@ -438,11 +440,11 @@ export function DiscoverScreen({ token }: { token: string | null }) {
         <EmptyState
           body={
             query.trim() || universityFilter !== "all"
-              ? "No students, mentors, professors, or collaborators match this search or university filter."
-              : "Student, mentor, professor, employer, and collaborator profiles will appear here."
+              ? t("No students, mentors, professors, or collaborators match this search or university filter.")
+              : t("Student, mentor, professor, employer, and collaborator profiles will appear here.")
           }
           icon={Inbox}
-          title={query.trim() || universityFilter !== "all" ? "No matching profiles" : "No Unibridge profiles"}
+          title={query.trim() || universityFilter !== "all" ? t("No matching profiles") : t("No Unibridge profiles")}
         />
       )}
     </View>

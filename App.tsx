@@ -1,6 +1,6 @@
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { SafeAreaView, ScrollView, View, useWindowDimensions } from "react-native";
+import { Alert, Platform, SafeAreaView, ScrollView, View, useWindowDimensions } from "react-native";
 
 import "./src/styles/webFocus";
 import { PortalHeader } from "./src/components/common/PortalHeader";
@@ -54,11 +54,26 @@ function AppInner() {
   );
 
   const handleLogout = useCallback(() => {
-    if (auth.token) {
-      void unregisterPushNotifications(auth.token);
+    const performLogout = () => {
+      if (auth.token) {
+        void unregisterPushNotifications(auth.token);
+      }
+      auth.logout();
+    };
+
+    // RN's Alert is a no-op on web, so the confirm dialog needs both paths.
+    if (Platform.OS === "web") {
+      if (typeof window === "undefined" || window.confirm(t("Sign out of Unibridge?"))) {
+        performLogout();
+      }
+      return;
     }
-    auth.logout();
-  }, [auth]);
+
+    Alert.alert(t("Sign out of Unibridge?"), undefined, [
+      { style: "cancel", text: t("Cancel") },
+      { onPress: performLogout, style: "destructive", text: t("Sign out") },
+    ]);
+  }, [auth, t]);
 
   // Ask for notification permission and register the device only once a
   // session exists, so the prompt never shows on the login screen.
