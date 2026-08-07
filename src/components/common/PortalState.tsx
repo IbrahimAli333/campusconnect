@@ -2,22 +2,24 @@ import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { AlertCircle, Inbox, RefreshCw } from "lucide-react-native";
 
 import { palette, styles } from "../../styles/theme";
+import { useI18n } from "../../lib/i18n";
 import type { IconComponent } from "./types";
 
 export function LoadingState({
   body,
-  label = "Loading Unibridge data",
+  label,
 }: {
   body?: string;
   label?: string;
 }) {
+  const { t } = useI18n();
   return (
     <View style={styles.statePanel}>
       <View style={styles.stateIcon}>
         <ActivityIndicator color={palette.teal} size="small" />
       </View>
       <View style={styles.stateBody}>
-        <Text style={styles.stateTitle}>{label}</Text>
+        <Text style={styles.stateTitle}>{label ?? t("Loading Unibridge data")}</Text>
         {body ? <Text style={styles.stateText}>{body}</Text> : null}
       </View>
     </View>
@@ -27,24 +29,25 @@ export function LoadingState({
 export function ErrorState({
   message,
   onRetry,
-  title = "Could not load Unibridge data",
+  title,
 }: {
   message: string;
   onRetry: () => void;
   title?: string;
 }) {
+  const { t } = useI18n();
   return (
     <View style={[styles.statePanel, styles.errorPanel]}>
       <View style={[styles.stateIcon, styles.errorIcon]}>
         <AlertCircle color={palette.red} size={22} strokeWidth={2.4} />
       </View>
       <View style={styles.stateBody}>
-        <Text style={styles.stateTitle}>{title}</Text>
+        <Text style={styles.stateTitle}>{title ?? t("Could not load Unibridge data")}</Text>
         <Text style={styles.stateText}>{message}</Text>
       </View>
       <Pressable accessibilityRole="button" onPress={onRetry} style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}>
         <RefreshCw color={palette.surface} size={16} strokeWidth={2.6} />
-        <Text style={styles.retryButtonText}>Retry</Text>
+        <Text style={styles.retryButtonText}>{t("Retry")}</Text>
       </Pressable>
     </View>
   );

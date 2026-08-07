@@ -2,6 +2,7 @@ import { Pressable, ScrollView, Text, View, useWindowDimensions } from "react-na
 import { Briefcase, FileText, Search, UserRound, Users } from "lucide-react-native";
 
 import { palette, styles } from "../../styles/theme";
+import { useI18n } from "../../lib/i18n";
 import type { IconComponent } from "./types";
 
 const tabLabels: Record<string, string> = {
@@ -59,6 +60,7 @@ export function SegmentedControl<T extends string>({
   labels?: Partial<Record<T, string>>;
   onChange: (item: T) => void;
 }) {
+  const { t } = useI18n();
   const { width } = useWindowDimensions();
   const isPhone = width < 520;
   const isCompactNetworkNav =
@@ -70,7 +72,7 @@ export function SegmentedControl<T extends string>({
         <View style={[styles.segmentedGrid, isPhone && styles.segmentedGridCompact]}>
           {items.map((item) => {
             const isActive = item === active;
-            const label = labels?.[item] ?? compactLabels[item] ?? tabLabels[item] ?? item;
+            const label = t(labels?.[item] ?? compactLabels[item] ?? tabLabels[item] ?? item);
             const Icon = tabIcons[item];
             const badgeCount = badges?.[item] ?? 0;
 
@@ -120,7 +122,7 @@ export function SegmentedControl<T extends string>({
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segmentedWrap}>
       {items.map((item) => {
         const isActive = item === active;
-        const label = labels?.[item] ?? tabLabels[item] ?? item;
+        const label = t(labels?.[item] ?? tabLabels[item] ?? item);
         const badgeCount = badges?.[item] ?? 0;
         return (
           <Pressable

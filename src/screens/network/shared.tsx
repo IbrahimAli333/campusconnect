@@ -41,6 +41,7 @@ import type { IconComponent } from "../../components/common/types";
 import { NetworkApiError, blockProfile, reportContent } from "../../lib/api/network";
 import { useScrollIntoViewOnMount } from "../../lib/scroll-anchor";
 import { palette, styles } from "../../styles/theme";
+import { useI18n } from "../../lib/i18n";
 import type {
   ContentReportTargetType,
   NetworkTab,
@@ -632,6 +633,7 @@ export function ScreenIntro({ children }: { children: string }) {
 }
 
 export function MatchSlip({ score }: { score: number }) {
+  const { t } = useI18n();
   const strong = score >= 70;
   return (
     <View style={[networkStyles.matchSlip, !strong && networkStyles.matchSlipQuiet]}>
@@ -639,14 +641,15 @@ export function MatchSlip({ score }: { score: number }) {
         style={[networkStyles.matchSlipText, !strong && networkStyles.matchSlipTextQuiet]}
         numberOfLines={1}
       >
-        {score}% Match
+        {t("{n}% Match", { n: score })}
       </Text>
     </View>
   );
 }
 
 export function MatchPreview({ reasons, score }: { reasons: string[]; score: number }) {
-  const reasonLine = (reasons.length ? reasons.slice(0, 2) : ["Based on profile fit"]).join(" · ");
+  const { t } = useI18n();
+  const reasonLine = (reasons.length ? reasons.slice(0, 2).map((reason) => t(reason)) : [t("Based on profile fit")]).join(" · ");
 
   return (
     <View style={networkStyles.matchPanel}>

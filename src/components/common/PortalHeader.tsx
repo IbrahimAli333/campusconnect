@@ -1,5 +1,7 @@
-import { Image, Text, View, useWindowDimensions } from "react-native";
+import { Image, Pressable, Text, View, useWindowDimensions } from "react-native";
 import { Bell, GraduationCap, LogOut, Users } from "lucide-react-native";
+
+import { LANGUAGES, useI18n } from "../../lib/i18n";
 
 const brandMark = require("../../../assets/brand-mark.png");
 
@@ -27,8 +29,17 @@ export function PortalHeader({
   showRoleSwitcher?: boolean;
 }) {
   const shouldShowRoleSwitcher = showRoleSwitcher && Boolean(onRoleChange);
+  const { language, setLanguage, t } = useI18n();
   const { width } = useWindowDimensions();
   const isCompact = width < 520;
+
+  const cycleLanguage = () => {
+    const index = LANGUAGES.findIndex((entry) => entry.code === language);
+    const next = LANGUAGES[(index + 1) % LANGUAGES.length];
+    if (next) {
+      setLanguage(next.code);
+    }
+  };
 
   return (
     <>
@@ -50,8 +61,22 @@ export function PortalHeader({
           </View>
         </View>
         <View style={[styles.topbarActions, isCompact && styles.topbarActionsCompact]}>
-          {showNotifications ? <IconButton icon={Bell} accessibilityLabel="Notifications" /> : null}
-          <IconButton icon={LogOut} accessibilityLabel="Sign out" onPress={onLogout} />
+          <Pressable
+            accessibilityLabel={t("Language")}
+            accessibilityRole="button"
+            onPress={cycleLanguage}
+            style={({ pressed }) => [
+              styles.iconButton,
+              isCompact && styles.iconButtonCompact,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text style={{ color: palette.muted, fontSize: isCompact ? 11 : 12, fontWeight: "700" }}>
+              {language.toUpperCase()}
+            </Text>
+          </Pressable>
+          {showNotifications ? <IconButton icon={Bell} accessibilityLabel={t("Notifications")} /> : null}
+          <IconButton icon={LogOut} accessibilityLabel={t("Sign out")} onPress={onLogout} />
         </View>
       </View>
 
