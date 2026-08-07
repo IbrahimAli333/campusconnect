@@ -434,11 +434,18 @@ export const networkStyles = StyleSheet.create({
     ...paperTexture("sheet"),
     ...paperShadow("strip"),
   },
+  matchSlipQuiet: {
+    backgroundColor: palette.surfaceAlt,
+    borderColor: palette.border,
+  },
   matchSlipText: {
     color: palette.amber,
     fontSize: 11,
     fontWeight: "700",
     lineHeight: 14,
+  },
+  matchSlipTextQuiet: {
+    color: palette.muted,
   },
   mobileStack: {
     gap: 12,

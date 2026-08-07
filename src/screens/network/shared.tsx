@@ -184,9 +184,33 @@ export function opportunityOwner(opportunity: { owner_profile: ProfileSummary })
   return opportunity.owner_profile.user.full_name;
 }
 
+const ACRONYM_SKIP_WORDS = new Set(["of", "the", "and", "for", "at", "in"]);
+
+export function universityShortName(name: string): string {
+  if (name.length <= 18) {
+    return name;
+  }
+  const words = name
+    .split(/[\s-]+/)
+    .filter((word) => word.length > 1 && !ACRONYM_SKIP_WORDS.has(word.toLowerCase()));
+  if (words.length < 2) {
+    return name;
+  }
+  return words
+    .slice(0, 4)
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase();
+}
+
 export function profileMeta(profile: ProfileSummary): string {
-  const parts = [profile.university, profile.faculty, profile.location].filter(Boolean);
-  return parts.length ? parts.join(" - ") : "Unibridge member";
+  const faculty = profile.faculty?.replace(/^Faculty of\s+/i, "");
+  const parts = [
+    profile.university ? universityShortName(profile.university) : null,
+    faculty,
+    profile.location,
+  ].filter(Boolean);
+  return parts.length ? parts.join(" · ") : "Unibridge member";
 }
 
 export function formatDate(value: string | null): string {
@@ -608,9 +632,13 @@ export function ScreenIntro({ children }: { children: string }) {
 }
 
 export function MatchSlip({ score }: { score: number }) {
+  const strong = score >= 70;
   return (
-    <View style={networkStyles.matchSlip}>
-      <Text style={networkStyles.matchSlipText} numberOfLines={1}>
+    <View style={[networkStyles.matchSlip, !strong && networkStyles.matchSlipQuiet]}>
+      <Text
+        style={[networkStyles.matchSlipText, !strong && networkStyles.matchSlipTextQuiet]}
+        numberOfLines={1}
+      >
         {score}% Match
       </Text>
     </View>

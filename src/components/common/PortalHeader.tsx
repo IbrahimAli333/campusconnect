@@ -1,5 +1,7 @@
-import { Text, View, useWindowDimensions } from "react-native";
+import { Image, Text, View, useWindowDimensions } from "react-native";
 import { Bell, GraduationCap, LogOut, Users } from "lucide-react-native";
+
+const brandMark = require("../../../assets/brand-mark.png");
 
 import { palette, styles } from "../../styles/theme";
 import { IconButton } from "./IconButton";
@@ -33,7 +35,12 @@ export function PortalHeader({
       <View style={[styles.topbar, isCompact && styles.topbarCompact]}>
         <View style={[styles.brandBlock, isCompact && styles.brandBlockCompact]}>
           <View style={[styles.brandIcon, isCompact && styles.brandIconCompact]}>
-            <Users color={palette.surface} size={isCompact ? 20 : 24} strokeWidth={2.4} />
+            <Image
+              accessibilityIgnoresInvertColors
+              resizeMode="contain"
+              source={brandMark}
+              style={{ height: isCompact ? 16 : 20, width: isCompact ? 24 : 28 }}
+            />
           </View>
           <View style={styles.brandTextBlock}>
             <Text style={[styles.brandTitle, isCompact && styles.brandTitleCompact]}>Unibridge</Text>
