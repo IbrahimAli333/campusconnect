@@ -97,6 +97,7 @@ import {
   OwnerApplicationsPanel,
   PanelHeader,
   ProfileCard,
+  InitialsAvatar,
   ProfileDetailPanel,
   ScreenIntro,
   SearchBox,
@@ -316,9 +317,7 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
             <View style={networkStyles.panelList}>
               {received.map((connection) => (
                 <View key={connection.id} style={styles.listRow}>
-                  <View style={networkStyles.resumeIcon}>
-                    <Users color={palette.blue} size={18} strokeWidth={2.4} />
-                  </View>
+                  <InitialsAvatar name={connection.requester_profile.user.full_name} size={38} />
                   <View style={styles.rowBody}>
                     <Text style={styles.rowTitle} numberOfLines={1}>
                       {connection.requester_profile.user.full_name}

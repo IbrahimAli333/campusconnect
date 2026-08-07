@@ -1,7 +1,7 @@
 import { Platform, StyleSheet, type TextStyle, type ViewStyle } from "react-native";
 
 export const palette = {
-  page: "#F5F7FA",
+  page: "#F6F8FC",
   surface: "#FFFFFF",
   surfaceAlt: "#F0F3F7",
   paper: "#FFFFFF",
@@ -10,7 +10,7 @@ export const palette = {
   buff: "#FBEBC8",
   buffBorder: "#E4B75F",
   charcoal: "#1E293B",
-  navy: "#0A2540",
+  navy: "#0B2350",
   navySoft: "#E7EEF4",
   border: "#DCE3EC",
   text: "#0F172A",
@@ -18,8 +18,8 @@ export const palette = {
   faint: "#8C9AAC",
   blue: "#2563EB",
   blueSoft: "#EAF1FD",
-  teal: "#0D9488",
-  tealSoft: "#E0F4F0",
+  teal: "#2563EB",
+  tealSoft: "#E8F0FE",
   amber: "#B45309",
   amberSoft: "#FDF1DC",
   red: "#DC2626",
@@ -88,7 +88,7 @@ export function paperTexture(_kind: "page" | "sheet" = "sheet"): ViewStyle {
 export function paperShadow(kind: "sheet" | "strip" | "pressed" | "cutout" | "sunken" = "sheet"): ViewStyle {
   if (Platform.OS === "web") {
     const shadows: Record<typeof kind, string> = {
-      cutout: "0 2px 6px rgba(13, 148, 136, 0.28), 0 10px 22px rgba(13, 148, 136, 0.16)",
+      cutout: "0 2px 6px rgba(37, 99, 235, 0.26), 0 10px 22px rgba(37, 99, 235, 0.15)",
       pressed: "inset 0 1px 2px rgba(15, 23, 42, 0.1)",
       sheet: "0 1px 2px rgba(15, 23, 42, 0.05), 0 10px 28px rgba(15, 23, 42, 0.07)",
       strip: "0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 18px rgba(15, 23, 42, 0.06)",
@@ -103,7 +103,7 @@ export function paperShadow(kind: "sheet" | "strip" | "pressed" | "cutout" | "su
   }
 
   return platformShadow({
-    color: kind === "cutout" ? "#0D9488" : "#0F172A",
+    color: kind === "cutout" ? "#2563EB" : "#0F172A",
     offset: { height: kind === "strip" ? 4 : 8, width: 0 },
     opacity: kind === "cutout" ? 0.22 : 0.07,
     radius: kind === "strip" ? 10 : 18,
@@ -155,7 +155,7 @@ export const styles = StyleSheet.create({
   topbar: {
     alignItems: "center",
     backgroundColor: palette.bond,
-    borderBottomColor: "#D9E0EA",
+    borderBottomColor: "#DCE3EC",
     borderBottomWidth: 1,
     borderColor: "#E3E9F0",
     borderRadius: 12,
@@ -190,12 +190,8 @@ export const styles = StyleSheet.create({
   },
   brandIcon: {
     alignItems: "center",
-    backgroundColor: "#0D9488",
-    borderBottomColor: "#0A7266",
-    borderBottomWidth: 1,
-    borderColor: "#2BA79A",
+    backgroundColor: palette.navy,
     borderRadius: 12,
-    borderWidth: 1,
     height: 36,
     justifyContent: "center",
     width: 36,
@@ -252,7 +248,7 @@ export const styles = StyleSheet.create({
   },
   rolePanel: {
     backgroundColor: palette.bond,
-    borderBottomColor: "#D9E0EA",
+    borderBottomColor: "#DCE3EC",
     borderBottomWidth: 1,
     borderColor: "#E3E9F0",
     borderRadius: 12,
@@ -343,7 +339,7 @@ export const styles = StyleSheet.create({
   segmentedGrid: {
     alignSelf: "center",
     backgroundColor: palette.bond,
-    borderBottomColor: "#D9E0EA",
+    borderBottomColor: "#DCE3EC",
     borderBottomWidth: 1,
     borderColor: "#E3E9F0",
     borderRadius: 12,
@@ -464,7 +460,7 @@ export const styles = StyleSheet.create({
   statCard: {
     backgroundColor: palette.surface,
     borderColor: palette.border,
-    borderBottomColor: "#D2DBE6",
+    borderBottomColor: "#DCE3EC",
     borderBottomWidth: 1,
     borderRadius: 12,
     borderWidth: 1,
@@ -521,7 +517,7 @@ export const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: palette.surface,
-    borderBottomColor: "#D2DBE6",
+    borderBottomColor: "#DCE3EC",
     borderBottomWidth: 1,
     borderColor: palette.border,
     borderRadius: 12,
@@ -599,7 +595,7 @@ export const styles = StyleSheet.create({
   listRow: {
     alignItems: "center",
     backgroundColor: palette.surface,
-    borderBottomColor: "#D9E0EA",
+    borderBottomColor: "#DCE3EC",
     borderBottomWidth: 1,
     borderColor: palette.border,
     borderRadius: 12,
@@ -696,7 +692,7 @@ export const styles = StyleSheet.create({
   searchRow: {
     alignItems: "center",
     backgroundColor: palette.bond,
-    borderBottomColor: "#D9E0EA",
+    borderBottomColor: "#DCE3EC",
     borderBottomWidth: 1,
     borderColor: "#DFE5EE",
     borderRadius: 12,
@@ -719,10 +715,6 @@ export const styles = StyleSheet.create({
   primaryAction: {
     alignItems: "center",
     backgroundColor: palette.teal,
-    borderBottomColor: "#0A7266",
-    borderBottomWidth: 1,
-    borderColor: "#2BA79A",
-    borderWidth: 1,
     borderRadius: 12,
     flexDirection: "row",
     gap: 8,
@@ -742,7 +734,7 @@ export const styles = StyleSheet.create({
   statePanel: {
     alignItems: "center",
     backgroundColor: palette.surface,
-    borderBottomColor: "#D9E0EA",
+    borderBottomColor: "#DCE3EC",
     borderBottomWidth: 1,
     borderColor: palette.border,
     borderRadius: 12,

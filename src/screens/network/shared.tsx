@@ -540,13 +540,7 @@ export function DiscoverDashboard({ data, isCompact, isWide }: { data: DiscoverD
             <View style={networkStyles.snapshotList}>
               {featuredProfiles.map((profile) => (
                 <View key={profile.id} style={networkStyles.snapshotRow}>
-                  <View style={[networkStyles.snapshotAvatar, profile.role === "teacher" && networkStyles.snapshotAvatarMentor]}>
-                    <Users
-                      color={profile.role === "teacher" ? palette.violet : palette.blue}
-                      size={17}
-                      strokeWidth={2.5}
-                    />
-                  </View>
+                  <InitialsAvatar name={profile.user.full_name} size={34} />
                   <View style={networkStyles.cardTitleBlock}>
                     <Text style={networkStyles.snapshotName} numberOfLines={1}>
                       {profile.user.full_name}
@@ -638,6 +632,49 @@ export function MatchPreview({ reasons, score }: { reasons: string[]; score: num
   );
 }
 
+const AVATAR_TONES = [
+  { bg: "#DBEAFE", fg: "#1D4ED8" },
+  { bg: "#E0E7FF", fg: "#4338CA" },
+  { bg: "#D1FAE5", fg: "#047857" },
+  { bg: "#FEF3C7", fg: "#B45309" },
+  { bg: "#FCE7F3", fg: "#BE185D" },
+  { bg: "#CFFAFE", fg: "#0E7490" },
+];
+
+function initialsFor(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) {
+    return "?";
+  }
+  const first = parts[0]?.[0] ?? "";
+  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? "") : "";
+  return `${first}${last}`.toUpperCase();
+}
+
+export function InitialsAvatar({ name, size = 42 }: { name: string; size?: number }) {
+  let hash = 0;
+  for (let index = 0; index < name.length; index += 1) {
+    hash = (hash * 31 + name.charCodeAt(index)) >>> 0;
+  }
+  const tone = AVATAR_TONES[hash % AVATAR_TONES.length] ?? AVATAR_TONES[0];
+  return (
+    <View
+      style={{
+        alignItems: "center",
+        backgroundColor: tone.bg,
+        borderRadius: size / 2,
+        height: size,
+        justifyContent: "center",
+        width: size,
+      }}
+    >
+      <Text style={{ color: tone.fg, fontSize: Math.round(size * 0.37), fontWeight: "700" }}>
+        {initialsFor(name)}
+      </Text>
+    </View>
+  );
+}
+
 export function ProfileCard({
   actionDisabled,
   actionIcon,
@@ -685,9 +722,7 @@ export function ProfileCard({
         style={({ pressed }) => [networkStyles.cardOpenArea, pressed && styles.pressed]}
       >
         <View style={networkStyles.entityHeader}>
-          <View style={[networkStyles.entityIcon, networkStyles.profileEntityIcon]}>
-            <Users color={palette.blue} size={20} strokeWidth={2.5} />
-          </View>
+          <InitialsAvatar name={profile.user.full_name} size={42} />
           <View style={networkStyles.cardTitleBlock}>
             <Text style={styles.cardTitle} numberOfLines={3}>
               {profile.user.full_name}
@@ -1105,7 +1140,7 @@ export function OpportunityDetailPanel({
             onPress={() => onOpenOwner?.(detail.owner_profile)}
             style={({ pressed }) => [networkStyles.ownerPanel, pressed && Boolean(onOpenOwner) && styles.pressed]}
           >
-            <Users color={palette.teal} size={18} strokeWidth={2.4} />
+            <InitialsAvatar name={opportunityOwner(detail)} size={36} />
             <View style={networkStyles.cardTitleBlock}>
               <Text style={styles.eyebrow}>Posted by</Text>
               <Text style={networkStyles.ownerName} numberOfLines={1}>

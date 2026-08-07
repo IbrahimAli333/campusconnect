@@ -1370,7 +1370,7 @@ const loginStyles = StyleSheet.create({
     backgroundColor: "#F3FBF9",
     borderColor: palette.teal,
     ...platformShadow({
-      color: "#0D9488",
+      color: "#2563EB",
       offset: { height: 12, width: 0 },
       opacity: 0.18,
       radius: 20,
@@ -1575,16 +1575,14 @@ const loginStyles = StyleSheet.create({
   submitButton: {
     alignItems: "center",
     backgroundColor: palette.teal,
-    borderColor: "#0A7266",
     borderRadius: 12,
-    borderWidth: 1,
     flexDirection: "row",
     gap: 9,
     justifyContent: "center",
     minHeight: 52,
     paddingHorizontal: 16,
     ...platformShadow({
-      color: "#0D9488",
+      color: "#2563EB",
       offset: { height: 10, width: 0 },
       opacity: 0.26,
       radius: 18,

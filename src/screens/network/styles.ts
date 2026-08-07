@@ -93,11 +93,7 @@ export const networkStyles = StyleSheet.create({
   },
   discoverEyebrowIcon: {
     alignItems: "center",
-    backgroundColor: "#0D9488",
-    borderBottomColor: "#0A7266",
-    borderBottomWidth: 1,
-    borderColor: "#2BA79A",
-    borderWidth: 1,
+    backgroundColor: palette.teal,
     borderRadius: 12,
     height: 34,
     justifyContent: "center",
@@ -195,7 +191,7 @@ export const networkStyles = StyleSheet.create({
   },
   detailPanel: {
     backgroundColor: palette.surface,
-    borderBottomColor: "#D2DBE6",
+    borderBottomColor: "#DCE3EC",
     borderBottomWidth: 1,
     borderColor: "#DCE3EC",
     borderRadius: 12,
@@ -279,7 +275,7 @@ export const networkStyles = StyleSheet.create({
   },
   formPanel: {
     backgroundColor: palette.surface,
-    borderBottomColor: "#D2DBE6",
+    borderBottomColor: "#DCE3EC",
     borderBottomWidth: 1,
     borderColor: "#DCE3EC",
     borderRadius: 12,
@@ -291,12 +287,8 @@ export const networkStyles = StyleSheet.create({
   },
   inlineAction: {
     alignItems: "center",
-    backgroundColor: "#0D9488",
-    borderBottomColor: "#0A7266",
-    borderBottomWidth: 1,
-    borderColor: "#2BA79A",
+    backgroundColor: palette.teal,
     borderRadius: 12,
-    borderWidth: 1,
     flexDirection: "row",
     gap: 7,
     justifyContent: "center",
@@ -326,7 +318,7 @@ export const networkStyles = StyleSheet.create({
   },
   inlineActionDisabledSecondary: {
     backgroundColor: "#E8EDF4",
-    borderColor: "#D2DBE6",
+    borderColor: "#DCE3EC",
     ...paperShadow("sunken"),
   },
   inlineActionWide: {
@@ -369,7 +361,7 @@ export const networkStyles = StyleSheet.create({
   inlineLoadingPanel: {
     alignItems: "center",
     backgroundColor: palette.surface,
-    borderBottomColor: "#D9E0EA",
+    borderBottomColor: "#DCE3EC",
     borderBottomWidth: 1,
     borderColor: "#DCE3EC",
     borderRadius: 12,
@@ -390,7 +382,7 @@ export const networkStyles = StyleSheet.create({
   },
   lockedField: {
     backgroundColor: "#E9EEF5",
-    borderColor: "#D2DBE6",
+    borderColor: "#DCE3EC",
     borderRadius: 12,
     borderWidth: 1,
     gap: 3,
@@ -579,7 +571,7 @@ export const networkStyles = StyleSheet.create({
   },
   networkCard: {
     backgroundColor: palette.bond,
-    borderBottomColor: "#D2DBE6",
+    borderBottomColor: "#DCE3EC",
     borderBottomWidth: 1,
     borderColor: "#DCE3EC",
     gap: 12,
@@ -768,7 +760,7 @@ export const networkStyles = StyleSheet.create({
   requestNote: {
     backgroundColor: "#F2F5F9",
     borderColor: "#DCE3EC",
-    borderLeftColor: "#2BA79A",
+    borderLeftColor: palette.teal,
     borderLeftWidth: 3,
     borderRadius: 12,
     borderWidth: 1,
