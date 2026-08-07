@@ -1,6 +1,7 @@
 import { API_BASE_URL } from "./config";
 import { fetchWithTimeout } from "./request";
 import type {
+  AssistantResponse,
   ConnectionRequestDecision,
   ConnectionRequestRead,
   ContentReportCreatePayload,
@@ -307,6 +308,17 @@ export function updateOpportunity(
 export function withdrawApplication(token: string, applicationId: number): Promise<void> {
   return requestNetworkNoContent(`/api/v1/network/applications/${applicationId}`, token, {
     method: "DELETE",
+  });
+}
+
+export function getAssistantStatus(token: string): Promise<void> {
+  return requestNetworkNoContent("/api/v1/network/assistant", token);
+}
+
+export function askAssistant(token: string, query: string): Promise<AssistantResponse> {
+  return requestNetworkJson<AssistantResponse>("/api/v1/network/assistant", token, {
+    method: "POST",
+    ...jsonRequest({ query }),
   });
 }
 

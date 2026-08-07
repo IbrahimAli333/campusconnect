@@ -191,6 +191,10 @@ export function isNotFound(error: unknown): boolean {
   return error instanceof NetworkApiError && error.status === 404;
 }
 
+export function isServiceUnavailable(error: unknown): boolean {
+  return error instanceof NetworkApiError && error.status === 503;
+}
+
 export function profileSkills(profile: ProfileRead): string[] {
   return profile.skills.map((item) => item.skill.name);
 }

@@ -304,3 +304,16 @@ class ContentReportRead(BaseModel):
     target_type: ContentReportTargetType
     target_id: int
     created_at: datetime
+
+
+class AssistantStatusRead(BaseModel):
+    enabled: bool
+
+
+class AssistantRequest(BaseModel):
+    query: str = Field(min_length=2, max_length=500)
+
+
+class AssistantResponse(BaseModel):
+    reply: str
+    matches: list[OpportunityRead]

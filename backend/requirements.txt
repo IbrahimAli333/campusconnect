@@ -8,6 +8,7 @@ pydantic-settings==2.7.0
 PyJWT==2.13.0
 pwdlib[argon2]==0.2.1
 httpx==0.28.1
+anthropic==0.120.2
 # Transitive deps (via uvicorn / pydantic-settings) pinned to advisory-fixed versions.
 click==8.3.3
 python-dotenv==1.2.2

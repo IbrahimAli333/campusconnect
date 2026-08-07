@@ -10,6 +10,7 @@ import {
   Briefcase,
   Building2,
   CalendarDays,
+  Sparkles,
   CheckCircle2,
   Eye,
   FileText,
@@ -35,9 +36,11 @@ import {
   addMySkill,
   addResumeEntry,
   applyToOpportunity,
+  askAssistant,
   createOpportunity,
   deleteMySkill,
   deleteResumeEntry,
+  getAssistantStatus,
   getMyApplications,
   getMyConnections,
   getMyOwnedOpportunities,
@@ -65,6 +68,7 @@ import { useI18n } from "../../lib/i18n";
 import { universityFilterOptions, universityKey } from "../../lib/universities";
 import { palette, styles } from "../../styles/theme";
 import type {
+  AssistantResponse,
   ConnectionRequestDecision,
   ConnectionRequestRead,
   MyOpportunityApplicationRead,
@@ -109,6 +113,7 @@ import {
   formatFullDate,
   isConflict,
   isNotFound,
+  isServiceUnavailable,
   normalizeDateInput,
   opportunityAuthoringCopy,
   opportunityFilters,
@@ -146,6 +151,11 @@ import { networkStyles } from "./styles";
 export function OpportunitiesScreen({ token }: { token: string | null }) {
   const { t } = useI18n();
   const [filter, setFilter] = useState<OpportunityFilter>("all");
+  const [assistantAvailable, setAssistantAvailable] = useState(false);
+  const [assistantQuery, setAssistantQuery] = useState("");
+  const [assistantLoading, setAssistantLoading] = useState(false);
+  const [assistantError, setAssistantError] = useState<string | null>(null);
+  const [assistantResult, setAssistantResult] = useState<AssistantResponse | null>(null);
   const [universityFilter, setUniversityFilter] = useState("all");
   const [createOpen, setCreateOpen] = useState(false);
   const [createType, setCreateType] = useState<OpportunityType>("startup");
@@ -234,6 +244,32 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
       ),
     [filter, opportunities, universityFilter],
   );
+
+  useEffect(() => {
+    if (!token) {
+      setAssistantAvailable(false);
+      return;
+    }
+
+    let canceled = false;
+    getAssistantStatus(token)
+      .then(() => {
+        if (!canceled) {
+          setAssistantAvailable(true);
+        }
+      })
+      .catch(() => {
+        // 503 means the assistant is not configured on this server; any other
+        // failure also just keeps the panel hidden.
+        if (!canceled) {
+          setAssistantAvailable(false);
+        }
+      });
+
+    return () => {
+      canceled = true;
+    };
+  }, [token]);
 
   useEffect(() => {
     if (!allowedCreateTypes.length || allowedCreateTypes.includes(createType)) {
@@ -502,6 +538,31 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
     }
   }
 
+  async function submitAssistantQuery() {
+    const query = assistantQuery.trim();
+    if (!token || assistantLoading || query.length < 2) {
+      return;
+    }
+
+    setAssistantLoading(true);
+    setAssistantError(null);
+
+    try {
+      setAssistantResult(await askAssistant(token, query));
+    } catch (error) {
+      if (isServiceUnavailable(error)) {
+        setAssistantAvailable(false);
+        setAssistantResult(null);
+      } else {
+        // Assistant failure details are fixed backend strings, so t() can
+        // translate the known ones and falls back to the raw message.
+        setAssistantError(t(toErrorMessage(error, t)));
+      }
+    } finally {
+      setAssistantLoading(false);
+    }
+  }
+
   async function submitCreate() {
     if (!token || createState === "saving") {
       return;
@@ -577,6 +638,59 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
           onRetry={opportunitiesState.retry}
           title={t("Could not refresh opportunities")}
         />
+      ) : null}
+
+      {assistantAvailable ? (
+        <View style={networkStyles.formPanel}>
+          <SectionHeader action={t("AI search")} icon={Sparkles} title={t("Opportunity Assistant")} />
+          <Text style={styles.smallText}>
+            {t("Describe what you are looking for — the assistant searches only posts inside Unibridge.")}
+          </Text>
+          <LabeledInput
+            label={t("Your request")}
+            maxLength={500}
+            onChangeText={setAssistantQuery}
+            onSubmitEditing={() => void submitAssistantQuery()}
+            placeholder={t("What are you looking for?")}
+            returnKeyType="search"
+            value={assistantQuery}
+          />
+          <InlineAction
+            disabled={assistantQuery.trim().length < 2}
+            icon={Send}
+            label={assistantLoading ? t("Searching") : t("Ask Assistant")}
+            loading={assistantLoading}
+            onPress={() => void submitAssistantQuery()}
+          />
+          {assistantError ? <Text style={networkStyles.errorText}>{assistantError}</Text> : null}
+          {assistantResult && !assistantLoading ? (
+            <>
+              <Text style={networkStyles.actionMessage}>{assistantResult.reply}</Text>
+              {assistantResult.matches.length ? (
+                <View style={[styles.grid, isWide && styles.gridWide]}>
+                  {assistantResult.matches.map((opportunity) => {
+                    const currentApplyState = applyState[opportunity.id] ?? "idle";
+                    const currentSaveState = saveState[opportunity.id] ?? "idle";
+
+                    return (
+                      <OpportunityCard
+                        applyMessage={actionMessages[`${opportunity.id}:apply`]}
+                        applyState={currentApplyState}
+                        key={opportunity.id}
+                        onApply={() => apply(opportunity)}
+                        onOpen={() => void openOpportunityDetail(opportunity.id)}
+                        onSave={() => save(opportunity, currentSaveState === "sent")}
+                        opportunity={opportunity}
+                        saveMessage={actionMessages[`${opportunity.id}:save`]}
+                        saveState={currentSaveState}
+                      />
+                    );
+                  })}
+                </View>
+              ) : null}
+            </>
+          ) : null}
+        </View>
       ) : null}
 
       <View style={[networkStyles.toolbar, isWide && networkStyles.toolbarWide]}>

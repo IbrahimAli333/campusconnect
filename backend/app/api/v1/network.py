@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.api.deps import get_current_active_user
 from app.core.action_rate_limit import (
     application_rate_limiter,
+    assistant_rate_limiter,
     connection_rate_limiter,
     enforce_action_limit,
     opportunity_rate_limiter,
@@ -38,6 +39,9 @@ from app.models.user import User
 from app.models.user_profile import NETWORK_PROFILE_ROLES, UserProfile
 from app.models.user_skill import UserSkill
 from app.schemas.network import (
+    AssistantRequest,
+    AssistantResponse,
+    AssistantStatusRead,
     ConnectionRequestCreate,
     ContentReportCreate,
     ContentReportRead,
@@ -1257,6 +1261,79 @@ def list_opportunities(
         .offset(offset)
     ).all()
     return [_opportunity_response(opportunity) for opportunity in opportunities]
+
+
+@router.get("/assistant", response_model=AssistantStatusRead)
+def read_assistant_status(
+    current_user: User = Depends(get_current_active_user),
+) -> AssistantStatusRead:
+    """Cheap availability probe so clients can hide the assistant panel
+    without spending a model call or the user's rate-limit budget."""
+    from app.services import assistant
+
+    if not assistant.assistant_enabled():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="The assistant is not configured on this server.",
+        )
+    return AssistantStatusRead(enabled=True)
+
+
+@router.post("/assistant", response_model=AssistantResponse)
+def ask_assistant(
+    payload: AssistantRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> AssistantResponse:
+    from app.services import assistant
+
+    if not assistant.assistant_enabled():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="The assistant is not configured on this server.",
+        )
+    enforce_action_limit(assistant_rate_limiter, current_user.id)
+
+    profile = _get_or_create_profile(db, current_user)
+    list_filters = [Opportunity.status == "open"]
+    blocked_ids = _blocked_profile_ids(db, profile.id)
+    if blocked_ids:
+        list_filters.append(Opportunity.owner_profile_id.not_in(blocked_ids))
+    opportunities = db.scalars(
+        select(Opportunity)
+        .options(*_opportunity_load_options())
+        .where(*list_filters)
+        .order_by(Opportunity.created_at.desc(), Opportunity.id.desc())
+        .limit(100)
+    ).all()
+
+    posts = [
+        {
+            "id": opportunity.id,
+            "type": opportunity.type,
+            "title": opportunity.title,
+            "description": opportunity.description,
+            "required_skills": opportunity.required_skills,
+            "owner": opportunity.owner_profile.user.full_name,
+        }
+        for opportunity in opportunities
+    ]
+
+    try:
+        result = assistant.find_matching_posts(payload.query, posts)
+    except assistant.AssistantError as error:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(error),
+        ) from error
+
+    by_id = {opportunity.id: opportunity for opportunity in opportunities}
+    matches = [
+        _opportunity_response(by_id[post_id])
+        for post_id in result["match_ids"]
+        if post_id in by_id
+    ]
+    return AssistantResponse(reply=result["reply"], matches=matches)
 
 
 @router.get("/opportunities/mine", response_model=list[OpportunityRead])

@@ -250,6 +250,11 @@ export interface PushTokenRead {
   created_at: string;
 }
 
+export interface AssistantResponse {
+  reply: string;
+  matches: OpportunityRead[];
+}
+
 export type ContentReportTargetType = "profile" | "opportunity";
 
 export interface ContentReportCreatePayload {

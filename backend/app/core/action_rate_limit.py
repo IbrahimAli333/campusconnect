@@ -13,6 +13,9 @@ opportunity_rate_limiter = LoginRateLimiter(max_attempts=10, window_seconds=3600
 application_rate_limiter = LoginRateLimiter(max_attempts=20, window_seconds=3600)
 report_rate_limiter = LoginRateLimiter(max_attempts=10, window_seconds=3600)
 connection_rate_limiter = LoginRateLimiter(max_attempts=30, window_seconds=3600)
+# Each assistant call costs real money (Claude API tokens), so this window is
+# deliberately tighter than the free actions above.
+assistant_rate_limiter = LoginRateLimiter(max_attempts=10, window_seconds=3600)
 
 ALL_ACTION_LIMITERS = [
     message_rate_limiter,
@@ -20,6 +23,7 @@ ALL_ACTION_LIMITERS = [
     application_rate_limiter,
     report_rate_limiter,
     connection_rate_limiter,
+    assistant_rate_limiter,
 ]
 
 

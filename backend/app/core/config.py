@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 30
     cors_origins: str = ""
     google_oauth_client_ids: str = ""
+    # Enables the AI opportunity assistant; the feature is hidden when unset.
+    anthropic_api_key: str = ""
     # The zero-users guard makes bootstrap-admin inert on a live database, but
     # a wiped or recreated production database would let anyone seize admin.
     # Require an explicit opt-in outside development.
