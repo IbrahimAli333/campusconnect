@@ -107,3 +107,39 @@ def test_production_cors_uses_explicit_origins_only(
         assert "access-control-allow-origin" not in blocked.headers
     finally:
         get_settings.cache_clear()
+
+
+def test_error_reporting_is_inert_without_a_dsn(monkeypatch: pytest.MonkeyPatch) -> None:
+    """No DSN configured means Sentry is never initialised."""
+    from app import main
+
+    # Settings reads .env, so patch the cached instance rather than the env.
+    settings = get_settings()
+    monkeypatch.setattr(settings, "sentry_dsn", "", raising=False)
+
+    called: list[object] = []
+    monkeypatch.setattr(main.sentry_sdk, "init", lambda **kwargs: called.append(kwargs))
+
+    assert main.init_error_reporting() is False
+    assert called == []
+
+
+def test_error_reporting_initialises_when_dsn_is_set(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app import main
+
+    settings = get_settings()
+    monkeypatch.setattr(
+        settings, "sentry_dsn", "https://public@example.ingest.sentry.io/1", raising=False
+    )
+    monkeypatch.setattr(settings, "environment", "production", raising=False)
+
+    captured: list[dict[str, object]] = []
+    monkeypatch.setattr(main.sentry_sdk, "init", lambda **kwargs: captured.append(kwargs))
+
+    assert main.init_error_reporting() is True
+    assert len(captured) == 1
+    assert captured[0]["environment"] == "production"
+    # Request bodies carry credentials and profile content; PII must stay off.
+    assert captured[0]["send_default_pii"] is False

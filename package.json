@@ -4,6 +4,7 @@
   "main": "index.ts",
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
+    "@sentry/react-native": "~7.2.0",
     "expo": "~54.0.35",
     "expo-auth-session": "~7.0.11",
     "expo-constants": "~18.0.13",

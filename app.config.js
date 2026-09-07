@@ -39,7 +39,10 @@ const baseConfig = {
   web: {
     favicon: "./assets/favicon.png",
   },
-  plugins: ["expo-web-browser", "expo-notifications"],
+  // Sentry's plugin wires up native crash capture and source-map upload.
+  // Org/project/auth come from SENTRY_ORG, SENTRY_PROJECT, and
+  // SENTRY_AUTH_TOKEN at build time; without them it only warns.
+  plugins: ["expo-web-browser", "expo-notifications", "@sentry/react-native/expo"],
   extra: {
     productName: "Unibridge",
     eas: {

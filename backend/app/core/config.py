@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     google_oauth_client_ids: str = ""
     # Enables the AI opportunity assistant; the feature is hidden when unset.
     anthropic_api_key: str = ""
+    # Crash/error reporting. Sentry stays completely inert while the DSN is
+    # unset, so local development and tests never emit events.
+    sentry_dsn: str = ""
+    # Performance tracing is sampled; errors are always captured in full.
+    sentry_traces_sample_rate: float = 0.1
     # The zero-users guard makes bootstrap-admin inert on a live database, but
     # a wiped or recreated production database would let anyone seize admin.
     # Require an explicit opt-in outside development.

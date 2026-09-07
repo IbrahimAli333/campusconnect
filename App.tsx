@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/react-native";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Platform, SafeAreaView, ScrollView, View, useWindowDimensions } from "react-native";
@@ -22,17 +23,33 @@ import type { NetworkTab } from "./src/types/network";
 
 const networkTabs: NetworkTab[] = ["discover", "opportunities", "applications", "profile", "connections"];
 
+// Crash reporting stays entirely off unless a DSN is baked into the build, so
+// development and Expo Go never send events.
+const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
+
+if (sentryDsn) {
+  Sentry.init({
+    dsn: sentryDsn,
+    // Profile text and messages are user content, so no PII is attached.
+    sendDefaultPii: false,
+    tracesSampleRate: 0.1,
+  });
+}
+
 function roleLabel(role: string): string {
   return role.charAt(0).toUpperCase() + role.slice(1);
 }
 
-export default function App() {
+function App() {
   return (
     <I18nProvider>
       <AppInner />
     </I18nProvider>
   );
 }
+
+// Sentry.wrap adds the error boundary that reports render crashes.
+export default Sentry.wrap(App);
 
 function AppInner() {
   const { t } = useI18n();

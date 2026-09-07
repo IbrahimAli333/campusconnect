@@ -37,6 +37,9 @@ services:
       # app hides the panel while this is unset.
       - key: UNIVERSITY_PORTAL_ANTHROPIC_API_KEY
         sync: false
+      # Crash/error reporting. Unset = reporting stays off entirely.
+      - key: UNIVERSITY_PORTAL_SENTRY_DSN
+        sync: false
       # Moderation + store-review accounts, provisioned by the preDeployCommand.
       # The accounts are only created once their password is set in the Render
       # dashboard; passwords are never stored in the repo.
