@@ -36,8 +36,9 @@ Create your own member account in the app, or sign in with credentials provided 
 
 ## Access instructions for Google reviewers (App access form)
 
-The app is invite-based, so declare "All or some functionality is restricted"
-and provide a demo credential set. The reviewer account (reviewer@example.edu,
+Anyone can create a Member account in-app, but posting requires a
+student/teacher role granted by administrators, so declare "All or some
+functionality is restricted" and provide a demo credential set. The reviewer account (reviewer@example.edu,
 student role) is provisioned automatically on deploy once
 UNIVERSITY_PORTAL_REVIEWER_PASSWORD is set in the Render dashboard — read the
 password from there (do NOT hand out the shared demo accounts):
@@ -45,9 +46,12 @@ password from there (do NOT hand out the shared demo accounts):
 ```
 Email: reviewer@example.edu
 Password: <UNIVERSITY_PORTAL_REVIEWER_PASSWORD from the Render dashboard>
-Notes: Log in with the credentials above. All app functionality
-(discover, apply, post, connect, report, block, delete account)
-is available to this account.
+Notes: Log in with the credentials above to review the full app. Anyone
+can also create a Member account with "Create account"; Member accounts can
+browse, save, apply, connect, and message. Posting requires a student or
+teacher role granted by university administrators, so the provided account
+is the easiest way to review posting and applicant review. Report, block,
+and account deletion are available in-app.
 ```
 
 ## Content rating questionnaire (IARC) - expected answers

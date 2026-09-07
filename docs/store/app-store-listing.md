@@ -36,30 +36,40 @@ campus,university,research,startup,internship,networking,students,faculty,mentor
 
 ## App Review Information (sign-in required)
 
-The app is invite-based, so check "Sign-in required" and provide a demo
-credential set. The reviewer account (reviewer@example.edu, student role) is
-provisioned automatically on deploy once UNIVERSITY_PORTAL_REVIEWER_PASSWORD
-is set in the Render dashboard — read the password from there. The same
-account serves Google Play review; do NOT hand out the shared demo accounts.
+Check "Sign-in required" and provide a demo credential set. The reviewer
+account (reviewer@example.edu) is provisioned automatically on deploy once
+UNIVERSITY_PORTAL_REVIEWER_PASSWORD is set in the Render dashboard — read the
+password from there. The same account serves Google Play review; do NOT hand
+out the shared demo accounts.
+
+Public email/password sign-up exists (added 2026-07-20) and creates Member
+accounts. Posting roles (student/teacher) are provisioned by administrators
+or university SSO. The notes below say exactly that — do not claim sign-up
+is unavailable, since the reviewer will see the Create account button.
 
 ```
 Email: reviewer@example.edu
 Password: <UNIVERSITY_PORTAL_REVIEWER_PASSWORD from the Render dashboard>
-Notes: Log in with the credentials above. All app functionality
-(discover, apply, post, connect, message, report, block, delete account)
-is available to this account. Accounts are provisioned by campus or
-program administrators, which is why public sign-up is not offered.
+Notes: Log in with the credentials above to review the full app. Anyone can
+also create a Member account with the "Create account" button; Member
+accounts can browse, save, apply, connect, and message. Posting
+opportunities requires a student or teacher role, which is granted by
+university administrators, so the provided account is the easiest way to
+review posting and applicant-review flows. Report, block, and account
+deletion are available from within the app.
 ```
 
-## Screenshots (required before submission)
+## Screenshots (done 2026-09-07)
 
-Apple accepts one size since 2025: 6.9" (1320x2868) or 6.7" (1290x2796).
-The existing Android captures (1080x1920) are NOT accepted.
+The App Store Connect iPhone slot for this app is labelled 6.5" and REJECTS
+the native iPhone 17 Pro Max capture (1320x2868); it accepts 1284x2778.
 
-- Capture on the iOS Simulator (needs Xcode installed) or a physical
-  iPhone running the TestFlight build; `Cmd+S` in Simulator saves at the
-  correct native resolution.
-- Reuse the same four scenes as Android: Discover, Posts, Me, Network.
+- Native captures: docs/store/assets/ios/ (1320x2868).
+- Uploaded set: docs/store/assets/ios-6.5/ (1284x2778, downscaled with
+  `sips --resampleWidth 1284` then `sips -c 2778 1284`).
+- Capture with `xcrun simctl io booted screenshot` on the simulator; check
+  for the iOS Keychain "Save Password?" prompt before saving — it ruined
+  the first Discover capture.
 
 ## Guideline traps specific to this app
 
