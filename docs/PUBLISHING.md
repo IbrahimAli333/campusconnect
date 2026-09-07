@@ -13,6 +13,25 @@ The repo currently stays on Expo SDK 54 for internal preview. Review and upgrade
 to SDK 56 in a separate production-store readiness task before public store
 submission.
 
+## Verify every iOS artifact before installing or submitting
+
+Sentry's Xcode build phase wraps React Native's bundling step. A misconfigured
+Sentry environment can produce a build that EAS reports as FINISHED but that
+contains **no JavaScript at all** (this happened with `SENTRY_ALLOW_FAILURE`,
+build 99d6d46f: the app crashed on launch with `handleBundleLoadingError`).
+
+Until Sentry credentials exist, `eas.json` sets `SENTRY_DISABLE_AUTO_UPLOAD=true`
+on every profile. Never replace that with `SENTRY_ALLOW_FAILURE`.
+
+After any iOS build, before installing it anywhere or submitting it:
+
+```bash
+tar -xzf build.tar.gz && ls -la Unibridge.app/main.jsbundle
+```
+
+A missing file, or one far smaller than ~4 MB, means the bundle step was
+skipped — do not ship it.
+
 ## 1. Pick Production Identifiers
 
 Current app identifiers:
