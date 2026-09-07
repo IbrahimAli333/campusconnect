@@ -6,7 +6,10 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "environment": "development"
+      "environment": "development",
+      "env": {
+        "SENTRY_ALLOW_FAILURE": "true"
+      }
     },
     "preview": {
       "distribution": "internal",
@@ -16,13 +19,17 @@
       },
       "ios": {
         "simulator": true
+      },
+      "env": {
+        "SENTRY_ALLOW_FAILURE": "true"
       }
     },
     "production": {
       "autoIncrement": true,
       "environment": "production",
       "env": {
-        "EXPO_PUBLIC_ENABLE_DEMO_LOGINS": "0"
+        "EXPO_PUBLIC_ENABLE_DEMO_LOGINS": "0",
+        "SENTRY_ALLOW_FAILURE": "true"
       }
     }
   },
