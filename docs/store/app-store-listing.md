@@ -32,7 +32,7 @@ campus,university,research,startup,internship,networking,students,faculty,mentor
 - **Support URL:** https://github.com/IbrahimAli333/campusconnect
 - **Privacy policy URL:** https://ibrahimali333.github.io/campusconnect/privacy-policy.html
 - **Contact email:** ibrahimaliworkacc@gmail.com
-- **Copyright:** Ibrahim Khudiyev
+- **Copyright:** 2026 Ibrahim Ali (user's preferred public name; "2026 Unibridge" is the no-personal-name alternative)
 
 ## App Review Information (sign-in required)
 
