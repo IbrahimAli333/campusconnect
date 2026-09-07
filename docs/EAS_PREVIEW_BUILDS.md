@@ -18,7 +18,7 @@ The example URL below is only a URL-shape placeholder unless Render confirms it
 as the final service URL:
 
 ```text
-https://campusconnect-api.onrender.com
+https://campusconnect-api-u7tq.onrender.com
 ```
 
 ## Preflight Audit

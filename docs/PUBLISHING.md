@@ -104,9 +104,9 @@ should not depend on the dev seed workflow.
 Verify the hosted API:
 
 ```bash
-curl https://campusconnect-api.onrender.com/health
-curl https://campusconnect-api.onrender.com/api/v1/health
-curl https://campusconnect-api.onrender.com/api/v1/health/db
+curl https://campusconnect-api-u7tq.onrender.com/health
+curl https://campusconnect-api-u7tq.onrender.com/api/v1/health
+curl https://campusconnect-api-u7tq.onrender.com/api/v1/health/db
 ```
 
 If you add a custom API domain, run the same checks against
@@ -117,7 +117,7 @@ If you add a custom API domain, run the same checks against
 Production and preview EAS builds require a public HTTPS API URL:
 
 ```bash
-export EXPO_PUBLIC_API_URL=https://campusconnect-api.onrender.com
+export EXPO_PUBLIC_API_URL=https://campusconnect-api-u7tq.onrender.com
 npm run publish:check
 ```
 
@@ -146,8 +146,8 @@ npx eas init
 Internal test builds:
 
 ```bash
-EXPO_PUBLIC_API_URL=https://campusconnect-api.onrender.com npm run build:android:preview
-EXPO_PUBLIC_API_URL=https://campusconnect-api.onrender.com npm run build:ios:preview
+EXPO_PUBLIC_API_URL=https://campusconnect-api-u7tq.onrender.com npm run build:android:preview
+EXPO_PUBLIC_API_URL=https://campusconnect-api-u7tq.onrender.com npm run build:ios:preview
 ```
 
 These preview commands do not submit to the App Store or Google Play. The
@@ -157,8 +157,8 @@ separately approved Apple Developer/App Store Connect path.
 Store builds:
 
 ```bash
-EXPO_PUBLIC_API_URL=https://campusconnect-api.onrender.com npm run build:android:production
-EXPO_PUBLIC_API_URL=https://campusconnect-api.onrender.com npm run build:ios:production
+EXPO_PUBLIC_API_URL=https://campusconnect-api-u7tq.onrender.com npm run build:android:production
+EXPO_PUBLIC_API_URL=https://campusconnect-api-u7tq.onrender.com npm run build:ios:production
 ```
 
 ## 5. Submit To Stores
@@ -187,7 +187,7 @@ Before submission:
 ```bash
 npm run typecheck
 npm run doctor
-EXPO_PUBLIC_API_URL=https://campusconnect-api.onrender.com npm run publish:check
+EXPO_PUBLIC_API_URL=https://campusconnect-api-u7tq.onrender.com npm run publish:check
 cd backend && .venv/bin/python -m pytest
 ```
 
