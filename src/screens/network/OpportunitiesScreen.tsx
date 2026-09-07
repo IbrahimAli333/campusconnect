@@ -244,6 +244,17 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
       ),
     [filter, opportunities, universityFilter],
   );
+  // The type and university chips apply to recommendations too; otherwise a
+  // filtered tab still opens with unrelated recommended cards on top.
+  const filteredRecommendedOpportunities = useMemo(
+    () =>
+      recommendedOpportunities.filter(
+        (item) =>
+          (filter === "all" || item.type === filter) &&
+          (universityFilter === "all" || universityKey(item.owner_profile.university) === universityFilter),
+      ),
+    [filter, recommendedOpportunities, universityFilter],
+  );
 
   useEffect(() => {
     if (!token) {
@@ -994,7 +1005,11 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
       ) : null}
 
       <SectionHeader
-        action={recommendedOpportunities.length ? t("{n} shown", { n: recommendedOpportunities.length }) : t("Empty")}
+        action={
+          filteredRecommendedOpportunities.length
+            ? t("{n} shown", { n: filteredRecommendedOpportunities.length })
+            : t("Empty")
+        }
         icon={CheckCircle2}
         title={t("Recommended for you")}
       />
@@ -1006,9 +1021,9 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
         </View>
       ) : null}
 
-      {recommendedOpportunities.length ? (
+      {filteredRecommendedOpportunities.length ? (
         <View style={[styles.grid, isWide && styles.gridWide]}>
-          {recommendedOpportunities.map((opportunity) => {
+          {filteredRecommendedOpportunities.map((opportunity) => {
             const currentApplyState = applyState[opportunity.id] ?? (opportunity.has_applied ? "sent" : "idle");
             const currentSaveState = saveState[opportunity.id] ?? (opportunity.has_saved ? "sent" : "idle");
             const applyMessage = actionMessages[`${opportunity.id}:apply`];
@@ -1031,7 +1046,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
             );
           })}
         </View>
-      ) : !recommendedOpportunitiesState.loading ? (
+      ) : !recommendedOpportunitiesState.loading && !recommendedOpportunities.length ? (
         <EmptyState
           body={t("Recommended opportunities will appear as open posts match your skills and profile.")}
           icon={Briefcase}
