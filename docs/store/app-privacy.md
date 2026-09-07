@@ -30,7 +30,12 @@ Notes:
 - Push tokens are stored server-side to deliver notifications; they fall
   under Identifiers > User ID handling (account-scoped, deleted with the
   account) rather than Device ID (no advertising/device-graph use).
-- Crash logs / analytics: none collected (no SDK present).
+- Crash logs / analytics: none collected in build 1.0.0 (2), which predates
+  Sentry. **From the first build that ships with EXPO_PUBLIC_SENTRY_DSN set,
+  add `Diagnostics > Crash Data` (linked to user: No; tracking: No; purpose:
+  App Functionality) before submitting** — a Sentry-enabled build with no
+  Diagnostics disclosure is a review mismatch. send_default_pii is off, so
+  no other category changes.
 
 ## Data deletion
 
