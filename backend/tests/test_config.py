@@ -164,3 +164,14 @@ def test_legacy_academic_api_can_be_switched_off(monkeypatch) -> None:
     finally:
         monkeypatch.delenv("UNIVERSITY_PORTAL_ENABLE_LEGACY_ACADEMIC_API")
         get_settings.cache_clear()
+
+
+def test_legacy_academic_api_defaults_off_in_production(monkeypatch) -> None:
+    from app.core.config import Settings
+
+    monkeypatch.delenv("UNIVERSITY_PORTAL_ENABLE_LEGACY_ACADEMIC_API", raising=False)
+    production = Settings(environment="production", secret_key="x" * 40)
+    assert production.enable_legacy_academic_api is False
+    assert Settings(environment="development").enable_legacy_academic_api is True
+    explicit = Settings(environment="production", secret_key="x" * 40, enable_legacy_academic_api=True)
+    assert explicit.enable_legacy_academic_api is True

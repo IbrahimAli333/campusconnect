@@ -45,9 +45,10 @@ class Settings(BaseSettings):
     # version. Off by default because app builds older than 1.1.0 have no
     # acceptance screen; switch it on once 1.1.0 is the minimum live version.
     enforce_terms_acceptance: bool = False
-    # Retired academic-portal API (attendance, grades, schedules). On for
-    # development/tests; render.yaml turns it off in production.
-    enable_legacy_academic_api: bool = True
+    # Retired academic-portal API (attendance, grades, schedules). Unset means
+    # on for development/tests and off in production, so production stays
+    # safe even where render.yaml's env vars were never applied.
+    enable_legacy_academic_api: bool | None = None
     # Moderation alerts by email (optional; push alerts to admins always run).
     # Example for Gmail: host smtp.gmail.com, port 587, username = the Gmail
     # address, password = a Google "app password", from = the same address.
@@ -77,6 +78,12 @@ class Settings(BaseSettings):
             raise ValueError(
                 "UNIVERSITY_PORTAL_SECRET_KEY must be set in production"
             )
+        return self
+
+    @model_validator(mode="after")
+    def default_legacy_academic_api(self) -> "Settings":
+        if self.enable_legacy_academic_api is None:
+            self.enable_legacy_academic_api = not self.is_production()
         return self
 
     def parsed_google_oauth_client_ids(self) -> list[str]:
