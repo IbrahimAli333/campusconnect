@@ -29,6 +29,13 @@ Terms/Privacy version in force: **2026-10-02** (`CURRENT_TERMS_VERSION` in
   and a Google sign-in that would create a new account returns 428 and
   creates nothing. The app then switches to the signup form and asks for
   both boxes.
+- **Builds older than 1.1.0** have no consent boxes and send neither
+  field. While server-side enforcement is off, their signups (email and
+  Google) still succeed, so the store version keeps working until 1.1.0
+  is out. Those accounts start with no recorded acceptance or age
+  confirmation, exactly like pre-1.1.0 accounts, and 1.1.0+ blocks them
+  behind the acceptance screen. Turning enforcement on also stops these
+  signups.
 - **Consent is recorded on the user:** `terms_version`,
   `terms_accepted_at`, `age_confirmed_at` (migration
   `202610020010`). No birth date is stored.
@@ -224,7 +231,8 @@ speaker's review**, especially the legal wording.
   input; see the questions.
 - **Turn on server-side terms enforcement** (`UNIVERSITY_PORTAL_ENFORCE_TERMS_ACCEPTANCE=true`
   in Render) once app 1.1.0 is the oldest version people use; set the
-  minimum version in the stores or wait for adoption first.
+  minimum version in the stores or wait for adoption first. Until then,
+  people on old builds can sign up without confirming they are 18+.
 
 ### Fixed in 1.1.0 (previously open)
 - **Deactivated users everywhere:** they also disappear from connection

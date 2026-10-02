@@ -107,7 +107,11 @@ class TestSignupConsent:
     ) -> None:
         client, session_local = client_and_sessionmaker
 
-        assert _register(client, "a@example.edu").status_code == 400
+        # App 1.1.0+ always sends both fields, ticked or not.
+        assert (
+            _register(client, "a@example.edu", accept_terms=False, confirm_age=False).status_code
+            == 400
+        )
         assert _register(client, "b@example.edu", accept_terms=True).status_code == 400
         assert _register(client, "c@example.edu", confirm_age=True).status_code == 400
 
@@ -134,6 +138,43 @@ class TestSignupConsent:
             stored = db.scalar(select(User).where(User.email == "ok@example.edu"))
             assert stored is not None
             assert stored.terms_version == CURRENT_TERMS_VERSION
+
+    def test_pre_consent_build_can_still_register_but_must_accept_later(
+        self, client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]]
+    ) -> None:
+        client, session_local = client_and_sessionmaker
+
+        # Builds before 1.1.0 have no consent boxes and send neither field.
+        response = _register(client, "old-app@example.edu")
+        assert response.status_code == 201
+        user = response.json()["user"]
+        assert user["terms_version"] is None
+        assert user["terms_accepted_at"] is None
+        assert user["age_confirmed_at"] is None
+        assert user["terms_acceptance_required"] is True
+
+        with session_local() as db:
+            stored = db.scalar(select(User).where(User.email == "old-app@example.edu"))
+            assert stored is not None
+            assert stored.age_confirmed_at is None
+
+    def test_pre_consent_build_blocked_once_terms_are_enforced(
+        self,
+        client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        from app.core.config import get_settings
+
+        client, session_local = client_and_sessionmaker
+        monkeypatch.setenv("UNIVERSITY_PORTAL_ENFORCE_TERMS_ACCEPTANCE", "true")
+        get_settings.cache_clear()
+        try:
+            assert _register(client, "old-app@example.edu").status_code == 400
+            with session_local() as db:
+                assert db.scalars(select(User)).all() == []
+        finally:
+            monkeypatch.delenv("UNIVERSITY_PORTAL_ENFORCE_TERMS_ACCEPTANCE")
+            get_settings.cache_clear()
 
     def test_legal_info_is_public(
         self, client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]]

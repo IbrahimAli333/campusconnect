@@ -78,10 +78,13 @@ def stub_identity(
     monkeypatch.setattr(auth_module, "verify_google_id_token", lambda _: identity)
 
 
-def sso_login(client: TestClient, consent: bool = True) -> object:
+def sso_login(
+    client: TestClient, consent: bool = True, pre_consent_build: bool = False
+) -> object:
     payload: dict[str, object] = {"id_token": "stub-token"}
-    if consent:
-        payload.update(accept_terms=True, confirm_age=True)
+    # App 1.1.0+ always sends both fields; older builds send neither.
+    if not pre_consent_build:
+        payload.update(accept_terms=consent, confirm_age=consent)
     return client.post("/api/v1/auth/sso/google", json=payload)
 
 
@@ -369,3 +372,40 @@ def test_sso_existing_account_signs_in_without_consent_fields(
     assert response.status_code == 200
     # Login works, but the app must show the acceptance screen first.
     assert response.json()["user"]["terms_acceptance_required"] is True
+
+
+def test_sso_pre_consent_build_can_still_sign_up(
+    client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, _ = client_and_sessionmaker
+    configure_sso(monkeypatch)
+    stub_identity(monkeypatch)
+
+    # Builds before 1.1.0 have no consent boxes and cannot handle 428.
+    response = sso_login(client, consent=False, pre_consent_build=True)
+    assert response.status_code == 200
+    # No consent is recorded; 1.1.0+ asks for it before the app can be used.
+    assert response.json()["user"]["terms_acceptance_required"] is True
+    assert response.json()["user"]["age_confirmed_at"] is None
+
+
+def test_sso_pre_consent_build_blocked_once_terms_are_enforced(
+    client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.core.config import get_settings
+
+    client, session_local = client_and_sessionmaker
+    configure_sso(monkeypatch)
+    stub_identity(monkeypatch)
+    monkeypatch.setenv("UNIVERSITY_PORTAL_ENFORCE_TERMS_ACCEPTANCE", "true")
+    get_settings.cache_clear()
+    try:
+        response = sso_login(client, consent=False, pre_consent_build=True)
+        assert response.status_code == 428
+        with session_local() as db:
+            assert db.scalars(select(User)).all() == []
+    finally:
+        monkeypatch.delenv("UNIVERSITY_PORTAL_ENFORCE_TERMS_ACCEPTANCE")
+        get_settings.cache_clear()
