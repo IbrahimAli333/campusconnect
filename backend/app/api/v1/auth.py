@@ -1,4 +1,6 @@
 import secrets
+from datetime import datetime, timezone
+from typing import Any
 
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -7,6 +9,13 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_active_user
 from app.core.config import get_settings
+from app.core.legal import (
+    CONSENT_REQUIRED_DETAIL,
+    CURRENT_TERMS_VERSION,
+    MINIMUM_AGE,
+    PRIVACY_POLICY_URL,
+    TERMS_URL,
+)
 from app.core.login_rate_limit import (
     ip_rate_limiter,
     login_rate_limiter,
@@ -25,6 +34,7 @@ from app.db.session import get_db
 from app.models.user import User, UserRole
 from app.models.user_profile import NETWORK_PROFILE_ROLES, UserProfile
 from app.schemas.auth import (
+    AcceptTermsRequest,
     BootstrapAdminRequest,
     ChangePasswordRequest,
     DeleteAccountRequest,
@@ -35,6 +45,7 @@ from app.schemas.auth import (
     TokenResponse,
 )
 from app.schemas.user import UserRead
+from app.services.data_export import build_user_data_export
 from app.services.google_sso import GoogleSsoError, verify_google_id_token
 
 
@@ -121,6 +132,13 @@ def bootstrap_admin(
     return user
 
 
+def _record_consent(user: User) -> None:
+    now = datetime.now(timezone.utc)
+    user.terms_version = CURRENT_TERMS_VERSION
+    user.terms_accepted_at = now
+    user.age_confirmed_at = now
+
+
 def _token_response(user: User) -> TokenResponse:
     return TokenResponse(
         access_token=create_access_token(user.id, user.role),
@@ -161,6 +179,12 @@ def register(
     # Every attempt counts against the window, not just rejected ones.
     registration_rate_limiter.record_failure(client_ip)
 
+    if not request.has_consent():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=CONSENT_REQUIRED_DETAIL,
+        )
+
     existing = db.scalar(select(User).where(User.email == request.email))
     if existing is not None:
         raise HTTPException(
@@ -175,6 +199,7 @@ def register(
         role=UserRole.member.value,
         is_active=True,
     )
+    _record_consent(user)
     db.add(user)
     db.flush()
     db.add(
@@ -307,6 +332,13 @@ def login_with_google(
 
     user = db.scalar(select(User).where(User.email == identity.email))
     if user is None:
+        # A new account is never created without explicit consent. 428 tells
+        # the app to show the signup consent boxes and retry.
+        if not request.has_consent():
+            raise HTTPException(
+                status_code=status.HTTP_428_PRECONDITION_REQUIRED,
+                detail=CONSENT_REQUIRED_DETAIL,
+            )
         user = User(
             email=identity.email,
             # SSO accounts have no usable password; login stays Google-only.
@@ -336,6 +368,9 @@ def login_with_google(
         db.add(profile)
     elif not profile.university:
         profile.university = university
+
+    if request.has_consent():
+        _record_consent(user)
 
     db.commit()
     db.refresh(user)
@@ -378,6 +413,50 @@ def delete_account(
 
     db.delete(current_user)
     db.commit()
+
+
+@router.get("/legal")
+def read_legal_info() -> dict[str, Any]:
+    """Public: the terms version users must accept and where to read it."""
+    return {
+        "terms_version": CURRENT_TERMS_VERSION,
+        "minimum_age": MINIMUM_AGE,
+        "terms_url": TERMS_URL,
+        "privacy_policy_url": PRIVACY_POLICY_URL,
+    }
+
+
+@router.post("/accept-terms", response_model=UserRead)
+def accept_terms(
+    request: AcceptTermsRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> User:
+    """(Re-)accept the current Terms/Privacy Policy and confirm age."""
+    if not request.has_consent():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=CONSENT_REQUIRED_DETAIL,
+        )
+    if request.terms_version != CURRENT_TERMS_VERSION:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="The terms were updated while you were reading. Review the latest version and try again.",
+        )
+
+    _record_consent(current_user)
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
+@router.get("/me/export")
+def export_my_data(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """Machine-readable copy of everything stored about the current user."""
+    return build_user_data_export(db, current_user)
 
 
 @router.get("/me", response_model=UserRead)

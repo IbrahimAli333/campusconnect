@@ -61,7 +61,7 @@ import {
   withdrawApplication,
 } from "../../lib/api/network";
 import { usePortalData } from "../../lib/api/usePortalData";
-import { deleteAccount } from "../../lib/api/auth";
+import { deleteAccount, type AuthUser } from "../../lib/api/auth";
 import { GOOGLE_OAUTH_CLIENT_ID } from "../../lib/google-oauth";
 import { GoogleIdTokenGate } from "../../components/common/GoogleIdTokenGate";
 import { useI18n } from "../../lib/i18n";
@@ -85,6 +85,7 @@ import type {
 } from "../../types/network";
 
 import {
+  ActionMessage,
   DiscoverDashboard,
   FilterChip,
   FormField,
@@ -144,11 +145,14 @@ import type {
   SkillDraft,
 } from "./shared";
 import { networkStyles } from "./styles";
+import { AccountPrivacySection } from "./AccountPrivacySection";
 
 export function ProfileScreen({
+  account,
   onAccountDeleted,
   token,
 }: {
+  account?: AuthUser | null;
   onAccountDeleted?: () => void;
   token: string | null;
 }) {
@@ -562,9 +566,7 @@ export function ProfileScreen({
           </View>
         </FormField>
         {skillMessage ? (
-          <Text style={[networkStyles.actionMessage, skillState === "error" && networkStyles.errorText]}>
-            {skillMessage}
-          </Text>
+          <ActionMessage error={skillState === "error"}>{skillMessage}</ActionMessage>
         ) : null}
         <View style={networkStyles.actionRow}>
           <InlineAction
@@ -592,8 +594,15 @@ export function ProfileScreen({
                 <Text style={styles.rowMeta}>{t(titleCase(userSkill.level))}</Text>
               </View>
               <View style={networkStyles.rowActions}>
-                <InlineAction icon={Pencil} label={t("Edit")} onPress={() => beginSkillEdit(userSkill)} secondary />
                 <InlineAction
+                  accessibilityLabel={t("Edit {name}", { name: userSkill.skill.name })}
+                  icon={Pencil}
+                  label={t("Edit")}
+                  onPress={() => beginSkillEdit(userSkill)}
+                  secondary
+                />
+                <InlineAction
+                  accessibilityLabel={t("Delete {name}", { name: userSkill.skill.name })}
                   icon={Trash2}
                   label={t("Delete")}
                   loading={deletingSkillId === userSkill.id}
@@ -622,9 +631,7 @@ export function ProfileScreen({
         />
       </View>
       {resumeMessage ? (
-        <Text style={[networkStyles.actionMessage, resumeState === "error" && networkStyles.errorText]}>
-          {resumeMessage}
-        </Text>
+        <ActionMessage error={resumeState === "error"}>{resumeMessage}</ActionMessage>
       ) : null}
       {resumeFormOpen ? (
         <View style={networkStyles.formPanel}>
@@ -733,8 +740,15 @@ export function ProfileScreen({
                 ) : null}
               </View>
               <View style={networkStyles.rowActions}>
-                <InlineAction icon={Pencil} label={t("Edit")} onPress={() => beginResumeEdit(entry)} secondary />
                 <InlineAction
+                  accessibilityLabel={t("Edit {name}", { name: entry.title })}
+                  icon={Pencil}
+                  label={t("Edit")}
+                  onPress={() => beginResumeEdit(entry)}
+                  secondary
+                />
+                <InlineAction
+                  accessibilityLabel={t("Delete {name}", { name: entry.title })}
                   icon={Trash2}
                   label={t("Delete")}
                   loading={deletingResumeEntryId === entry.id}
@@ -813,9 +827,7 @@ export function ProfileScreen({
           </View>
         </FormField>
         {saveMessage ? (
-          <Text style={[networkStyles.actionMessage, saveState === "error" && networkStyles.errorText]}>
-            {saveMessage}
-          </Text>
+          <ActionMessage error={saveState === "error"}>{saveMessage}</ActionMessage>
         ) : null}
         <InlineAction
           icon={Save}
@@ -825,10 +837,12 @@ export function ProfileScreen({
         />
       </View>
 
+      <AccountPrivacySection account={account} token={token} />
+
       <View style={[styles.card, styles.compactCard]}>
         <SectionHeader action={t("Irreversible")} icon={Trash2} title={t("Delete Account")} />
         <Text style={styles.smallText}>
-          {t("Permanently removes your account, portfolio, posts, applications, and connections. This cannot be undone.")}
+          {t("Permanently removes your account, profile, skills, portfolio, posts, applications, saved posts, connections, messages, and push notification registrations. This cannot be undone. You can download your data first.")}
         </Text>
         {!deleteConfirmOpen ? (
           <InlineAction
@@ -898,9 +912,7 @@ export function ProfileScreen({
               </>
             ) : null}
             {deleteMessage ? (
-              <Text style={[networkStyles.actionMessage, deleteState === "error" && networkStyles.errorText]}>
-                {deleteMessage}
-              </Text>
+              <ActionMessage error={deleteState === "error"}>{deleteMessage}</ActionMessage>
             ) : null}
           </>
         )}

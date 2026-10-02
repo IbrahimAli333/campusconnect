@@ -38,6 +38,13 @@ import { EmptyState, ErrorState, LoadingState } from "../../components/common/Po
 import { SectionHeader } from "../../components/common/SectionHeader";
 import { StatusChip } from "../../components/common/StatusChip";
 import type { IconComponent } from "../../components/common/types";
+import {
+  decorativeProps,
+  headingProps,
+  liveRegionProps,
+  selectedButtonProps,
+  useAnnounce,
+} from "../../components/common/a11y";
 import { NetworkApiError, blockProfile, reportContent } from "../../lib/api/network";
 import { useScrollIntoViewOnMount } from "../../lib/scroll-anchor";
 import { palette, styles } from "../../styles/theme";
@@ -424,6 +431,7 @@ export function reviewStatusIcon(status: OwnerApplicationStatusUpdate): IconComp
 }
 
 export function InlineAction({
+  accessibilityLabel,
   disabled = false,
   icon: Icon,
   label,
@@ -432,6 +440,8 @@ export function InlineAction({
   secondary = false,
   wide = false,
 }: {
+  /** Overrides the visible label for screen readers; must contain it (WCAG 2.5.3). */
+  accessibilityLabel?: string;
   disabled?: boolean;
   icon: IconComponent;
   label: string;
@@ -447,7 +457,9 @@ export function InlineAction({
 
   return (
     <Pressable
+      accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
+      aria-busy={loading}
       disabled={disabled || loading}
       onPress={(event) => {
         event.stopPropagation();
@@ -481,6 +493,36 @@ export function InlineAction({
         {label}
       </Text>
     </Pressable>
+  );
+}
+
+/**
+ * Inline result/error line after an action. Exposed as a status message
+ * (WCAG 4.1.3) so screen readers hear "Request sent." or an error without
+ * moving focus. `bare` keeps the plain errorText look used by panel errors.
+ */
+export function ActionMessage({
+  bare = false,
+  children,
+  error = false,
+}: {
+  bare?: boolean;
+  children?: string | null;
+  error?: boolean;
+}) {
+  useAnnounce(children);
+  if (!children) {
+    return null;
+  }
+
+  return (
+    <Text
+      {...liveRegionProps(error ? "assertive" : "polite")}
+      role={error ? "alert" : "status"}
+      style={[!bare && networkStyles.actionMessage, error && networkStyles.errorText]}
+    >
+      {children}
+    </Text>
   );
 }
 
@@ -527,6 +569,7 @@ export function FilterChip<T extends string>({
   return (
     <Pressable
       accessibilityRole="button"
+      {...selectedButtonProps(active)}
       onPress={() => onPress(value)}
       style={({ pressed }) => [networkStyles.filterChip, active && networkStyles.filterChipActive, pressed && styles.pressed]}
     >
@@ -544,6 +587,8 @@ export function SearchBox({ onChangeText, value }: { onChangeText: (value: strin
     <View style={[styles.searchRow, isCompact && networkStyles.searchRowCompact]}>
       <Search color={palette.faint} size={18} strokeWidth={2.4} />
       <TextInput
+        // Placeholder text vanishes on input and is not a reliable name.
+        accessibilityLabel={t("Search people, skills, roles, or university")}
         autoCapitalize="none"
         autoCorrect={false}
         onChangeText={onChangeText}
@@ -638,6 +683,8 @@ export function LabeledInput({
   return (
     <FormField label={label} style={containerStyle}>
       <TextInput
+        // The visible label is a sibling Text, so name the field explicitly.
+        accessibilityLabel={label}
         placeholderTextColor={palette.faint}
         style={[styles.textInput, networkStyles.formInput, inputStyle]}
         {...props}
@@ -747,8 +794,11 @@ export function InitialsAvatar({ name, size = 42 }: { name: string; size?: numbe
     hash = (hash * 31 + name.charCodeAt(index)) >>> 0;
   }
   const tone = AVATAR_TONES[hash % AVATAR_TONES.length] ?? AVATAR_TONES[0];
+  // Decorative: the full name is always rendered next to the avatar, so the
+  // initials would only be read out twice.
   return (
     <View
+      {...decorativeProps}
       style={{
         alignItems: "center",
         backgroundColor: tone.bg,
@@ -808,6 +858,7 @@ export function ProfileCard({
       ]}
     >
       <Pressable
+        accessibilityHint={t("Opens profile details")}
         accessibilityRole="button"
         onPress={onOpen}
         style={({ pressed }) => [networkStyles.cardOpenArea, pressed && styles.pressed]}
@@ -850,9 +901,7 @@ export function ProfileCard({
       />
       {footer}
       {message ? (
-        <Text style={[networkStyles.actionMessage, messageError && networkStyles.errorText]}>
-          {message}
-        </Text>
+        <ActionMessage error={messageError}>{message}</ActionMessage>
       ) : null}
     </View>
   );
@@ -895,6 +944,7 @@ export function OpportunityCard({
       ]}
     >
       <Pressable
+        accessibilityHint={t("Opens opportunity details")}
         accessibilityRole="button"
         onPress={onOpen}
         style={({ pressed }) => [networkStyles.cardOpenArea, pressed && styles.pressed]}
@@ -944,14 +994,10 @@ export function OpportunityCard({
         />
       </View>
       {applyMessage ? (
-        <Text style={[networkStyles.actionMessage, applyState === "error" && networkStyles.errorText]}>
-          {applyMessage}
-        </Text>
+        <ActionMessage error={applyState === "error"}>{applyMessage}</ActionMessage>
       ) : null}
       {saveMessage ? (
-        <Text style={[networkStyles.actionMessage, saveState === "error" && networkStyles.errorText]}>
-          {saveMessage}
-        </Text>
+        <ActionMessage error={saveState === "error"}>{saveMessage}</ActionMessage>
       ) : null}
     </View>
   );
@@ -1041,7 +1087,7 @@ export function ModerationActions({
         ) : null}
       </View>
       {message ? (
-        <Text style={[networkStyles.actionMessage, isError && networkStyles.errorText]}>{message}</Text>
+        <ActionMessage error={isError}>{message}</ActionMessage>
       ) : null}
     </>
   );
@@ -1072,7 +1118,7 @@ export function PanelHeader({
         </View>
         <View style={networkStyles.cardTitleBlock}>
           {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
-          <Text style={networkStyles.panelTitle} numberOfLines={2}>
+          <Text {...headingProps(2)} style={networkStyles.panelTitle} numberOfLines={2}>
             {title}
           </Text>
         </View>
@@ -1218,7 +1264,7 @@ export function OpportunityDetailPanel({
 
       {error ? (
         <View style={networkStyles.panelList}>
-          <Text style={networkStyles.errorText}>{error}</Text>
+          <ActionMessage bare error>{error}</ActionMessage>
           <InlineAction icon={RefreshCw} label={t("Retry")} onPress={onRetry} secondary />
         </View>
       ) : null}
@@ -1235,6 +1281,7 @@ export function OpportunityDetailPanel({
           <Text style={networkStyles.bodyText}>{detail.description}</Text>
 
           <Pressable
+            accessibilityHint={onOpenOwner ? t("Opens profile details") : undefined}
             accessibilityRole="button"
             disabled={!onOpenOwner}
             onPress={() => onOpenOwner?.(detail.owner_profile)}
@@ -1278,14 +1325,10 @@ export function OpportunityDetailPanel({
             />
           </View>
           {applyMessage ? (
-            <Text style={[networkStyles.actionMessage, applyState === "error" && networkStyles.errorText]}>
-              {applyMessage}
-            </Text>
+            <ActionMessage error={applyState === "error"}>{applyMessage}</ActionMessage>
           ) : null}
           {saveMessage ? (
-            <Text style={[networkStyles.actionMessage, saveState === "error" && networkStyles.errorText]}>
-              {saveMessage}
-            </Text>
+            <ActionMessage error={saveState === "error"}>{saveMessage}</ActionMessage>
           ) : null}
 
           <ModerationActions targetId={detail.id} targetType="opportunity" token={token} />
@@ -1345,7 +1388,7 @@ export function OwnerApplicationsPanel({
 
       {error ? (
         <View style={networkStyles.panelList}>
-          <Text style={networkStyles.errorText}>{error}</Text>
+          <ActionMessage bare error>{error}</ActionMessage>
           <InlineAction icon={RefreshCw} label={t("Retry")} onPress={onRetry} secondary />
         </View>
       ) : null}
@@ -1456,9 +1499,7 @@ export function OwnerApplicationsPanel({
                 </View>
 
                 {message ? (
-                  <Text style={[networkStyles.actionMessage, hasError && networkStyles.errorText]}>
-                    {message}
-                  </Text>
+                  <ActionMessage error={hasError}>{message}</ActionMessage>
                 ) : null}
               </View>
             );

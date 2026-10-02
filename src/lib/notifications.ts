@@ -1,5 +1,6 @@
 import Constants from "expo-constants";
 import * as Notifications from "expo-notifications";
+import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
 import { registerPushToken, unregisterPushToken } from "./api/network";
@@ -8,7 +9,30 @@ import type { NetworkTab } from "../types/network";
 const NETWORK_TABS: NetworkTab[] = ["discover", "opportunities", "applications", "profile", "connections"];
 
 // Remote push requires a device runtime; every entry point below no-ops on web.
-const isPushSupported = Platform.OS === "ios" || Platform.OS === "android";
+export const isPushSupported = Platform.OS === "ios" || Platform.OS === "android";
+
+// Per-device opt-out from the Me tab. Stored on the device (like the language
+// choice) because push tokens are per device, not per account.
+const PUSH_PREFERENCE_KEY = "campusconnect.push_enabled";
+
+export async function getPushPreference(): Promise<boolean> {
+  if (!isPushSupported) {
+    return false;
+  }
+  try {
+    return (await SecureStore.getItemAsync(PUSH_PREFERENCE_KEY)) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+async function storePushPreference(enabled: boolean): Promise<void> {
+  try {
+    await SecureStore.setItemAsync(PUSH_PREFERENCE_KEY, enabled ? "1" : "0");
+  } catch {
+    // Best-effort; the backend token state below is what stops delivery.
+  }
+}
 
 let registeredPushToken: string | null = null;
 let handlerConfigured = false;
@@ -54,7 +78,7 @@ function expoProjectId(): string | undefined {
  * permission prompt never appears on the login screen.
  */
 export async function registerForPushNotifications(apiToken: string): Promise<void> {
-  if (!isPushSupported) {
+  if (!isPushSupported || !(await getPushPreference())) {
     return;
   }
 
@@ -90,6 +114,53 @@ export async function unregisterPushNotifications(apiToken: string): Promise<voi
   } catch (error) {
     console.warn("Push token unregistration failed:", error);
   }
+}
+
+export type PushToggleResult = "enabled" | "disabled" | "permission-denied" | "failed";
+
+/**
+ * Me tab switch. Turning push off removes this device's token from the
+ * backend, so the server has nothing to deliver to; turning it on asks for OS
+ * permission (if needed) and registers the device again.
+ */
+export async function setPushNotificationsEnabled(apiToken: string, enabled: boolean): Promise<PushToggleResult> {
+  if (!isPushSupported) {
+    return "failed";
+  }
+
+  await storePushPreference(enabled);
+
+  if (!enabled) {
+    try {
+      let pushToken = registeredPushToken;
+      if (!pushToken) {
+        const permissions = await Notifications.getPermissionsAsync();
+        if (permissions.granted) {
+          const projectId = expoProjectId();
+          pushToken = (await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined)).data;
+        }
+      }
+      registeredPushToken = null;
+      if (pushToken) {
+        await unregisterPushToken(apiToken, pushToken);
+      }
+      return "disabled";
+    } catch (error) {
+      console.warn("Push opt-out failed:", error);
+      return "failed";
+    }
+  }
+
+  await registerForPushNotifications(apiToken);
+  if (registeredPushToken) {
+    return "enabled";
+  }
+  const permissions = await Notifications.getPermissionsAsync().catch(() => null);
+  if (permissions && !permissions.granted) {
+    await storePushPreference(false);
+    return "permission-denied";
+  }
+  return "failed";
 }
 
 function tabFromResponse(response: Notifications.NotificationResponse | null): NetworkTab | null {

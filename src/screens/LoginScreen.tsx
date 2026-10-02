@@ -31,10 +31,13 @@ import {
 } from "lucide-react-native";
 
 import { API_BASE_URL } from "../lib/api/config";
-import { AuthApiError } from "../lib/api/auth";
+import { AuthApiError, CONSENT_REQUIRED_STATUS } from "../lib/api/auth";
+import type { SignupConsent } from "../lib/legal";
+import { ConsentCheckboxes, LegalLinks } from "../components/legal/ConsentCheckboxes";
 import { useI18n } from "../lib/i18n";
 import { GOOGLE_OAUTH_CLIENT_ID } from "../lib/google-oauth";
 import { GoogleIdTokenGate } from "../components/common/GoogleIdTokenGate";
+import { liveRegionProps, selectedButtonProps, useAnnounce } from "../components/common/a11y";
 import { palette, platformShadow, styles, webSafeTextShadow } from "../styles/theme";
 import type { IconComponent } from "../components/common/types";
 
@@ -90,7 +93,7 @@ const authModes: Array<{
   value: AuthMode;
 }> = [
   {
-    description: "Existing demo accounts",
+    description: "Sign in to your account",
     icon: LogIn,
     label: "Log in",
     value: "login",
@@ -281,11 +284,14 @@ function DashboardPreview({ compact }: { compact: boolean }) {
 // Mounted only when GOOGLE_OAUTH_CLIENT_ID exists so the auth-request hook
 // never runs with an empty client ID.
 function GoogleSsoButton({
+  canPrompt,
   clientId,
   disabled,
   onError,
   onIdToken,
 }: {
+  // Return false to stop the Google prompt (e.g. consent boxes not ticked).
+  canPrompt?: () => boolean;
   clientId: string;
   disabled: boolean;
   onError: (message: string) => void;
@@ -298,8 +304,13 @@ function GoogleSsoButton({
       {(promptGoogleSignIn, ready) => (
         <Pressable
           accessibilityRole="button"
+          accessibilityState={{ disabled: disabled || !ready }}
           disabled={disabled || !ready}
-          onPress={promptGoogleSignIn}
+          onPress={() => {
+            if (!canPrompt || canPrompt()) {
+              promptGoogleSignIn();
+            }
+          }}
           style={({ pressed }) => [
             loginStyles.secondaryButton,
             (disabled || !ready) && loginStyles.disabled,
@@ -320,8 +331,8 @@ export function LoginScreen({
   onRegister,
 }: {
   onLogin: (email: string, password: string) => Promise<unknown>;
-  onGoogleLogin?: (idToken: string) => Promise<unknown>;
-  onRegister: (email: string, password: string, fullName: string) => Promise<unknown>;
+  onGoogleLogin?: (idToken: string, consent?: SignupConsent) => Promise<unknown>;
+  onRegister: (email: string, password: string, fullName: string, consent: SignupConsent) => Promise<unknown>;
 }) {
   const { t } = useI18n();
   const [authMode, setAuthMode] = useState<AuthMode>("login");
@@ -333,6 +344,11 @@ export function LoginScreen({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showSlowHint, setShowSlowHint] = useState(false);
+  // Signup consent: both boxes start unchecked and must be ticked by the user.
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [confirmAge, setConfirmAge] = useState(false);
+  const hasConsent = acceptTerms && confirmAge;
+  useAnnounce(error);
 
   useEffect(() => {
     // Warm the backend as soon as the login screen appears so a spun-down
@@ -404,6 +420,10 @@ export function LoginScreen({
       setError(t("Password must be at least 8 characters."));
       return;
     }
+    if (!hasConsent) {
+      setError(t("Tick both boxes to create an account."));
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -411,7 +431,10 @@ export function LoginScreen({
     const slowHintTimer = setTimeout(() => setShowSlowHint(true), SLOW_LOGIN_HINT_MS);
 
     try {
-      await onRegister(normalizedEmail, password, normalizedName);
+      await onRegister(normalizedEmail, password, normalizedName, {
+        accept_terms: acceptTerms,
+        confirm_age: confirmAge,
+      });
     } catch (registerError) {
       if (registerError instanceof AuthApiError) {
         setError(registerError.message);
@@ -434,9 +457,17 @@ export function LoginScreen({
     setError(null);
 
     try {
-      await onGoogleLogin(idToken);
+      // Consent is sent only from the signup form, where the user ticked it;
+      // a Google login for an existing account needs none.
+      await onGoogleLogin(
+        idToken,
+        authMode === "signup" && hasConsent ? { accept_terms: true, confirm_age: true } : undefined,
+      );
     } catch (loginError) {
-      if (loginError instanceof AuthApiError) {
+      if (loginError instanceof AuthApiError && loginError.status === CONSENT_REQUIRED_STATUS) {
+        setAuthMode("signup");
+        setError(t("No Unibridge account uses this Google account yet. Tick both boxes below, then continue with Google to create one."));
+      } else if (loginError instanceof AuthApiError) {
         setError(loginError.message);
       } else {
         setError(t("Could not connect to the API. Check the backend URL and try again."));
@@ -473,6 +504,8 @@ export function LoginScreen({
                 <View style={loginStyles.assetMark}>
                   <Image
                     accessibilityIgnoresInvertColors
+                    accessible={false}
+                    aria-hidden
                     resizeMode="cover"
                     source={require("../../assets/icon.png")}
                     style={loginStyles.assetImage}
@@ -550,7 +583,9 @@ export function LoginScreen({
                         ? "Use a demo role preset or working credentials."
                         : "Use a demo role preset or enter working credentials manually."
                       : t("Sign in with your Unibridge credentials.")
-                    : t("Member accounts can browse, save, apply, and connect. Students and faculty join with their university Google account.")}
+                    : GOOGLE_OAUTH_CLIENT_ID
+                      ? t("Member accounts can browse, save, apply, and connect. Students and faculty join with their university Google account.")
+                      : t("Member accounts can browse, save, apply, and connect. Student and faculty roles are granted by university administrators.")}
                 </Text>
               </View>
 
@@ -562,6 +597,7 @@ export function LoginScreen({
                   return (
                     <Pressable
                       accessibilityRole="button"
+                      {...selectedButtonProps(active)}
                       key={mode.value}
                       onPress={() => switchAuthMode(mode.value)}
                       style={({ pressed }) => [
@@ -608,6 +644,7 @@ export function LoginScreen({
                         return (
                           <Pressable
                             accessibilityRole="button"
+                            {...selectedButtonProps(active)}
                             key={preset.role}
                             onPress={() => selectPreset(preset.role)}
                             style={({ pressed }) => [
@@ -666,6 +703,7 @@ export function LoginScreen({
                       <Text style={loginStyles.label}>{t("Email")}</Text>
                       <View style={[loginStyles.inputFrame, isCompact && loginStyles.inputFrameCompact]}>
                         <TextInput
+                          accessibilityLabel={t("Email")}
                           autoCapitalize="none"
                           autoComplete="email"
                           autoCorrect={false}
@@ -688,6 +726,7 @@ export function LoginScreen({
                       <Text style={loginStyles.label}>{t("Password")}</Text>
                       <View style={[loginStyles.inputFrame, isCompact && loginStyles.inputFrameCompact]}>
                         <TextInput
+                          accessibilityLabel={t("Password")}
                           autoCapitalize="none"
                           autoComplete="password"
                           onChangeText={(value) => {
@@ -721,7 +760,7 @@ export function LoginScreen({
                   </View>
 
                   {error ? (
-                    <View style={loginStyles.errorPanel}>
+                    <View {...liveRegionProps("assertive")} role="alert" style={loginStyles.errorPanel}>
                       <Text style={loginStyles.errorText}>{error}</Text>
                     </View>
                   ) : null}
@@ -769,6 +808,7 @@ export function LoginScreen({
                       <Text style={loginStyles.label}>{t("Full name")}</Text>
                       <View style={[loginStyles.inputFrame, isCompact && loginStyles.inputFrameCompact]}>
                         <TextInput
+                          accessibilityLabel={t("Full name")}
                           autoComplete="name"
                           autoCorrect={false}
                           onChangeText={setFullName}
@@ -786,6 +826,7 @@ export function LoginScreen({
                       <Text style={loginStyles.label}>{t("Email")}</Text>
                       <View style={[loginStyles.inputFrame, isCompact && loginStyles.inputFrameCompact]}>
                         <TextInput
+                          accessibilityLabel={t("Email")}
                           autoCapitalize="none"
                           autoComplete="email"
                           autoCorrect={false}
@@ -805,6 +846,7 @@ export function LoginScreen({
                       <Text style={loginStyles.label}>{t("Password")}</Text>
                       <View style={[loginStyles.inputFrame, isCompact && loginStyles.inputFrameCompact]}>
                         <TextInput
+                          accessibilityLabel={t("Password")}
                           autoCapitalize="none"
                           autoComplete="password-new"
                           onChangeText={setPassword}
@@ -834,8 +876,15 @@ export function LoginScreen({
                     </View>
                   </View>
 
+                  <ConsentCheckboxes
+                    acceptTerms={acceptTerms}
+                    confirmAge={confirmAge}
+                    onAcceptTermsChange={setAcceptTerms}
+                    onConfirmAgeChange={setConfirmAge}
+                  />
+
                   {error ? (
-                    <View style={loginStyles.errorPanel}>
+                    <View {...liveRegionProps("assertive")} role="alert" style={loginStyles.errorPanel}>
                       <Text style={loginStyles.errorText}>{error}</Text>
                     </View>
                   ) : null}
@@ -871,6 +920,13 @@ export function LoginScreen({
 
                   {GOOGLE_OAUTH_CLIENT_ID && onGoogleLogin ? (
                     <GoogleSsoButton
+                      canPrompt={() => {
+                        if (!hasConsent) {
+                          setError(t("Tick both boxes to create an account."));
+                          return false;
+                        }
+                        return true;
+                      }}
                       clientId={GOOGLE_OAUTH_CLIENT_ID}
                       disabled={loading}
                       onError={setError}
@@ -879,6 +935,8 @@ export function LoginScreen({
                   ) : null}
                 </>
               )}
+
+              <LegalLinks align="center" />
 
               {DEMO_LOGINS_ENABLED ? (
                 <View style={loginStyles.apiHint}>
@@ -1519,7 +1577,8 @@ const loginStyles = StyleSheet.create({
   inputFrame: {
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    borderColor: "#DBE2EB",
+    // >= 3:1 against white so the field edge is perceivable (WCAG 1.4.11).
+    borderColor: palette.fieldBorder,
     borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",

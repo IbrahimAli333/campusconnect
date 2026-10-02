@@ -15,16 +15,20 @@ export const palette = {
   border: "#DCE3EC",
   text: "#0F172A",
   muted: "#5A6679",
-  faint: "#8C9AAC",
+  // Darkened from #8C9AAC (2.86:1 on white) so placeholder and helper text
+  // reach WCAG AA 4.5:1 on every light surface it sits on.
+  faint: "#617085",
+  // Text-field boundary: 3:1 against white and page (WCAG 1.4.11).
+  fieldBorder: "#8390A3",
   blue: "#2563EB",
   blueSoft: "#EAF1FD",
   teal: "#2563EB",
   tealSoft: "#E8F0FE",
-  amber: "#B45309",
+  amber: "#AE5009", // was #B45309: 4.26:1 on buff / 4.49:1 on amberSoft
   amberSoft: "#FDF1DC",
-  red: "#DC2626",
+  red: "#D52222", // was #DC2626: 4.23:1 on redSoft
   redSoft: "#FDECEC",
-  green: "#15803D",
+  green: "#157F3C", // was #15803D: 4.46:1 on greenSoft
   greenSoft: "#E7F5EC",
   violet: "#7C3AED",
   violetSoft: "#F1EBFE",
@@ -237,14 +241,15 @@ export const styles = StyleSheet.create({
     borderColor: "#DCE3EC",
     borderRadius: 12,
     borderWidth: 1,
-    height: 40,
+    // 44x44 minimum touch target (Apple HIG / WCAG 2.5.5).
+    height: 44,
     justifyContent: "center",
-    width: 40,
+    width: 44,
     ...paperShadow("sunken"),
   },
   iconButtonCompact: {
-    height: 34,
-    width: 34,
+    height: 44,
+    width: 44,
   },
   rolePanel: {
     backgroundColor: palette.bond,
@@ -309,7 +314,7 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 7,
     justifyContent: "center",
-    minHeight: 42,
+    minHeight: 44,
     paddingHorizontal: 10,
   },
   roleButtonActive: {
@@ -363,7 +368,7 @@ export const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     justifyContent: "center",
-    minHeight: 38,
+    minHeight: 44,
     minWidth: 104,
     paddingHorizontal: 14,
     ...paperShadow("sunken"),
@@ -371,12 +376,12 @@ export const styles = StyleSheet.create({
   segmentedItemCompact: {
     flex: 1,
     gap: 2,
-    minHeight: 42,
-    minWidth: 0,
+    minHeight: 44,
+    minWidth: 44,
     paddingHorizontal: 5,
   },
   segmentedItemPhone: {
-    minHeight: 36,
+    minHeight: 44,
     paddingHorizontal: 3,
   },
   segmentedItemActive: {
@@ -692,9 +697,9 @@ export const styles = StyleSheet.create({
   searchRow: {
     alignItems: "center",
     backgroundColor: palette.bond,
-    borderBottomColor: "#DCE3EC",
+    borderBottomColor: palette.fieldBorder,
     borderBottomWidth: 1,
-    borderColor: "#DFE5EE",
+    borderColor: palette.fieldBorder,
     borderRadius: 12,
     borderWidth: 1,
     flexDirection: "row",
@@ -709,7 +714,7 @@ export const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: "700",
-    minHeight: 40,
+    minHeight: 44,
     ...webInputReset(),
   },
   primaryAction: {
@@ -787,7 +792,7 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 6,
     justifyContent: "center",
-    minHeight: 38,
+    minHeight: 44,
     paddingHorizontal: 12,
   },
   retryButtonText: {
@@ -806,7 +811,7 @@ export const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     maxWidth: 260,
-    minHeight: 38,
+    minHeight: 44,
     justifyContent: "center",
     paddingHorizontal: 12,
   },
@@ -843,9 +848,9 @@ export const styles = StyleSheet.create({
     borderColor: palette.border,
     borderRadius: 12,
     borderWidth: 1,
-    height: 36,
+    height: 44,
     justifyContent: "center",
-    width: 36,
+    width: 44,
   },
   attendanceButtonActive: {
     backgroundColor: palette.green,
@@ -882,9 +887,9 @@ export const styles = StyleSheet.create({
     borderColor: palette.border,
     borderRadius: 12,
     borderWidth: 1,
-    height: 34,
+    height: 44,
     justifyContent: "center",
-    width: 34,
+    width: 44,
   },
   scoreValue: {
     color: palette.text,
@@ -895,13 +900,13 @@ export const styles = StyleSheet.create({
   },
   scoreInput: {
     backgroundColor: palette.surface,
-    borderColor: palette.border,
+    borderColor: palette.fieldBorder,
     borderRadius: 12,
     borderWidth: 1,
     color: palette.text,
     fontSize: 16,
     fontWeight: "700",
-    height: 36,
+    height: 44,
     minWidth: 58,
     paddingHorizontal: 8,
     textAlign: "center",

@@ -20,6 +20,9 @@ export const networkStyles = StyleSheet.create({
   applicationCard: {
     minWidth: 0,
   },
+  applicationOpenArea: {
+    gap: 12,
+  },
   bodyText: {
     color: palette.text,
     fontSize: 14,
@@ -39,9 +42,9 @@ export const networkStyles = StyleSheet.create({
     borderColor: "#DCE3EC",
     borderRadius: 12,
     borderWidth: 1,
-    height: 38,
+    height: 44,
     justifyContent: "center",
-    width: 38,
+    width: 44,
     ...paperShadow("sunken"),
   },
   discoverBody: {
@@ -228,7 +231,8 @@ export const networkStyles = StyleSheet.create({
     borderColor: "#DCE3EC",
     borderRadius: 12,
     borderWidth: 1,
-    minHeight: 36,
+    minHeight: 44,
+    minWidth: 44,
     justifyContent: "center",
     paddingHorizontal: 11,
     ...paperShadow("sunken"),
@@ -257,10 +261,12 @@ export const networkStyles = StyleSheet.create({
   },
   formInput: {
     backgroundColor: palette.bond,
-    borderColor: "#DCE3EC",
+    // 3:1 against the surrounding surface so the field edge is perceivable
+    // (WCAG 1.4.11); the old #DCE3EC was 1.29:1.
+    borderColor: palette.fieldBorder,
     borderRadius: 12,
     borderWidth: 1,
-    minHeight: 42,
+    minHeight: 44,
     paddingHorizontal: 11,
     ...paperShadow("sunken"),
   },
@@ -292,7 +298,8 @@ export const networkStyles = StyleSheet.create({
     flexDirection: "row",
     gap: 7,
     justifyContent: "center",
-    minHeight: 36,
+    minHeight: 44,
+    minWidth: 44,
     paddingHorizontal: 12,
     ...paperShadow("cutout"),
   },
@@ -381,7 +388,8 @@ export const networkStyles = StyleSheet.create({
     gap: 8,
   },
   lockedField: {
-    backgroundColor: "#E9EEF5",
+    // Lightened from #E9EEF5 so the teal eyebrow label inside reaches 4.5:1.
+    backgroundColor: "#ECF0F6",
     borderColor: "#DCE3EC",
     borderRadius: 12,
     borderWidth: 1,
@@ -760,7 +768,8 @@ export const networkStyles = StyleSheet.create({
     lineHeight: 20,
   },
   chatBubbleMeta: {
-    color: palette.faint,
+    // muted, not faint: faint is 4.41:1 on the teal-tinted "mine" bubble.
+    color: palette.muted,
     fontSize: 11,
     fontWeight: "700",
   },

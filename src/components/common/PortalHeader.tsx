@@ -6,10 +6,19 @@ import { LANGUAGES, useI18n } from "../../lib/i18n";
 const brandMark = require("../../../assets/brand-mark.png");
 
 import { palette, styles } from "../../styles/theme";
+import { decorativeProps } from "./a11y";
 import { IconButton } from "./IconButton";
 import { RoleButton } from "./RoleButton";
 
 type UserRole = "member" | "student" | "teacher";
+
+// Endonyms: a language is announced in its own name, so these are not run
+// through t().
+const LANGUAGE_NAMES: Record<string, string> = {
+  az: "Azərbaycanca",
+  en: "English",
+  ru: "Русский",
+};
 
 export function PortalHeader({
   onRoleChange,
@@ -33,11 +42,12 @@ export function PortalHeader({
   const { width } = useWindowDimensions();
   const isCompact = width < 520;
 
+  const languageIndex = LANGUAGES.findIndex((entry) => entry.code === language);
+  const nextLanguage = LANGUAGES[(languageIndex + 1) % LANGUAGES.length];
+
   const cycleLanguage = () => {
-    const index = LANGUAGES.findIndex((entry) => entry.code === language);
-    const next = LANGUAGES[(index + 1) % LANGUAGES.length];
-    if (next) {
-      setLanguage(next.code);
+    if (nextLanguage) {
+      setLanguage(nextLanguage.code);
     }
   };
 
@@ -46,7 +56,9 @@ export function PortalHeader({
       <View style={[styles.topbar, isCompact && styles.topbarCompact]}>
         <View style={[styles.brandBlock, isCompact && styles.brandBlockCompact]}>
           <View style={[styles.brandIcon, isCompact && styles.brandIconCompact]}>
+            {/* Decorative: the visible "Unibridge" title next to it names the brand. */}
             <Image
+              {...decorativeProps}
               accessibilityIgnoresInvertColors
               resizeMode="contain"
               source={brandMark}
@@ -62,7 +74,16 @@ export function PortalHeader({
         </View>
         <View style={[styles.topbarActions, isCompact && styles.topbarActionsCompact]}>
           <Pressable
-            accessibilityLabel={t("Language")}
+            // The visible text is only the code ("EN"), so the name keeps the
+            // code (label-in-name, WCAG 2.5.3) and says what the button does.
+            accessibilityHint={
+              nextLanguage
+                ? t("Switches to {language}", {
+                    language: LANGUAGE_NAMES[nextLanguage.code] ?? nextLanguage.label,
+                  })
+                : undefined
+            }
+            accessibilityLabel={t("Change language, current: {code}", { code: language.toUpperCase() })}
             accessibilityRole="button"
             onPress={cycleLanguage}
             style={({ pressed }) => [

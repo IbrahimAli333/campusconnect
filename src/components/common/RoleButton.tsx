@@ -1,6 +1,7 @@
 import { Pressable, Text } from "react-native";
 
 import { palette, styles } from "../../styles/theme";
+import { selectedButtonProps } from "./a11y";
 import type { IconComponent } from "./types";
 
 export function RoleButton({
@@ -17,6 +18,7 @@ export function RoleButton({
   return (
     <Pressable
       accessibilityRole="button"
+      {...selectedButtonProps(active)}
       onPress={onPress}
       style={({ pressed }) => [styles.roleButton, active && styles.roleButtonActive, pressed && styles.pressed]}
     >

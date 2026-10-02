@@ -63,13 +63,15 @@ export function SegmentedControl<T extends string>({
   const { t } = useI18n();
   const { width } = useWindowDimensions();
   const isPhone = width < 520;
+  const badgeLabel = (label: string, count: number) =>
+    count > 0 ? t("{label}, {n} new", { label, n: count > 99 ? "99+" : count }) : label;
   const isCompactNetworkNav =
     items.length === 5 && items.every((item) => ["discover", "opportunities", "applications", "profile", "connections"].includes(item));
 
   if (isCompactNetworkNav) {
     return (
       <View style={[styles.segmentedWrap, isPhone && styles.segmentedWrapCompact]}>
-        <View style={[styles.segmentedGrid, isPhone && styles.segmentedGridCompact]}>
+        <View accessibilityRole="tablist" style={[styles.segmentedGrid, isPhone && styles.segmentedGridCompact]}>
           {items.map((item) => {
             const isActive = item === active;
             const label = t(labels?.[item] ?? compactLabels[item] ?? tabLabels[item] ?? item);
@@ -78,7 +80,7 @@ export function SegmentedControl<T extends string>({
 
             return (
               <Pressable
-                accessibilityLabel={badgeCount > 0 ? `${label}, ${badgeCount} new` : label}
+                accessibilityLabel={badgeLabel(label, badgeCount)}
                 accessibilityRole="tab"
                 aria-selected={isActive}
                 key={item}
@@ -119,14 +121,19 @@ export function SegmentedControl<T extends string>({
   }
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segmentedWrap}>
+    <ScrollView
+      accessibilityRole="tablist"
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.segmentedWrap}
+    >
       {items.map((item) => {
         const isActive = item === active;
         const label = t(labels?.[item] ?? tabLabels[item] ?? item);
         const badgeCount = badges?.[item] ?? 0;
         return (
           <Pressable
-            accessibilityLabel={badgeCount > 0 ? `${label}, ${badgeCount} new` : label}
+            accessibilityLabel={badgeLabel(label, badgeCount)}
             accessibilityRole="tab"
             aria-selected={isActive}
             key={item}

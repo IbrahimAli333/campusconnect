@@ -14,7 +14,15 @@ import {
 import { palette, styles } from "../../styles/theme";
 import type { MessageRead, MessageThreadRead, ProfileSummary } from "../../types/network";
 
-import { InitialsAvatar, InlineAction, PanelHeader, formatFullDate, profileMeta, toErrorMessage } from "./shared";
+import {
+  ActionMessage,
+  InitialsAvatar,
+  InlineAction,
+  PanelHeader,
+  formatFullDate,
+  profileMeta,
+  toErrorMessage,
+} from "./shared";
 import { networkStyles } from "./styles";
 
 const THREADS_POLL_MS = 15000;
@@ -94,7 +102,7 @@ function ChatPanel({
       <PanelHeader eyebrow={profileMeta(profile, t)} icon={MessageCircle} onClose={onClose} title={profile.user.full_name} />
 
       {loadError && !messages ? (
-        <Text style={[networkStyles.actionMessage, networkStyles.errorText]}>{loadError}</Text>
+        <ActionMessage error>{loadError}</ActionMessage>
       ) : null}
 
       {messages && messages.length === 0 ? (
@@ -124,7 +132,9 @@ function ChatPanel({
           onChangeText={setDraft}
           placeholder={t("Write a message")}
           placeholderTextColor={palette.faint}
-          style={[styles.textInput, networkStyles.chatComposerInput]}
+          // formInput gives the field a visible 3:1 boundary (WCAG 1.4.11);
+          // the bare textInput style had no edge at all inside the card.
+          style={[styles.textInput, networkStyles.formInput, networkStyles.chatComposerInput]}
           value={draft}
         />
         <InlineAction
@@ -135,7 +145,7 @@ function ChatPanel({
           onPress={() => void send()}
         />
       </View>
-      {sendError ? <Text style={[networkStyles.actionMessage, networkStyles.errorText]}>{sendError}</Text> : null}
+      {sendError ? <ActionMessage error>{sendError}</ActionMessage> : null}
     </View>
   );
 }
@@ -242,7 +252,7 @@ export function MessagesSection({
       ) : null}
 
       {threadsError && !threads ? (
-        <Text style={[networkStyles.actionMessage, networkStyles.errorText]}>{threadsError}</Text>
+        <ActionMessage error>{threadsError}</ActionMessage>
       ) : null}
 
       {sortedThreads.length ? (

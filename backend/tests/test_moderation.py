@@ -147,6 +147,24 @@ class TestAccountDeletion:
         assert member_email not in emails
 
 
+    def test_teacher_with_legacy_academic_records_can_delete_account(
+        self, seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]]
+    ) -> None:
+        client, session_local = seeded_client_and_sessionmaker
+        token = _login(client, "teacher")
+        teacher_email = DEV_CREDENTIALS["teacher"]["email"]
+
+        response = client.post(
+            "/api/v1/auth/delete-account",
+            headers=_auth_headers(token),
+            json={"password": DEV_CREDENTIALS["teacher"]["password"]},
+        )
+        assert response.status_code == 204
+
+        with session_local() as db:
+            assert db.scalar(select(User).where(User.email == teacher_email)) is None
+
+
 class TestContentReports:
     def test_report_profile_and_opportunity(
         self, seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]]

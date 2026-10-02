@@ -18,6 +18,7 @@ import {
 import { ScrollAnchorContext } from "./src/lib/scroll-anchor";
 import { CampusConnectScreen } from "./src/screens/CampusConnectScreen";
 import { LoginScreen } from "./src/screens/LoginScreen";
+import { TermsAcceptanceScreen } from "./src/screens/TermsAcceptanceScreen";
 import { styles } from "./src/styles/theme";
 import type { NetworkTab } from "./src/types/network";
 
@@ -92,13 +93,16 @@ function AppInner() {
     ]);
   }, [auth, t]);
 
+  const termsAcceptanceRequired = Boolean(auth.user?.terms_acceptance_required);
+
   // Ask for notification permission and register the device only once a
-  // session exists, so the prompt never shows on the login screen.
+  // session exists and the current terms are accepted, so the prompt never
+  // shows on the login or consent screens. Users can opt out in the Me tab.
   useEffect(() => {
-    if (auth.token) {
+    if (auth.token && !termsAcceptanceRequired) {
       void registerForPushNotifications(auth.token);
     }
-  }, [auth.token]);
+  }, [auth.token, termsAcceptanceRequired]);
 
   useEffect(() => subscribeToNotificationTaps(handleTabChange), [handleTabChange]);
 
@@ -116,6 +120,15 @@ function AppInner() {
       <SafeAreaView style={styles.safeArea}>
         <StatusBar style="dark" />
         <LoginScreen onGoogleLogin={auth.loginWithGoogle} onLogin={auth.login} onRegister={auth.register} />
+      </SafeAreaView>
+    );
+  }
+
+  if (auth.user.terms_acceptance_required) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="dark" />
+        <TermsAcceptanceScreen onAccept={auth.acceptTerms} onSignOut={handleLogout} user={auth.user} />
       </SafeAreaView>
     );
   }
@@ -139,7 +152,12 @@ function AppInner() {
           showsVerticalScrollIndicator={false}
         >
           <ScrollAnchorContext.Provider value={scrollRef}>
-            <CampusConnectScreen activeTab={activeTab} onAccountDeleted={auth.logout} token={auth.token} />
+            <CampusConnectScreen
+              account={auth.user}
+              activeTab={activeTab}
+              onAccountDeleted={auth.logout}
+              token={auth.token}
+            />
           </ScrollAnchorContext.Provider>
         </ScrollView>
       </View>

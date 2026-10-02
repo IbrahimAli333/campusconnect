@@ -6,7 +6,23 @@ import { palette } from "./theme";
 // get no focus indicator (WCAG 2.4.7). Inject one global rule instead.
 if (Platform.OS === "web" && typeof document !== "undefined") {
   const style = document.createElement("style");
-  style.textContent = `[role="button"]:focus-visible, [role="tab"]:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid ${palette.teal}; outline-offset: 2px; }`;
+  // !important: TextInputs ship an `outline: none` reset (webInputReset) that
+  // would otherwise win the cascade and hide the ring on fields.
+  const selectors = [
+    '[role="button"]',
+    '[role="tab"]',
+    '[role="checkbox"]',
+    '[role="radio"]',
+    '[role="switch"]',
+    '[role="link"]',
+    "a[href]",
+    "input",
+    "textarea",
+    "select",
+  ]
+    .map((selector) => `${selector}:focus-visible`)
+    .join(", ");
+  style.textContent = `${selectors} { outline: 2px solid ${palette.teal} !important; outline-offset: 2px; }`;
   document.head.appendChild(style);
 }
 

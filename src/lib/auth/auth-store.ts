@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   AuthApiError,
+  acceptTerms as requestAcceptTerms,
   getMe as requestCurrentUser,
   login as requestLogin,
   loginWithGoogle as requestGoogleLogin,
@@ -11,6 +12,7 @@ import {
   type TokenResponse,
 } from "../api/auth";
 import { setUnauthorizedHandler } from "../api/network";
+import type { SignupConsent } from "../legal";
 import { clearPortalDataCache } from "../api/usePortalData";
 import { clearStoredSession, loadStoredSession, storeSession } from "./token-storage";
 
@@ -24,8 +26,9 @@ export interface AuthStore {
   isAuthenticated: boolean;
   isRestoring: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
-  register: (email: string, password: string, fullName: string) => Promise<AuthUser>;
-  loginWithGoogle: (idToken: string) => Promise<AuthUser>;
+  register: (email: string, password: string, fullName: string, consent: SignupConsent) => Promise<AuthUser>;
+  loginWithGoogle: (idToken: string, consent?: SignupConsent) => Promise<AuthUser>;
+  acceptTerms: (termsVersion: string) => Promise<AuthUser>;
   refreshCurrentUser: () => Promise<AuthUser | null>;
   logout: () => void;
 }
@@ -54,8 +57,8 @@ export function useAuthStore(): AuthStore {
   );
 
   const register = useCallback(
-    async (email: string, password: string, fullName: string) => {
-      const response = await requestRegister(email, password, fullName);
+    async (email: string, password: string, fullName: string, consent: SignupConsent) => {
+      const response = await requestRegister(email, password, fullName, consent);
       applySession(response);
       return response.user;
     },
@@ -63,12 +66,24 @@ export function useAuthStore(): AuthStore {
   );
 
   const loginWithGoogle = useCallback(
-    async (idToken: string) => {
-      const response = await requestGoogleLogin(idToken);
+    async (idToken: string, consent?: SignupConsent) => {
+      const response = await requestGoogleLogin(idToken, consent);
       applySession(response);
       return response.user;
     },
     [applySession],
+  );
+
+  const acceptTerms = useCallback(
+    async (termsVersion: string) => {
+      if (!token) {
+        throw new AuthApiError("Not signed in", 401);
+      }
+      const nextUser = await requestAcceptTerms(token, termsVersion);
+      setUser(nextUser);
+      return nextUser;
+    },
+    [token],
   );
 
   const refreshCurrentUser = useCallback(async () => {
@@ -190,9 +205,10 @@ export function useAuthStore(): AuthStore {
       login,
       register,
       loginWithGoogle,
+      acceptTerms,
       refreshCurrentUser,
       logout,
     }),
-    [isRestoring, login, loginWithGoogle, logout, refreshCurrentUser, register, token, user],
+    [acceptTerms, isRestoring, login, loginWithGoogle, logout, refreshCurrentUser, register, token, user],
   );
 }

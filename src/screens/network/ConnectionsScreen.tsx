@@ -86,6 +86,7 @@ import type {
 } from "../../types/network";
 
 import {
+  ActionMessage,
   DiscoverDashboard,
   FilterChip,
   FormField,
@@ -294,14 +295,7 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
                       </View>
                     ) : null}
                     {decisionMessages[connection.id] ? (
-                      <Text
-                        style={[
-                          networkStyles.actionMessage,
-                          decisionErrors[connection.id] && networkStyles.errorText,
-                        ]}
-                      >
-                        {decisionMessages[connection.id]}
-                      </Text>
+                      <ActionMessage error={Boolean(decisionErrors[connection.id])}>{decisionMessages[connection.id]}</ActionMessage>
                     ) : null}
                   </View>
                   <StatusChip label={t(titleCase(connection.status))} tone={statusTone(connection.status)} />
@@ -358,14 +352,7 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
                       </View>
                     ) : null}
                     {decisionMessages[connection.id] ? (
-                      <Text
-                        style={[
-                          networkStyles.actionMessage,
-                          decisionErrors[connection.id] && networkStyles.errorText,
-                        ]}
-                      >
-                        {decisionMessages[connection.id]}
-                      </Text>
+                      <ActionMessage error={Boolean(decisionErrors[connection.id])}>{decisionMessages[connection.id]}</ActionMessage>
                     ) : null}
                   </View>
                   <StatusChip label={t(titleCase(connection.status))} tone={statusTone(connection.status)} />
@@ -412,7 +399,7 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
             ))}
           </View>
           {unblockError ? (
-            <Text style={[networkStyles.actionMessage, networkStyles.errorText]}>{unblockError}</Text>
+            <ActionMessage error>{unblockError}</ActionMessage>
           ) : null}
         </>
       ) : null}

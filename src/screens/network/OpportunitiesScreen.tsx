@@ -87,6 +87,7 @@ import type {
 } from "../../types/network";
 
 import {
+  ActionMessage,
   DiscoverDashboard,
   FilterChip,
   FormField,
@@ -657,6 +658,9 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
           <Text style={styles.smallText}>
             {t("Describe what you are looking for — the assistant searches only posts inside Unibridge.")}
           </Text>
+          <Text style={styles.smallText}>
+            {t("Your request is sent to Anthropic's Claude AI to rank posts. Do not include personal information.")}
+          </Text>
           <LabeledInput
             label={t("Your request")}
             maxLength={500}
@@ -673,10 +677,10 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
             loading={assistantLoading}
             onPress={() => void submitAssistantQuery()}
           />
-          {assistantError ? <Text style={networkStyles.errorText}>{assistantError}</Text> : null}
+          {assistantError ? <ActionMessage bare error>{assistantError}</ActionMessage> : null}
           {assistantResult && !assistantLoading ? (
             <>
-              <Text style={networkStyles.actionMessage}>{assistantResult.reply}</Text>
+              <ActionMessage>{assistantResult.reply}</ActionMessage>
               {assistantResult.matches.length ? (
                 <View style={[styles.grid, isWide && styles.gridWide]}>
                   {assistantResult.matches.map((opportunity) => {
@@ -795,9 +799,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
             value={createSkills}
           />
           {createMessage ? (
-            <Text style={[networkStyles.actionMessage, createState === "error" && networkStyles.errorText]}>
-              {createMessage}
-            </Text>
+            <ActionMessage error={createState === "error"}>{createMessage}</ActionMessage>
           ) : null}
           <InlineAction
             icon={Send}
@@ -901,14 +903,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
                       ) : null}
                     </View>
                     {actionMessages[`${opportunity.id}:status`] ? (
-                      <Text
-                        style={[
-                          networkStyles.actionMessage,
-                          ownedStatusErrors[opportunity.id] && networkStyles.errorText,
-                        ]}
-                      >
-                        {actionMessages[`${opportunity.id}:status`]}
-                      </Text>
+                      <ActionMessage error={Boolean(ownedStatusErrors[opportunity.id])}>{actionMessages[`${opportunity.id}:status`]}</ActionMessage>
                     ) : null}
                   </View>
                 );
@@ -989,7 +984,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
           ) : null}
           {ownerProfileError ? (
             <View style={networkStyles.panelList}>
-              <Text style={networkStyles.errorText}>{ownerProfileError}</Text>
+              <ActionMessage bare error>{ownerProfileError}</ActionMessage>
               <InlineAction icon={RefreshCw} label={t("Retry")} onPress={retryOwnerProfile} secondary />
             </View>
           ) : null}

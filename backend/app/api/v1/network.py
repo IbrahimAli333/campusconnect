@@ -1314,7 +1314,6 @@ def ask_assistant(
             "title": opportunity.title,
             "description": opportunity.description,
             "required_skills": opportunity.required_skills,
-            "owner": opportunity.owner_profile.user.full_name,
         }
         for opportunity in opportunities
     ]
