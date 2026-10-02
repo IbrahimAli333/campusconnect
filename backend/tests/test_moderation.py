@@ -147,6 +147,24 @@ class TestAccountDeletion:
         assert member_email not in emails
 
 
+    def test_teacher_with_legacy_academic_records_can_delete_account(
+        self, seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]]
+    ) -> None:
+        client, session_local = seeded_client_and_sessionmaker
+        token = _login(client, "teacher")
+        teacher_email = DEV_CREDENTIALS["teacher"]["email"]
+
+        response = client.post(
+            "/api/v1/auth/delete-account",
+            headers=_auth_headers(token),
+            json={"password": DEV_CREDENTIALS["teacher"]["password"]},
+        )
+        assert response.status_code == 204
+
+        with session_local() as db:
+            assert db.scalar(select(User).where(User.email == teacher_email)) is None
+
+
 class TestContentReports:
     def test_report_profile_and_opportunity(
         self, seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]]
@@ -361,3 +379,87 @@ class TestProfileBlocks:
             headers=_auth_headers(member_token),
         )
         assert response.status_code == 404
+
+
+class TestDeactivatedAccountsAreHidden:
+    def test_deactivated_users_profile_posts_and_messages_disappear(
+        self, seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]]
+    ) -> None:
+        client, session_local = seeded_client_and_sessionmaker
+        member_token = _login(client, "member")
+        teacher_email = DEV_CREDENTIALS["teacher"]["email"]
+        teacher_profile_id = _profile_id_by_email(client, member_token, teacher_email)
+
+        response = client.get(
+            "/api/v1/network/opportunities", headers=_auth_headers(member_token)
+        )
+        teacher_posts = [
+            post["id"]
+            for post in response.json()
+            if post["owner_profile"]["id"] == teacher_profile_id
+        ]
+        assert teacher_posts, "seed data should give the teacher at least one post"
+
+        # The member has history with the teacher: a connection request and
+        # an application to one of the teacher's open posts.
+        client.post(
+            f"/api/v1/network/connections/{teacher_profile_id}/request",
+            headers=_auth_headers(member_token),
+        )
+        open_posts = [
+            post["id"]
+            for post in response.json()
+            if post["owner_profile"]["id"] == teacher_profile_id and post["status"] == "open"
+        ]
+        assert open_posts
+        assert (
+            client.post(
+                f"/api/v1/network/opportunities/{open_posts[0]}/apply",
+                headers=_auth_headers(member_token),
+                json={},
+            ).status_code
+            == 201
+        )
+
+        # Moderation action: an admin deactivates the teacher.
+        with session_local() as db:
+            teacher = db.scalar(select(User).where(User.email == teacher_email))
+            assert teacher is not None
+            teacher.is_active = False
+            db.commit()
+
+        profiles = client.get(
+            "/api/v1/network/profiles", headers=_auth_headers(member_token)
+        ).json()
+        assert teacher_profile_id not in [profile["id"] for profile in profiles]
+        assert (
+            client.get(
+                f"/api/v1/network/profiles/{teacher_profile_id}",
+                headers=_auth_headers(member_token),
+            ).status_code
+            == 404
+        )
+
+        posts = client.get(
+            "/api/v1/network/opportunities", headers=_auth_headers(member_token)
+        ).json()
+        assert not set(teacher_posts) & {post["id"] for post in posts}
+
+        response = client.post(
+            f"/api/v1/network/messages/threads/{teacher_profile_id}",
+            headers=_auth_headers(member_token),
+            json={"body": "hello"},
+        )
+        assert response.status_code in (403, 404)
+
+        # The deactivated account also leaves the member's own lists.
+        connections = client.get(
+            "/api/v1/network/connections/me", headers=_auth_headers(member_token)
+        ).json()
+        assert all(
+            item["receiver_profile"]["id"] != teacher_profile_id for item in connections["sent"]
+        )
+        applications = client.get(
+            "/api/v1/network/applications/me", headers=_auth_headers(member_token)
+        ).json()
+        assert all(item["opportunity"]["id"] not in teacher_posts for item in applications)

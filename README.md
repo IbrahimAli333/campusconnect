@@ -21,6 +21,14 @@ Project coordination, stack decisions, and milestone ownership live in
 [`docs/PROJECT_COORDINATION.md`](docs/PROJECT_COORDINATION.md).
 Publishing and deployment steps live in
 [`docs/PUBLISHING.md`](docs/PUBLISHING.md).
+Legal and compliance status (Terms of Service, privacy, consent, data
+inventory, third parties, and open questions for the lawyer) lives in
+[`COMPLIANCE.md`](COMPLIANCE.md). The public legal pages are
+[`docs/terms.html`](docs/terms.html),
+[`docs/privacy-policy.html`](docs/privacy-policy.html),
+[`docs/child-safety.html`](docs/child-safety.html), and
+[`docs/delete-account.html`](docs/delete-account.html) — all DRAFTS pending
+lawyer review.
 
 ## Current MVP
 
@@ -58,17 +66,21 @@ Publishing and deployment steps live in
 ## Mobile Unibridge Flow
 
 The authenticated Expo app opens directly into the Unibridge networking
-shell. It uses custom segmented tabs and does not add React Navigation yet.
+shell: React Navigation bottom tabs, a gradient "Caspian" header on every
+tab, and detail views that slide up as bottom sheets (`@gorhom/bottom-sheet`).
+The design system (Azerbaijan-inspired palette, Inter font, SVG ornaments,
+spring/haptic press feedback) lives in `src/styles/theme.ts`,
+`src/components/brand/`, and `src/components/ui/`.
 
 - **Discover** loads `/api/v1/network/recommendations/profiles` for an early
   deterministic matching preview, then loads `/api/v1/network/profiles`,
   enriches visible profiles with detail data, supports local search by name,
-  skill, and university, opens profile detail panels in-screen, and sends
+  skill, and university, opens profile details in a bottom sheet, and sends
   connection requests with `/api/v1/network/connections/{profile_id}/request`.
 - **Opportunities** loads `/api/v1/network/recommendations/opportunities` for
   recommended open posts, then loads `/api/v1/network/opportunities`, filters
-  by startup, research, internship, job, and project, opens in-screen
-  opportunity detail panels from tapped cards, supports apply/save actions, and
+  by startup, research, internship, job, and project, opens
+  opportunity details in bottom sheets from tapped cards, supports apply/save actions, and
   includes an inline create-opportunity form. Detail panels use
   `/api/v1/network/opportunities/{opportunity_id}` and show owner, required
   skills, applied, and saved state. The same tab includes **My Posts**, loaded
@@ -79,12 +91,12 @@ shell. It uses custom segmented tabs and does not add React Navigation yet.
   status controls for reviewing, accepted, and rejected.
 - **Applications** loads `/api/v1/network/applications/me` and tracks the
   current user's submitted applications with opportunity title, type, owner,
-  status, and submitted date. Tapping an application opens the same in-screen
-  opportunity detail panel without adding a navigation library.
+  status, and submitted date. Tapping an application opens the same
+  opportunity detail bottom sheet.
 - **Profile** loads `/api/v1/network/me`, shows headline, bio, university,
   faculty, location, visibility, skills, and resume entries, edits basic
   profile fields through `PATCH /api/v1/network/me`, and manages skills and
-  portfolio/resume entries inline without adding a navigation library. Skill
+  portfolio/resume entries inline. Skill
   edits use `/api/v1/network/me/skills`; resume edits use
   `/api/v1/network/me/resume`.
 - **Connections** loads `/api/v1/network/connections/me` and shows the current

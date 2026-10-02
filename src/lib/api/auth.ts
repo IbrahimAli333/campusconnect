@@ -1,3 +1,4 @@
+import type { SignupConsent } from "../legal";
 import { API_BASE_URL } from "./config";
 import { fetchWithTimeout } from "./request";
 
@@ -9,6 +10,13 @@ export interface AuthUser {
   full_name: string;
   role: BackendRole;
   is_active: boolean;
+  terms_version: string | null;
+  terms_accepted_at: string | null;
+  age_confirmed_at: string | null;
+  current_terms_version: string;
+  // True until the current Terms/Privacy version is accepted and age is
+  // confirmed; the app shows the acceptance screen until then.
+  terms_acceptance_required: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -96,14 +104,20 @@ export function login(email: string, password: string): Promise<TokenResponse> {
 }
 
 // Public signup always creates a member account; posting roles come from
-// university SSO or admin provisioning.
-export function register(email: string, password: string, fullName: string): Promise<TokenResponse> {
+// university SSO or admin provisioning. The server rejects signups without
+// both consent boxes ticked.
+export function register(
+  email: string,
+  password: string,
+  fullName: string,
+  consent: SignupConsent,
+): Promise<TokenResponse> {
   return requestJson<TokenResponse>("/api/v1/auth/register", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ email, password, full_name: fullName }),
+    body: JSON.stringify({ email, password, full_name: fullName, ...consent }),
   });
 }
 
@@ -117,13 +131,38 @@ export function refreshSession(refreshToken: string): Promise<TokenResponse> {
   });
 }
 
-export function loginWithGoogle(idToken: string): Promise<TokenResponse> {
+// Status the backend returns when a Google sign-in would create a new account
+// but the consent boxes were not ticked.
+export const CONSENT_REQUIRED_STATUS = 428;
+
+export function loginWithGoogle(idToken: string, consent?: SignupConsent): Promise<TokenResponse> {
   return requestJson<TokenResponse>("/api/v1/auth/sso/google", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ id_token: idToken }),
+    body: JSON.stringify({ id_token: idToken, ...consent }),
+  });
+}
+
+export function acceptTerms(token: string, termsVersion: string): Promise<AuthUser> {
+  return requestJson<AuthUser>("/api/v1/auth/accept-terms", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ terms_version: termsVersion, accept_terms: true, confirm_age: true }),
+  });
+}
+
+// "Download my data": everything the backend stores about the signed-in user.
+export function exportMyData(token: string): Promise<Record<string, unknown>> {
+  return requestJson<Record<string, unknown>>("/api/v1/auth/me/export", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   });
 }
 

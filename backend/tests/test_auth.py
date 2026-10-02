@@ -439,6 +439,8 @@ def test_register_creates_member_with_profile(
             "email": "  New.Member@BSU.edu.az ",
             "password": "fresh-password-1",
             "full_name": "  Nigar Aliyeva  ",
+            "accept_terms": True,
+            "confirm_age": True,
         },
     )
 
@@ -475,6 +477,8 @@ def test_register_without_university_domain_leaves_university_unset(
             "email": "tester@gmail.com",
             "password": "fresh-password-1",
             "full_name": "Gmail Tester",
+            "accept_terms": True,
+            "confirm_age": True,
         },
     )
 
@@ -494,6 +498,8 @@ def test_register_duplicate_email_conflicts(
         "email": "taken@example.edu",
         "password": "fresh-password-1",
         "full_name": "First Claimant",
+        "accept_terms": True,
+        "confirm_age": True,
     }
     assert client.post("/api/v1/auth/register", json=payload).status_code == 201
 
@@ -514,6 +520,8 @@ def test_register_rejects_short_password(
             "email": "short@example.edu",
             "password": "seven77",
             "full_name": "Short Password",
+            "accept_terms": True,
+            "confirm_age": True,
         },
     )
     assert response.status_code == 422
@@ -531,6 +539,8 @@ def test_register_rate_limits_per_ip(
                 "email": f"bulk-{index}@example.edu",
                 "password": "fresh-password-1",
                 "full_name": f"Bulk {index}",
+                "accept_terms": True,
+                "confirm_age": True,
             },
         )
         assert response.status_code == 201
@@ -541,6 +551,8 @@ def test_register_rate_limits_per_ip(
             "email": "bulk-final@example.edu",
             "password": "fresh-password-1",
             "full_name": "Bulk Final",
+            "accept_terms": True,
+            "confirm_age": True,
         },
     )
     assert blocked.status_code == 429

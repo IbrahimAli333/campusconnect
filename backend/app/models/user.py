@@ -37,6 +37,17 @@ class User(Base):
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(String(30), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # Consent record: which Terms/Privacy version was accepted and when, plus
+    # when the user confirmed meeting the minimum age. No birth date is
+    # stored. NULL means the user has not accepted (e.g. accounts created
+    # before consent existed) and must accept before using the app.
+    terms_version: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    terms_accepted_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    age_confirmed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

@@ -32,7 +32,12 @@ class TeacherProfile(Base):
     user: Mapped["User"] = relationship(back_populates="teacher_profile")
     department: Mapped["Department"] = relationship(back_populates="teacher_profiles")
     courses: Mapped[List["Course"]] = relationship(back_populates="teacher_profile")
-    lessons: Mapped[List["Lesson"]] = relationship(back_populates="teacher_profile")
+    # Account deletion must never be blocked: lessons.teacher_profile_id is
+    # NOT NULL / RESTRICT, so a deleted teacher's legacy lessons (and their
+    # attendance rows) are removed with the teacher profile.
+    lessons: Mapped[List["Lesson"]] = relationship(
+        back_populates="teacher_profile", cascade="all, delete-orphan"
+    )
     marked_attendance_records: Mapped[List["AttendanceRecord"]] = relationship(
         back_populates="marked_by_teacher"
     )

@@ -15,7 +15,19 @@ class LoginRequest(BaseModel):
         return value.strip().lower()
 
 
-class RegisterRequest(BaseModel):
+class ConsentFields(BaseModel):
+    """Explicit signup consent. Both boxes start unchecked in the app and must
+    be ticked by the user; the server records the version that was current
+    at that moment."""
+
+    accept_terms: bool = False
+    confirm_age: bool = False
+
+    def has_consent(self) -> bool:
+        return self.accept_terms and self.confirm_age
+
+
+class RegisterRequest(ConsentFields):
     email: str = Field(min_length=3, max_length=255)
     password: str = Field(min_length=8, max_length=255)
     full_name: str = Field(min_length=1, max_length=255)
@@ -77,8 +89,16 @@ class ChangePasswordRequest(BaseModel):
         return self
 
 
-class GoogleSsoRequest(BaseModel):
+class GoogleSsoRequest(ConsentFields):
+    # Consent is only required when this sign-in would create a new account;
+    # existing users with outdated consent are asked again in the app.
     id_token: str = Field(min_length=1, max_length=4096)
+
+
+class AcceptTermsRequest(ConsentFields):
+    # The version the app displayed, so a user can never "accept" a version
+    # that changed after the screen was rendered.
+    terms_version: str = Field(min_length=1, max_length=32)
 
 
 class RefreshRequest(BaseModel):

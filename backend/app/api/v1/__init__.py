@@ -13,11 +13,17 @@ from app.api.v1.portal import router as portal_router
 
 api_router = APIRouter()
 api_router.include_router(admin_router)
-api_router.include_router(attendance_router)
 api_router.include_router(auth_router)
-api_router.include_router(grades_router)
 api_router.include_router(health_router)
 api_router.include_router(messages_router)
 api_router.include_router(network_router)
 api_router.include_router(notifications_router)
-api_router.include_router(portal_router)
+
+# Retired academic-portal surface (schedules, attendance, grades). The app no
+# longer calls it; create_app mounts it only when
+# UNIVERSITY_PORTAL_ENABLE_LEGACY_ACADEMIC_API is on (development and tests),
+# so production does not expose student attendance/grade data.
+legacy_academic_router = APIRouter()
+legacy_academic_router.include_router(attendance_router)
+legacy_academic_router.include_router(grades_router)
+legacy_academic_router.include_router(portal_router)

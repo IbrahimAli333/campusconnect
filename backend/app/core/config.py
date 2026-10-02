@@ -40,6 +40,23 @@ class Settings(BaseSettings):
     # a wiped or recreated production database would let anyone seize admin.
     # Require an explicit opt-in outside development.
     enable_bootstrap_admin: bool = False
+    # Server-side gate: network, messaging, and push-registration endpoints
+    # answer 428 until the user has accepted the current Terms/Privacy
+    # version. Off by default because app builds older than 1.1.0 have no
+    # acceptance screen; switch it on once 1.1.0 is the minimum live version.
+    enforce_terms_acceptance: bool = False
+    # Retired academic-portal API (attendance, grades, schedules). On for
+    # development/tests; render.yaml turns it off in production.
+    enable_legacy_academic_api: bool = True
+    # Moderation alerts by email (optional; push alerts to admins always run).
+    # Example for Gmail: host smtp.gmail.com, port 587, username = the Gmail
+    # address, password = a Google "app password", from = the same address.
+    moderation_alert_email: str = ""
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
 
     @model_validator(mode="after")
     def normalize_database_url(self) -> "Settings":

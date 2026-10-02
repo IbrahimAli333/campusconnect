@@ -56,6 +56,15 @@ export function universityKey(value: string | null | undefined): string | null {
   return value.trim();
 }
 
+/** The curated university whose canonical name exactly matches, if any. */
+export function knownUniversity(value: string | null | undefined): UniversityInfo | null {
+  if (!value) {
+    return null;
+  }
+  const normalized = normalize(value);
+  return AZ_UNIVERSITIES.find((university) => normalize(university.name) === normalized) ?? null;
+}
+
 export interface UniversityFilterOption {
   value: string;
   label: string;

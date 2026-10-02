@@ -27,10 +27,13 @@ router = APIRouter(
 
 
 def _report_response(report: ContentReport) -> AdminReportRead:
+    target_user_id = None
     if report.target_type == "profile" and report.target_profile is not None:
         target_label = report.target_profile.user.full_name
+        target_user_id = report.target_profile.user_id
     elif report.target_opportunity is not None:
         target_label = report.target_opportunity.title
+        target_user_id = report.target_opportunity.owner_profile.user_id
     else:
         target_label = "(deleted)"
 
@@ -40,6 +43,7 @@ def _report_response(report: ContentReport) -> AdminReportRead:
         target_profile_id=report.target_profile_id,
         target_opportunity_id=report.target_opportunity_id,
         target_label=target_label,
+        target_user_id=target_user_id,
         reporter_profile_id=report.reporter_profile_id,
         reporter_name=report.reporter_profile.user.full_name,
         reason=report.reason,
@@ -52,7 +56,7 @@ def _report_load_options():
     return (
         joinedload(ContentReport.reporter_profile).joinedload(UserProfile.user),
         joinedload(ContentReport.target_profile).joinedload(UserProfile.user),
-        joinedload(ContentReport.target_opportunity),
+        joinedload(ContentReport.target_opportunity).joinedload(Opportunity.owner_profile),
     )
 
 

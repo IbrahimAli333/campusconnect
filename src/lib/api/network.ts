@@ -49,6 +49,14 @@ export class NetworkApiError extends Error {
 }
 
 let unauthorizedHandler: (() => void) | null = null;
+let termsRequiredHandler: (() => void) | null = null;
+
+// 428 = the server wants the current Terms/Privacy accepted first (when
+// server-side enforcement is on). The auth store re-reads the user, which
+// brings up the acceptance screen.
+export function setTermsRequiredHandler(handler: (() => void) | null): void {
+  termsRequiredHandler = handler;
+}
 
 export function setUnauthorizedHandler(handler: (() => void) | null): void {
   unauthorizedHandler = handler;
@@ -99,6 +107,8 @@ async function requestNetworkJson<TResponse>(
   if (!response.ok) {
     if (response.status === 401) {
       unauthorizedHandler?.();
+    } else if (response.status === 428) {
+      termsRequiredHandler?.();
     }
     throw new NetworkApiError(await getErrorMessage(response), response.status);
   }
@@ -131,6 +141,8 @@ async function requestNetworkNoContent(
   if (!response.ok) {
     if (response.status === 401) {
       unauthorizedHandler?.();
+    } else if (response.status === 428) {
+      termsRequiredHandler?.();
     }
     throw new NetworkApiError(await getErrorMessage(response), response.status);
   }
@@ -349,10 +361,12 @@ export function registerPushToken(
   token: string,
   pushToken: string,
   platform?: PushPlatform,
+  language?: "az" | "en" | "ru",
 ): Promise<PushTokenRead> {
+  // The server writes notifications in the device's app language.
   return requestNetworkJson<PushTokenRead>("/api/v1/notifications/tokens", token, {
     method: "POST",
-    ...jsonRequest(platform ? { token: pushToken, platform } : { token: pushToken }),
+    ...jsonRequest({ token: pushToken, ...(platform ? { platform } : {}), ...(language ? { language } : {}) }),
   });
 }
 
@@ -405,5 +419,46 @@ export function updateConnectionStatus(
   return requestNetworkJson<ConnectionRequestRead>(`/api/v1/network/connections/${connectionId}`, token, {
     method: "PATCH",
     ...jsonRequest({ status }),
+  });
+}
+
+// --- Moderation (admin accounts only; the server enforces the role) ---
+
+export interface AdminReport {
+  id: number;
+  target_type: "profile" | "opportunity";
+  target_profile_id: number | null;
+  target_opportunity_id: number | null;
+  target_label: string;
+  target_user_id: number | null;
+  reporter_profile_id: number;
+  reporter_name: string;
+  reason: string | null;
+  status: "open" | "resolved" | "dismissed";
+  created_at: string;
+}
+
+export function listOpenReports(token: string): Promise<AdminReport[]> {
+  return requestNetworkJson<AdminReport[]>("/api/v1/admin/reports?status=open", token);
+}
+
+export function setReportStatus(token: string, reportId: number, status: "resolved" | "dismissed"): Promise<AdminReport> {
+  return requestNetworkJson<AdminReport>(`/api/v1/admin/reports/${reportId}`, token, {
+    method: "PATCH",
+    ...jsonRequest({ status }),
+  });
+}
+
+export function deactivateUser(token: string, userId: number): Promise<unknown> {
+  return requestNetworkJson<unknown>(`/api/v1/admin/users/${userId}`, token, {
+    method: "PATCH",
+    ...jsonRequest({ is_active: false }),
+  });
+}
+
+export function closeOpportunityAsAdmin(token: string, opportunityId: number): Promise<unknown> {
+  return requestNetworkJson<unknown>(`/api/v1/admin/opportunities/${opportunityId}`, token, {
+    method: "PATCH",
+    ...jsonRequest({ status: "closed" }),
   });
 }

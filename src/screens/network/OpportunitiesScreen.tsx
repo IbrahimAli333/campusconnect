@@ -87,6 +87,7 @@ import type {
 } from "../../types/network";
 
 import {
+  ActionMessage,
   DiscoverDashboard,
   FilterChip,
   FormField,
@@ -147,6 +148,7 @@ import type {
   SkillDraft,
 } from "./shared";
 import { networkStyles } from "./styles";
+import { translateApiError } from "../../lib/i18n/apiErrors";
 
 export function OpportunitiesScreen({ token }: { token: string | null }) {
   const { t } = useI18n();
@@ -634,7 +636,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
   if (!opportunitiesState.data) {
     return (
       <ErrorState
-        message={opportunitiesState.error?.message ?? t("Unibridge opportunities are not available.")}
+        message={opportunitiesState.error ? translateApiError(t, opportunitiesState.error.message) : t("Unibridge opportunities are not available.")}
         onRetry={opportunitiesState.retry}
         title={t("Could not load opportunities")}
       />
@@ -645,7 +647,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
     <View style={styles.stack}>
       {opportunitiesState.error ? (
         <ErrorState
-          message={opportunitiesState.error.message}
+          message={translateApiError(t, opportunitiesState.error.message)}
           onRetry={opportunitiesState.retry}
           title={t("Could not refresh opportunities")}
         />
@@ -656,6 +658,9 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
           <SectionHeader action={t("AI search")} icon={Sparkles} title={t("Opportunity Assistant")} />
           <Text style={styles.smallText}>
             {t("Describe what you are looking for — the assistant searches only posts inside Unibridge.")}
+          </Text>
+          <Text style={styles.smallText}>
+            {t("Your request is sent to Anthropic's Claude AI to rank posts. Do not include personal information.")}
           </Text>
           <LabeledInput
             label={t("Your request")}
@@ -673,10 +678,10 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
             loading={assistantLoading}
             onPress={() => void submitAssistantQuery()}
           />
-          {assistantError ? <Text style={networkStyles.errorText}>{assistantError}</Text> : null}
+          {assistantError ? <ActionMessage bare error>{assistantError}</ActionMessage> : null}
           {assistantResult && !assistantLoading ? (
             <>
-              <Text style={networkStyles.actionMessage}>{assistantResult.reply}</Text>
+              <ActionMessage>{assistantResult.reply}</ActionMessage>
               {assistantResult.matches.length ? (
                 <View style={[styles.grid, isWide && styles.gridWide]}>
                   {assistantResult.matches.map((opportunity) => {
@@ -744,7 +749,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
             <FilterChip
               active={universityFilter === option.value}
               key={option.value}
-              label={option.label}
+              label={t(option.label)}
               onPress={setUniversityFilter}
               value={option.value}
             />
@@ -795,9 +800,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
             value={createSkills}
           />
           {createMessage ? (
-            <Text style={[networkStyles.actionMessage, createState === "error" && networkStyles.errorText]}>
-              {createMessage}
-            </Text>
+            <ActionMessage error={createState === "error"}>{createMessage}</ActionMessage>
           ) : null}
           <InlineAction
             icon={Send}
@@ -812,7 +815,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
         <>
           {ownedOpportunitiesState.error ? (
             <ErrorState
-              message={ownedOpportunitiesState.error.message}
+              message={translateApiError(t, ownedOpportunitiesState.error.message)}
               onRetry={ownedOpportunitiesState.retry}
               title={t("Could not refresh My Posts")}
             />
@@ -877,7 +880,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
                       <View style={networkStyles.metaRow}>
                         <CalendarDays color={palette.faint} size={15} strokeWidth={2.4} />
                         <Text style={networkStyles.metaText} numberOfLines={1}>
-                          {t("Posted {date}", { date: formatFullDate(opportunity.created_at) })}
+                          {t("Posted {date}", { date: formatFullDate(opportunity.created_at, t) })}
                         </Text>
                       </View>
                       <SkillList emptyLabel={t("No required skills listed.")} items={opportunity.required_skills} />
@@ -901,14 +904,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
                       ) : null}
                     </View>
                     {actionMessages[`${opportunity.id}:status`] ? (
-                      <Text
-                        style={[
-                          networkStyles.actionMessage,
-                          ownedStatusErrors[opportunity.id] && networkStyles.errorText,
-                        ]}
-                      >
-                        {actionMessages[`${opportunity.id}:status`]}
-                      </Text>
+                      <ActionMessage error={Boolean(ownedStatusErrors[opportunity.id])}>{actionMessages[`${opportunity.id}:status`]}</ActionMessage>
                     ) : null}
                   </View>
                 );
@@ -989,7 +985,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
           ) : null}
           {ownerProfileError ? (
             <View style={networkStyles.panelList}>
-              <Text style={networkStyles.errorText}>{ownerProfileError}</Text>
+              <ActionMessage bare error>{ownerProfileError}</ActionMessage>
               <InlineAction icon={RefreshCw} label={t("Retry")} onPress={retryOwnerProfile} secondary />
             </View>
           ) : null}
@@ -998,7 +994,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
 
       {recommendedOpportunitiesState.error ? (
         <ErrorState
-          message={recommendedOpportunitiesState.error.message}
+          message={translateApiError(t, recommendedOpportunitiesState.error.message)}
           onRetry={recommendedOpportunitiesState.retry}
           title={t("Could not refresh recommendations")}
         />

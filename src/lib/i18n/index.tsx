@@ -109,6 +109,15 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Tell the browser which language the page is in: screen readers pick the
+  // right pronunciation (WCAG 3.1.1), and CSS uppercase follows the
+  // language's rules (Azerbaijani i -> İ, not I).
+  useEffect(() => {
+    if (Platform.OS === "web" && typeof document !== "undefined") {
+      document.documentElement.lang = language;
+    }
+  }, [language]);
+
   const setLanguage = useCallback((next: Language) => {
     setLanguageState(next);
     void persistLanguage(next);

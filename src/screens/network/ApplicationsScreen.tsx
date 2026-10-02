@@ -82,6 +82,7 @@ import type {
 } from "../../types/network";
 
 import {
+  ActionMessage,
   DiscoverDashboard,
   FilterChip,
   FormField,
@@ -141,6 +142,7 @@ import type {
   SkillDraft,
 } from "./shared";
 import { networkStyles } from "./styles";
+import { translateApiError } from "../../lib/i18n/apiErrors";
 
 export function ApplicationsScreen({ token }: { token: string | null }) {
   const { t } = useI18n();
@@ -295,7 +297,7 @@ export function ApplicationsScreen({ token }: { token: string | null }) {
   if (!applicationsState.data) {
     return (
       <ErrorState
-        message={applicationsState.error?.message ?? t("Your Unibridge applications are not available.")}
+        message={applicationsState.error ? translateApiError(t, applicationsState.error.message) : t("Your Unibridge applications are not available.")}
         onRetry={applicationsState.retry}
         title={t("Could not load applications")}
       />
@@ -306,7 +308,7 @@ export function ApplicationsScreen({ token }: { token: string | null }) {
     <View style={styles.stack}>
       {applicationsState.error ? (
         <ErrorState
-          message={applicationsState.error.message}
+          message={translateApiError(t, applicationsState.error.message)}
           onRetry={applicationsState.retry}
           title={t("Could not refresh applications")}
         />
@@ -348,42 +350,49 @@ export function ApplicationsScreen({ token }: { token: string | null }) {
       {applications.length ? (
         <View style={[styles.grid, isWide && styles.gridWide]}>
           {applications.map((application) => (
-            <Pressable
-              accessibilityRole="button"
+            // The card is a plain container: nesting the Withdraw button inside
+            // a pressable card made it unreachable for VoiceOver/TalkBack (the
+            // outer button swallows its children) and invalid on web.
+            <View
               key={application.id}
-              onPress={() => void openOpportunityDetail(application.opportunity.id)}
-              style={({ pressed }) => [
+              style={[
                 styles.card,
                 styles.compactCard,
                 networkStyles.networkCard,
                 isWide && networkStyles.networkCardWide,
-                pressed && styles.pressed,
               ]}
             >
-              <View style={styles.cardTop}>
-                <View style={networkStyles.cardTitleBlock}>
-                  <Text style={styles.cardTitle} numberOfLines={2}>
-                    {application.opportunity.title}
+              <Pressable
+                accessibilityHint={t("Opens opportunity details")}
+                accessibilityRole="button"
+                onPress={() => void openOpportunityDetail(application.opportunity.id)}
+                style={({ pressed }) => [networkStyles.applicationOpenArea, pressed && styles.pressed]}
+              >
+                <View style={styles.cardTop}>
+                  <View style={networkStyles.cardTitleBlock}>
+                    <Text style={styles.cardTitle} numberOfLines={2}>
+                      {application.opportunity.title}
+                    </Text>
+                  </View>
+                  <View style={networkStyles.statusStack}>
+                    <StatusChip label={t(titleCase(application.opportunity.type))} tone={opportunityTone(application.opportunity.type)} />
+                    <StatusChip label={t(titleCase(application.status))} tone={statusTone(application.status)} />
+                  </View>
+                </View>
+
+                <View style={networkStyles.metaRow}>
+                  <Users color={palette.faint} size={15} strokeWidth={2.4} />
+                  <Text style={networkStyles.metaText} numberOfLines={1}>
+                    {opportunityOwner(application.opportunity)}
                   </Text>
                 </View>
-                <View style={networkStyles.statusStack}>
-                  <StatusChip label={t(titleCase(application.opportunity.type))} tone={opportunityTone(application.opportunity.type)} />
-                  <StatusChip label={t(titleCase(application.status))} tone={statusTone(application.status)} />
+                <View style={networkStyles.metaRow}>
+                  <CalendarDays color={palette.faint} size={15} strokeWidth={2.4} />
+                  <Text style={networkStyles.metaText} numberOfLines={1}>
+                    {t("Applied {date}", { date: formatFullDate(application.created_at, t) })}
+                  </Text>
                 </View>
-              </View>
-
-              <View style={networkStyles.metaRow}>
-                <Users color={palette.faint} size={15} strokeWidth={2.4} />
-                <Text style={networkStyles.metaText} numberOfLines={1}>
-                  {opportunityOwner(application.opportunity)}
-                </Text>
-              </View>
-              <View style={networkStyles.metaRow}>
-                <CalendarDays color={palette.faint} size={15} strokeWidth={2.4} />
-                <Text style={networkStyles.metaText} numberOfLines={1}>
-                  {t("Applied {date}", { date: formatFullDate(application.created_at) })}
-                </Text>
-              </View>
+              </Pressable>
               {application.status === "submitted" || application.status === "reviewing" ? (
                 <InlineAction
                   icon={Trash2}
@@ -395,16 +404,9 @@ export function ApplicationsScreen({ token }: { token: string | null }) {
                 />
               ) : null}
               {withdrawMessages[application.id] ? (
-                <Text
-                  style={[
-                    networkStyles.actionMessage,
-                    withdrawState[application.id] === "error" && networkStyles.errorText,
-                  ]}
-                >
-                  {withdrawMessages[application.id]}
-                </Text>
+                <ActionMessage error={withdrawState[application.id] === "error"}>{withdrawMessages[application.id]}</ActionMessage>
               ) : null}
-            </Pressable>
+            </View>
           ))}
         </View>
       ) : (

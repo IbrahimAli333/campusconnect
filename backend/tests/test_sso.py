@@ -78,8 +78,11 @@ def stub_identity(
     monkeypatch.setattr(auth_module, "verify_google_id_token", lambda _: identity)
 
 
-def sso_login(client: TestClient) -> object:
-    return client.post("/api/v1/auth/sso/google", json={"id_token": "stub-token"})
+def sso_login(client: TestClient, consent: bool = True) -> object:
+    payload: dict[str, object] = {"id_token": "stub-token"}
+    if consent:
+        payload.update(accept_terms=True, confirm_age=True)
+    return client.post("/api/v1/auth/sso/google", json=payload)
 
 
 def test_university_domain_mapping() -> None:
@@ -325,3 +328,44 @@ def test_sso_user_can_set_password_with_google_reauth(
         },
     )
     assert login_response.status_code == 200
+
+
+def test_sso_never_creates_an_account_without_consent(
+    client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, session_local = client_and_sessionmaker
+    configure_sso(monkeypatch)
+    stub_identity(monkeypatch)
+
+    response = sso_login(client, consent=False)
+    assert response.status_code == 428
+    assert "Terms of Service" in response.json()["detail"]
+    with session_local() as db:
+        assert db.scalars(select(User)).all() == []
+
+    created = sso_login(client, consent=True)
+    assert created.status_code == 200
+    assert created.json()["user"]["terms_acceptance_required"] is False
+
+
+def test_sso_existing_account_signs_in_without_consent_fields(
+    client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, session_local = client_and_sessionmaker
+    configure_sso(monkeypatch)
+    stub_identity(monkeypatch)
+    assert sso_login(client).status_code == 200
+
+    # Simulate an account from before consent was recorded.
+    with session_local() as db:
+        user = db.scalars(select(User)).one()
+        user.terms_version = None
+        user.age_confirmed_at = None
+        db.commit()
+
+    response = sso_login(client, consent=False)
+    assert response.status_code == 200
+    # Login works, but the app must show the acceptance screen first.
+    assert response.json()["user"]["terms_acceptance_required"] is True

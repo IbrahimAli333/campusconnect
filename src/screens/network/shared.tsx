@@ -13,6 +13,8 @@ import {
 import {
   Ban,
   Briefcase,
+  FlaskConical,
+  Rocket,
   Building2,
   CalendarDays,
   CheckCircle2,
@@ -38,9 +40,18 @@ import { EmptyState, ErrorState, LoadingState } from "../../components/common/Po
 import { SectionHeader } from "../../components/common/SectionHeader";
 import { StatusChip } from "../../components/common/StatusChip";
 import type { IconComponent } from "../../components/common/types";
+import {
+  decorativeProps,
+  headingProps,
+  liveRegionProps,
+  selectedButtonProps,
+  useAnnounce,
+} from "../../components/common/a11y";
 import { NetworkApiError, blockProfile, reportContent } from "../../lib/api/network";
-import { useScrollIntoViewOnMount } from "../../lib/scroll-anchor";
-import { palette, styles } from "../../styles/theme";
+import { EightPointStar } from "../../components/brand/Ornaments";
+import { DetailSheet, useDetailSheet } from "../../components/ui/DetailSheet";
+import { PressableScale } from "../../components/ui/PressableScale";
+import { fonts, palette, styles } from "../../styles/theme";
 import { useI18n } from "../../lib/i18n";
 import type {
   ContentReportTargetType,
@@ -62,6 +73,8 @@ import type {
 } from "../../types/network";
 
 import { networkStyles } from "./styles";
+import { translateApiError } from "../../lib/i18n/apiErrors";
+import { knownUniversity } from "../../lib/universities";
 
 type Translate = (source: string, vars?: Record<string, string | number>) => string;
 
@@ -177,7 +190,7 @@ export function titleCase(value: string): string {
 
 export function toErrorMessage(error: unknown, t: Translate = englishT): string {
   if (error instanceof Error) {
-    return error.message;
+    return translateApiError(t, error.message);
   }
 
   return t("Request failed");
@@ -222,14 +235,54 @@ export function universityShortName(name: string): string {
     .toUpperCase();
 }
 
+/**
+ * University names are stored in English (canonical, used for filtering);
+ * known universities are shown under their official name in the app
+ * language ("Bakı Dövlət Universiteti"). Free text is shown as typed.
+ */
+export function universityDisplayName(value: string, t: Translate = englishT): string {
+  return knownUniversity(value) ? t(value.trim()) : value;
+}
+
+function universityAcronym(value: string, t: Translate): string {
+  const known = knownUniversity(value);
+  return known ? t(known.short) : universityShortName(value);
+}
+
 export function profileMeta(profile: ProfileSummary, t: Translate = englishT): string {
   const faculty = profile.faculty?.replace(/^Faculty of\s+/i, "");
   const parts = [
-    profile.university ? universityShortName(profile.university) : null,
+    profile.university ? universityAcronym(profile.university, t) : null,
     faculty,
     profile.location,
   ].filter(Boolean);
   return parts.length ? parts.join(" · ") : t("Unibridge member");
+}
+
+// Month names and date order come from the dictionaries (not the device
+// locale), so dates follow the app language on every platform:
+// "2 okt 2026" in Azerbaijani, "2 окт. 2026" in Russian, "Oct 2, 2026" in English.
+// Short names follow a day ("2 okt", "2 мая"); full names stand alone in
+// month-year ranges ("Oktyabr 2026", "май 2026"), which Russian inflects
+// differently.
+const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS_FULL = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+function monthLabel(date: Date, t: Translate, names: string[] = MONTHS_SHORT): string {
+  return t(names[date.getMonth()] ?? "");
 }
 
 export function formatDate(value: string | null, t: Translate = englishT): string {
@@ -242,16 +295,16 @@ export function formatDate(value: string | null, t: Translate = englishT): strin
     return value;
   }
 
-  return date.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+  return t("{month} {year}", { month: monthLabel(date, t, MONTHS_FULL), year: date.getFullYear() });
 }
 
-export function formatFullDate(value: string): string {
+export function formatFullDate(value: string, t: Translate = englishT): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return value;
   }
 
-  return date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  return t("{month} {day}, {year}", { day: date.getDate(), month: monthLabel(date, t), year: date.getFullYear() });
 }
 
 export function resumeDateRange(entry: ResumeEntryRead, t: Translate = englishT): string {
@@ -424,6 +477,7 @@ export function reviewStatusIcon(status: OwnerApplicationStatusUpdate): IconComp
 }
 
 export function InlineAction({
+  accessibilityLabel,
   disabled = false,
   icon: Icon,
   label,
@@ -432,6 +486,8 @@ export function InlineAction({
   secondary = false,
   wide = false,
 }: {
+  /** Overrides the visible label for screen readers; must contain it (WCAG 2.5.3). */
+  accessibilityLabel?: string;
   disabled?: boolean;
   icon: IconComponent;
   label: string;
@@ -442,18 +498,21 @@ export function InlineAction({
 }) {
   const { width } = useWindowDimensions();
   const locked = disabled && !loading;
-  const color = locked ? "#6B7686" : secondary ? palette.text : palette.surface;
+  const color = locked ? "#5E6270" : secondary ? palette.text : palette.surface;
   const shouldStretch = wide && width < 640;
 
   return (
-    <Pressable
+    <PressableScale
+      accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
+      aria-busy={loading}
       disabled={disabled || loading}
+      haptic={secondary ? "tap" : "action"}
       onPress={(event) => {
         event.stopPropagation();
         onPress?.();
       }}
-      style={({ pressed }) => [
+      style={[
         networkStyles.inlineAction,
         secondary && networkStyles.inlineActionSecondary,
         shouldStretch && networkStyles.inlineActionWide,
@@ -462,7 +521,6 @@ export function InlineAction({
         locked && networkStyles.inlineActionDisabled,
         locked && secondary && networkStyles.inlineActionDisabledSecondary,
         locked && !secondary && networkStyles.inlineActionDisabledPrimary,
-        pressed && !disabled && !loading && styles.pressed,
       ]}
     >
       {loading ? (
@@ -480,7 +538,37 @@ export function InlineAction({
       >
         {label}
       </Text>
-    </Pressable>
+    </PressableScale>
+  );
+}
+
+/**
+ * Inline result/error line after an action. Exposed as a status message
+ * (WCAG 4.1.3) so screen readers hear "Request sent." or an error without
+ * moving focus. `bare` keeps the plain errorText look used by panel errors.
+ */
+export function ActionMessage({
+  bare = false,
+  children,
+  error = false,
+}: {
+  bare?: boolean;
+  children?: string | null;
+  error?: boolean;
+}) {
+  useAnnounce(children);
+  if (!children) {
+    return null;
+  }
+
+  return (
+    <Text
+      {...liveRegionProps(error ? "assertive" : "polite")}
+      role={error ? "alert" : "status"}
+      style={[!bare && networkStyles.actionMessage, error && networkStyles.errorText]}
+    >
+      {children}
+    </Text>
   );
 }
 
@@ -525,13 +613,15 @@ export function FilterChip<T extends string>({
   value: T;
 }) {
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
+      {...selectedButtonProps(active)}
       onPress={() => onPress(value)}
-      style={({ pressed }) => [networkStyles.filterChip, active && networkStyles.filterChipActive, pressed && styles.pressed]}
+      scaleTo={0.94}
+      style={[networkStyles.filterChip, active && networkStyles.filterChipActive]}
     >
       <Text style={[networkStyles.filterChipText, active && networkStyles.filterChipTextActive]}>{label}</Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -544,6 +634,8 @@ export function SearchBox({ onChangeText, value }: { onChangeText: (value: strin
     <View style={[styles.searchRow, isCompact && networkStyles.searchRowCompact]}>
       <Search color={palette.faint} size={18} strokeWidth={2.4} />
       <TextInput
+        // Placeholder text vanishes on input and is not a reliable name.
+        accessibilityLabel={t("Search people, skills, roles, or university")}
         autoCapitalize="none"
         autoCorrect={false}
         onChangeText={onChangeText}
@@ -638,6 +730,8 @@ export function LabeledInput({
   return (
     <FormField label={label} style={containerStyle}>
       <TextInput
+        // The visible label is a sibling Text, so name the field explicitly.
+        accessibilityLabel={label}
         placeholderTextColor={palette.faint}
         style={[styles.textInput, networkStyles.formInput, inputStyle]}
         {...props}
@@ -659,6 +753,7 @@ export function MatchSlip({ score }: { score: number }) {
   const strong = score >= 70;
   return (
     <View style={[networkStyles.matchSlip, !strong && networkStyles.matchSlipQuiet]}>
+      {strong ? <EightPointStar color={palette.saffron} size={12} /> : null}
       <Text
         style={[networkStyles.matchSlipText, !strong && networkStyles.matchSlipTextQuiet]}
         numberOfLines={1}
@@ -722,13 +817,15 @@ export function MatchPreview({ reasons, score }: { reasons: string[]; score: num
   );
 }
 
+// Caspian, pomegranate, saffron, flag green, plum, and sea-sky pairs; every
+// foreground passes 4.5:1 on its background.
 const AVATAR_TONES = [
-  { bg: "#DBEAFE", fg: "#1D4ED8" },
-  { bg: "#E0E7FF", fg: "#4338CA" },
-  { bg: "#D1FAE5", fg: "#047857" },
-  { bg: "#FEF3C7", fg: "#B45309" },
-  { bg: "#FCE7F3", fg: "#BE185D" },
-  { bg: "#CFFAFE", fg: "#0E7490" },
+  { bg: "#DCEEF4", fg: "#0B5A76" },
+  { bg: "#FBE3E0", fg: "#A0221B" },
+  { bg: "#FBEBC8", fg: "#7A4A00" },
+  { bg: "#E2F0DD", fg: "#2A6B25" },
+  { bg: "#EFE5F7", fg: "#5E3590" },
+  { bg: "#E3EEF8", fg: "#1F4E7A" },
 ];
 
 function initialsFor(name: string): string {
@@ -747,18 +844,23 @@ export function InitialsAvatar({ name, size = 42 }: { name: string; size?: numbe
     hash = (hash * 31 + name.charCodeAt(index)) >>> 0;
   }
   const tone = AVATAR_TONES[hash % AVATAR_TONES.length] ?? AVATAR_TONES[0];
+  // Decorative: the full name is always rendered next to the avatar, so the
+  // initials would only be read out twice.
   return (
     <View
+      {...decorativeProps}
       style={{
         alignItems: "center",
         backgroundColor: tone.bg,
+        borderColor: "#FFFFFF",
         borderRadius: size / 2,
+        borderWidth: 2,
         height: size,
         justifyContent: "center",
         width: size,
       }}
     >
-      <Text style={{ color: tone.fg, fontSize: Math.round(size * 0.37), fontWeight: "700" }}>
+      <Text style={{ color: tone.fg, fontSize: Math.round(size * 0.37), fontFamily: fonts.bold }}>
         {initialsFor(name)}
       </Text>
     </View>
@@ -808,6 +910,7 @@ export function ProfileCard({
       ]}
     >
       <Pressable
+        accessibilityHint={t("Opens profile details")}
         accessibilityRole="button"
         onPress={onOpen}
         style={({ pressed }) => [networkStyles.cardOpenArea, pressed && styles.pressed]}
@@ -850,10 +953,45 @@ export function ProfileCard({
       />
       {footer}
       {message ? (
-        <Text style={[networkStyles.actionMessage, messageError && networkStyles.errorText]}>
-          {message}
-        </Text>
+        <ActionMessage error={messageError}>{message}</ActionMessage>
       ) : null}
+    </View>
+  );
+}
+
+const OPPORTUNITY_TYPE_ICONS: Record<OpportunityType, IconComponent> = {
+  internship: GraduationCap,
+  job: Briefcase,
+  project: Users,
+  research: FlaskConical,
+  startup: Rocket,
+};
+
+const OPPORTUNITY_TYPE_TILES: Record<OpportunityType, { bg: string; fg: string }> = {
+  internship: { bg: palette.greenSoft, fg: palette.green },
+  job: { bg: palette.amberSoft, fg: palette.amber },
+  project: { bg: palette.surfaceAlt, fg: palette.text },
+  research: { bg: palette.caspianSoft, fg: palette.caspian },
+  startup: { bg: palette.violetSoft, fg: palette.violet },
+};
+
+/** Coloured icon tile identifying an opportunity's type at a glance. */
+export function OpportunityTypeIcon({ size = 44, type }: { size?: number; type: OpportunityType }) {
+  const Icon = OPPORTUNITY_TYPE_ICONS[type] ?? Briefcase;
+  const tile = OPPORTUNITY_TYPE_TILES[type] ?? OPPORTUNITY_TYPE_TILES.project;
+  return (
+    <View
+      {...decorativeProps}
+      style={{
+        alignItems: "center",
+        backgroundColor: tile.bg,
+        borderRadius: 14,
+        height: size,
+        justifyContent: "center",
+        width: size,
+      }}
+    >
+      <Icon color={tile.fg} size={Math.round(size * 0.48)} strokeWidth={2.3} />
     </View>
   );
 }
@@ -895,14 +1033,19 @@ export function OpportunityCard({
       ]}
     >
       <Pressable
+        accessibilityHint={t("Opens opportunity details")}
         accessibilityRole="button"
         onPress={onOpen}
         style={({ pressed }) => [networkStyles.cardOpenArea, pressed && styles.pressed]}
       >
         <View style={styles.cardTop}>
+          <OpportunityTypeIcon type={opportunity.type} />
           <View style={networkStyles.cardTitleBlock}>
             <Text style={styles.cardTitle} numberOfLines={2}>
               {opportunity.title}
+            </Text>
+            <Text style={styles.rowMeta} numberOfLines={1}>
+              {opportunityOwner(opportunity)}
             </Text>
           </View>
           <View style={networkStyles.statusStack}>
@@ -916,12 +1059,6 @@ export function OpportunityCard({
         <Text style={styles.cardMeta} numberOfLines={5}>
           {opportunity.description}
         </Text>
-        <View style={networkStyles.metaRow}>
-          <Users color={palette.faint} size={15} strokeWidth={2.4} />
-          <Text style={networkStyles.metaText} numberOfLines={3}>
-            {opportunityOwner(opportunity)}
-          </Text>
-        </View>
         <SkillList emptyLabel={t("No required skills listed.")} items={opportunity.required_skills} />
       </Pressable>
 
@@ -944,14 +1081,10 @@ export function OpportunityCard({
         />
       </View>
       {applyMessage ? (
-        <Text style={[networkStyles.actionMessage, applyState === "error" && networkStyles.errorText]}>
-          {applyMessage}
-        </Text>
+        <ActionMessage error={applyState === "error"}>{applyMessage}</ActionMessage>
       ) : null}
       {saveMessage ? (
-        <Text style={[networkStyles.actionMessage, saveState === "error" && networkStyles.errorText]}>
-          {saveMessage}
-        </Text>
+        <ActionMessage error={saveState === "error"}>{saveMessage}</ActionMessage>
       ) : null}
     </View>
   );
@@ -1041,7 +1174,7 @@ export function ModerationActions({
         ) : null}
       </View>
       {message ? (
-        <Text style={[networkStyles.actionMessage, isError && networkStyles.errorText]}>{message}</Text>
+        <ActionMessage error={isError}>{message}</ActionMessage>
       ) : null}
     </>
   );
@@ -1060,19 +1193,18 @@ export function PanelHeader({
   title: string;
 }) {
   const { t } = useI18n();
-  // Detail panels render below the fold in the shared ScrollView; without
-  // this scroll the panel opens invisibly and the tap looks like a no-op.
-  const anchorRef = useScrollIntoViewOnMount();
+  // Inside a bottom sheet, closing animates the sheet down first.
+  const sheet = useDetailSheet();
 
   return (
-    <View ref={anchorRef} style={styles.cardTop}>
+    <View style={styles.cardTop}>
       <View style={networkStyles.panelTitleRow}>
         <View style={networkStyles.panelIcon}>
           <Icon color={palette.teal} size={18} strokeWidth={2.5} />
         </View>
         <View style={networkStyles.cardTitleBlock}>
           {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
-          <Text style={networkStyles.panelTitle} numberOfLines={2}>
+          <Text {...headingProps(2)} style={networkStyles.panelTitle} numberOfLines={2}>
             {title}
           </Text>
         </View>
@@ -1080,7 +1212,7 @@ export function PanelHeader({
       <Pressable
         accessibilityLabel={t("Close")}
         accessibilityRole="button"
-        onPress={onClose}
+        onPress={sheet ? sheet.dismiss : onClose}
         style={({ pressed }) => [networkStyles.closeButton, pressed && styles.pressed]}
       >
         <X color={palette.text} size={18} strokeWidth={2.5} />
@@ -1102,7 +1234,7 @@ export function ProfileDetailPanel({
 }) {
   const { t } = useI18n();
   return (
-    <View style={networkStyles.detailPanel}>
+    <DetailSheet accessibilityLabel={profile.user.full_name} onClose={onClose}>
       <PanelHeader eyebrow={t(titleCase(profile.role))} icon={Users} onClose={onClose} title={profile.user.full_name} />
       <Text style={styles.cardMeta}>{profile.headline ?? t("Portfolio headline not added yet")}</Text>
       <Text style={networkStyles.bodyText}>{profile.bio ?? t("Portfolio bio not added yet.")}</Text>
@@ -1111,7 +1243,9 @@ export function ProfileDetailPanel({
         <View style={networkStyles.profileMetaItem}>
           <GraduationCap color={palette.teal} size={18} strokeWidth={2.4} />
           <Text style={networkStyles.metaText} numberOfLines={2}>
-            {[profile.university, profile.faculty].filter(Boolean).join(" - ") || t("University affiliation not set")}
+            {[profile.university ? universityDisplayName(profile.university, t) : null, profile.faculty]
+              .filter(Boolean)
+              .join(" - ") || t("University affiliation not set")}
           </Text>
         </View>
         <View style={networkStyles.profileMetaItem}>
@@ -1163,7 +1297,7 @@ export function ProfileDetailPanel({
         targetType="profile"
         token={token}
       />
-    </View>
+    </DetailSheet>
   );
 }
 
@@ -1201,10 +1335,10 @@ export function OpportunityDetailPanel({
   const saved = detail ? detail.has_saved || saveState === "sent" : false;
 
   return (
-    <View style={networkStyles.detailPanel}>
+    <DetailSheet accessibilityLabel={detail?.title ?? t("Opportunity detail")} onClose={onClose}>
       <PanelHeader
         eyebrow={detail ? t(titleCase(detail.type)) : t("Opportunity")}
-        icon={Briefcase}
+        icon={detail ? (OPPORTUNITY_TYPE_ICONS[detail.type] ?? Briefcase) : Briefcase}
         onClose={onClose}
         title={detail?.title ?? t("Opportunity detail")}
       />
@@ -1218,7 +1352,7 @@ export function OpportunityDetailPanel({
 
       {error ? (
         <View style={networkStyles.panelList}>
-          <Text style={networkStyles.errorText}>{error}</Text>
+          <ActionMessage bare error>{error}</ActionMessage>
           <InlineAction icon={RefreshCw} label={t("Retry")} onPress={onRetry} secondary />
         </View>
       ) : null}
@@ -1235,6 +1369,7 @@ export function OpportunityDetailPanel({
           <Text style={networkStyles.bodyText}>{detail.description}</Text>
 
           <Pressable
+            accessibilityHint={onOpenOwner ? t("Opens profile details") : undefined}
             accessibilityRole="button"
             disabled={!onOpenOwner}
             onPress={() => onOpenOwner?.(detail.owner_profile)}
@@ -1278,20 +1413,16 @@ export function OpportunityDetailPanel({
             />
           </View>
           {applyMessage ? (
-            <Text style={[networkStyles.actionMessage, applyState === "error" && networkStyles.errorText]}>
-              {applyMessage}
-            </Text>
+            <ActionMessage error={applyState === "error"}>{applyMessage}</ActionMessage>
           ) : null}
           {saveMessage ? (
-            <Text style={[networkStyles.actionMessage, saveState === "error" && networkStyles.errorText]}>
-              {saveMessage}
-            </Text>
+            <ActionMessage error={saveState === "error"}>{saveMessage}</ActionMessage>
           ) : null}
 
           <ModerationActions targetId={detail.id} targetType="opportunity" token={token} />
         </>
       ) : null}
-    </View>
+    </DetailSheet>
   );
 }
 
@@ -1320,7 +1451,7 @@ export function OwnerApplicationsPanel({
 }) {
   const { t } = useI18n();
   return (
-    <View style={networkStyles.detailPanel}>
+    <DetailSheet accessibilityLabel={opportunity.title} onClose={onClose}>
       <PanelHeader eyebrow={t("My Post")} icon={FileText} onClose={onClose} title={opportunity.title} />
 
       <View style={networkStyles.statusRow}>
@@ -1345,7 +1476,7 @@ export function OwnerApplicationsPanel({
 
       {error ? (
         <View style={networkStyles.panelList}>
-          <Text style={networkStyles.errorText}>{error}</Text>
+          <ActionMessage bare error>{error}</ActionMessage>
           <InlineAction icon={RefreshCw} label={t("Retry")} onPress={onRetry} secondary />
         </View>
       ) : null}
@@ -1390,7 +1521,7 @@ export function OwnerApplicationsPanel({
                 <View style={networkStyles.metaRow}>
                   <CalendarDays color={palette.faint} size={15} strokeWidth={2.4} />
                   <Text style={networkStyles.metaText} numberOfLines={1}>
-                    {t("Applied {date}", { date: formatFullDate(application.created_at) })}
+                    {t("Applied {date}", { date: formatFullDate(application.created_at, t) })}
                   </Text>
                 </View>
 
@@ -1456,15 +1587,13 @@ export function OwnerApplicationsPanel({
                 </View>
 
                 {message ? (
-                  <Text style={[networkStyles.actionMessage, hasError && networkStyles.errorText]}>
-                    {message}
-                  </Text>
+                  <ActionMessage error={hasError}>{message}</ActionMessage>
                 ) : null}
               </View>
             );
           })}
         </View>
       ) : null}
-    </View>
+    </DetailSheet>
   );
 }

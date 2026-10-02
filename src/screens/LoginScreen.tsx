@@ -1,42 +1,45 @@
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
   useWindowDimensions,
+  type ViewStyle,
 } from "react-native";
 import {
+  AlertCircle,
   Briefcase,
   Building2,
   CheckCircle2,
-  Eye,
-  EyeOff,
-  FileText,
+  Clock,
   GraduationCap,
-  Home,
+  Lock,
   LogIn,
-  Search,
+  Mail,
   Server,
-  SlidersHorizontal,
   UserPlus,
   UserRound,
   Users,
 } from "lucide-react-native";
 
 import { API_BASE_URL } from "../lib/api/config";
-import { AuthApiError } from "../lib/api/auth";
+import { AuthApiError, CONSENT_REQUIRED_STATUS } from "../lib/api/auth";
+import type { SignupConsent } from "../lib/legal";
+import { ConsentCheckboxes, LegalLinks } from "../components/legal/ConsentCheckboxes";
 import { useI18n } from "../lib/i18n";
 import { GOOGLE_OAUTH_CLIENT_ID } from "../lib/google-oauth";
 import { GoogleIdTokenGate } from "../components/common/GoogleIdTokenGate";
-import { palette, platformShadow, styles, webSafeTextShadow } from "../styles/theme";
+import { decorativeProps, headingProps, liveRegionProps, selectedButtonProps, useAnnounce } from "../components/common/a11y";
+import { PressableScale } from "../components/ui/PressableScale";
+import { AuthField, PasswordVisibilityToggle } from "../components/login/AuthField";
+import { BANNER_CARD_OVERLAP, LoginBanner, LoginHeroPanel, displayUppercase } from "../components/login/LoginHero";
+import { fonts, palette, paperShadow, radii } from "../styles/theme";
 import type { IconComponent } from "../components/common/types";
+import { NETWORK_ERROR_MESSAGE, translateApiError } from "../lib/i18n/apiErrors";
 
 type LoginRole = "member" | "student" | "teacher";
 type AuthMode = "login" | "signup";
@@ -84,20 +87,17 @@ const loginPresets: Array<{
 
 const authModes: Array<{
   compactLabel?: string;
-  description: string;
   icon: IconComponent;
   label: string;
   value: AuthMode;
 }> = [
   {
-    description: "Existing demo accounts",
     icon: LogIn,
     label: "Log in",
     value: "login",
   },
   {
     compactLabel: "New account",
-    description: "Join as a member",
     icon: UserPlus,
     label: "Create account",
     value: "signup",
@@ -131,161 +131,17 @@ const heroHighlights: Array<{
   },
 ];
 
-const previewProfiles = [
-  { name: "Prof. Leyla", role: "Mentor", tone: "mentor" },
-  { name: "Rauf H.", role: "Student", tone: "student" },
-  { name: "Aydin M.", role: "Student", tone: "student" },
-];
-
-const previewOpportunities = [
-  { icon: Briefcase, label: "Research", title: "AI Research Intern" },
-  { icon: Users, label: "Project", title: "Smart City Team" },
-  { icon: GraduationCap, label: "Teaching", title: "Teaching Assistant" },
-];
-
-const previewNavItems: Array<{ icon: IconComponent; label: string; active?: boolean }> = [
-  { active: true, icon: Home, label: "Discover" },
-  { icon: FileText, label: "Posts" },
-  { icon: Briefcase, label: "Applied" },
-  { icon: UserRound, label: "Me" },
-  { icon: Users, label: "Network" },
-];
-
-function HeroPaperScene({ compact }: { compact: boolean }) {
-  if (compact) {
-    return null;
-  }
-
-  return (
-    <View style={loginStyles.paperScene}>
-      <View style={loginStyles.paperMoon} />
-      <View style={loginStyles.paperHillBack} />
-      <View style={loginStyles.paperHillFront} />
-      <View style={loginStyles.paperTreeLeft} />
-      <View style={loginStyles.paperTreeRight} />
-      <View style={loginStyles.paperBuilding}>
-        <View style={loginStyles.paperRoof} />
-        <View style={loginStyles.paperFlagPole} />
-        <View style={loginStyles.paperFlag} />
-        <View style={loginStyles.paperColumnRow}>
-          <View style={loginStyles.paperColumn} />
-          <View style={loginStyles.paperColumn} />
-          <View style={loginStyles.paperColumn} />
-          <View style={loginStyles.paperColumn} />
-        </View>
-        <View style={loginStyles.paperSteps} />
-      </View>
-      <View style={loginStyles.paperClockTower}>
-        <View style={loginStyles.paperTowerRoof} />
-        <View style={loginStyles.paperClockFace} />
-      </View>
-    </View>
-  );
-}
-
-function DashboardPreview({ compact }: { compact: boolean }) {
-  const { t } = useI18n();
-
-  if (compact) {
-    return null;
-  }
-
-  return (
-    <View style={loginStyles.previewStack}>
-      <View style={loginStyles.previewSearchRow}>
-        <View style={loginStyles.previewSearch}>
-          <Search color={palette.navy} size={18} strokeWidth={2.5} />
-          <Text style={loginStyles.previewSearchText} numberOfLines={1}>
-            {t("Search people, skills, or universities")}
-          </Text>
-        </View>
-        <View style={loginStyles.previewFilterButton}>
-          <SlidersHorizontal color={palette.navy} size={18} strokeWidth={2.5} />
-        </View>
-      </View>
-
-      <View style={loginStyles.previewSectionHeader}>
-        <Text style={loginStyles.previewSectionTitle}>{t("Recommended for you")}</Text>
-        <Text style={loginStyles.previewSectionAction}>{t("See all")}</Text>
-      </View>
-      <View style={loginStyles.previewProfileRow}>
-        {previewProfiles.map((profile) => (
-          <View key={profile.name} style={loginStyles.previewProfileCard}>
-            <View
-              style={[
-                loginStyles.previewAvatar,
-                profile.tone === "mentor" ? loginStyles.previewAvatarMentor : loginStyles.previewAvatarStudent,
-              ]}
-            >
-              <UserRound
-                color={profile.tone === "mentor" ? palette.violet : palette.blue}
-                size={17}
-                strokeWidth={2.6}
-              />
-            </View>
-            <Text style={loginStyles.previewProfileName} numberOfLines={2}>
-              {profile.name}
-            </Text>
-            <Text
-              style={[
-                loginStyles.previewRolePill,
-                profile.tone === "mentor" ? loginStyles.previewRolePillMentor : loginStyles.previewRolePillStudent,
-              ]}
-              numberOfLines={1}
-            >
-              {t(profile.role)}
-            </Text>
-          </View>
-        ))}
-      </View>
-
-      <View style={loginStyles.previewSectionHeader}>
-        <Text style={loginStyles.previewSectionTitle}>{t("Top opportunities")}</Text>
-        <Text style={loginStyles.previewSectionAction}>{t("See all")}</Text>
-      </View>
-      <View style={loginStyles.previewOpportunityRow}>
-        {previewOpportunities.map((item) => {
-          const Icon = item.icon;
-
-          return (
-            <View key={item.title} style={loginStyles.previewOpportunityCard}>
-              <View style={loginStyles.previewOpportunityIcon}>
-                <Icon color={palette.surface} size={16} strokeWidth={2.5} />
-              </View>
-              <Text style={loginStyles.previewOpportunityTitle} numberOfLines={2}>
-                {t(item.title)}
-              </Text>
-              <Text style={loginStyles.previewOpportunityMeta}>{t(item.label)}</Text>
-            </View>
-          );
-        })}
-      </View>
-
-      <View style={loginStyles.previewBottomNav}>
-        {previewNavItems.map((item) => {
-          const Icon = item.icon;
-          const active = Boolean(item.active);
-
-          return (
-            <View key={item.label} style={loginStyles.previewNavItem}>
-              <Icon color={active ? palette.teal : palette.navy} size={18} strokeWidth={2.5} />
-              <Text style={[loginStyles.previewNavText, active && loginStyles.previewNavTextActive]}>{t(item.label)}</Text>
-            </View>
-          );
-        })}
-      </View>
-    </View>
-  );
-}
-
 // Mounted only when GOOGLE_OAUTH_CLIENT_ID exists so the auth-request hook
 // never runs with an empty client ID.
 function GoogleSsoButton({
+  canPrompt,
   clientId,
   disabled,
   onError,
   onIdToken,
 }: {
+  // Return false to stop the Google prompt (e.g. consent boxes not ticked).
+  canPrompt?: () => boolean;
   clientId: string;
   disabled: boolean;
   onError: (message: string) => void;
@@ -296,21 +152,44 @@ function GoogleSsoButton({
   return (
     <GoogleIdTokenGate clientId={clientId} onError={onError} onIdToken={onIdToken}>
       {(promptGoogleSignIn, ready) => (
-        <Pressable
+        <PressableScale
           accessibilityRole="button"
+          accessibilityState={{ disabled: disabled || !ready }}
           disabled={disabled || !ready}
-          onPress={promptGoogleSignIn}
-          style={({ pressed }) => [
-            loginStyles.secondaryButton,
-            (disabled || !ready) && loginStyles.disabled,
-            pressed && !disabled && styles.pressed,
-          ]}
+          onPress={() => {
+            if (!canPrompt || canPrompt()) {
+              promptGoogleSignIn();
+            }
+          }}
+          style={[loginStyles.secondaryButton, (disabled || !ready) && loginStyles.disabled]}
         >
-          <GraduationCap color={palette.text} size={18} strokeWidth={2.6} />
+          <GraduationCap color={palette.caspian} size={18} strokeWidth={2.4} />
           <Text style={loginStyles.secondaryButtonText}>{t("Continue with university Google account")}</Text>
-        </Pressable>
+        </PressableScale>
       )}
     </GoogleIdTokenGate>
+  );
+}
+
+function ErrorPanel({ message }: { message: string }) {
+  return (
+    <View {...liveRegionProps("assertive")} role="alert" style={loginStyles.errorPanel}>
+      <View {...decorativeProps} style={loginStyles.noticeIcon}>
+        <AlertCircle color={palette.red} size={18} strokeWidth={2.4} />
+      </View>
+      <Text style={loginStyles.errorText}>{message}</Text>
+    </View>
+  );
+}
+
+function SlowHintPanel({ message }: { message: string }) {
+  return (
+    <View style={loginStyles.slowHintPanel}>
+      <View {...decorativeProps} style={loginStyles.noticeIcon}>
+        <Clock color={palette.amber} size={18} strokeWidth={2.4} />
+      </View>
+      <Text style={loginStyles.slowHintText}>{message}</Text>
+    </View>
   );
 }
 
@@ -320,10 +199,10 @@ export function LoginScreen({
   onRegister,
 }: {
   onLogin: (email: string, password: string) => Promise<unknown>;
-  onGoogleLogin?: (idToken: string) => Promise<unknown>;
-  onRegister: (email: string, password: string, fullName: string) => Promise<unknown>;
+  onGoogleLogin?: (idToken: string, consent?: SignupConsent) => Promise<unknown>;
+  onRegister: (email: string, password: string, fullName: string, consent: SignupConsent) => Promise<unknown>;
 }) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
@@ -333,19 +212,20 @@ export function LoginScreen({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showSlowHint, setShowSlowHint] = useState(false);
+  // Signup consent: both boxes start unchecked and must be ticked by the user.
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [confirmAge, setConfirmAge] = useState(false);
+  const hasConsent = acceptTerms && confirmAge;
+  useAnnounce(error);
 
   useEffect(() => {
     // Warm the backend as soon as the login screen appears so a spun-down
     // Render instance is already waking while the user types.
     void fetch(`${API_BASE_URL}/health`).catch(() => {});
   }, []);
-  const { width } = useWindowDimensions();
+  const { height: windowHeight, width } = useWindowDimensions();
   const isWide = width >= 900;
   const isCompact = width < 520;
-  const pagePadding = isWide ? 20 : 14;
-  const availableShellWidth = width - pagePadding * 2;
-  const shellWidth = Math.max(Math.min(availableShellWidth, isWide ? 1120 : 720), 0);
-  const visibleHighlights = isCompact ? [] : heroHighlights;
 
   function switchAuthMode(mode: AuthMode) {
     setAuthMode(mode);
@@ -382,9 +262,9 @@ export function LoginScreen({
       await onLogin(normalizedEmail, password);
     } catch (loginError) {
       if (loginError instanceof AuthApiError) {
-        setError(loginError.message);
+        setError(translateApiError(t, loginError.message));
       } else {
-        setError(t("Could not connect to the API. Check the backend URL and try again."));
+        setError(t(NETWORK_ERROR_MESSAGE));
       }
     } finally {
       clearTimeout(slowHintTimer);
@@ -404,6 +284,10 @@ export function LoginScreen({
       setError(t("Password must be at least 8 characters."));
       return;
     }
+    if (!hasConsent) {
+      setError(t("Tick both boxes to create an account."));
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -411,12 +295,15 @@ export function LoginScreen({
     const slowHintTimer = setTimeout(() => setShowSlowHint(true), SLOW_LOGIN_HINT_MS);
 
     try {
-      await onRegister(normalizedEmail, password, normalizedName);
+      await onRegister(normalizedEmail, password, normalizedName, {
+        accept_terms: acceptTerms,
+        confirm_age: confirmAge,
+      });
     } catch (registerError) {
       if (registerError instanceof AuthApiError) {
-        setError(registerError.message);
+        setError(translateApiError(t, registerError.message));
       } else {
-        setError(t("Could not connect to the API. Check the backend URL and try again."));
+        setError(t(NETWORK_ERROR_MESSAGE));
       }
     } finally {
       clearTimeout(slowHintTimer);
@@ -434,818 +321,506 @@ export function LoginScreen({
     setError(null);
 
     try {
-      await onGoogleLogin(idToken);
+      // Consent is sent only from the signup form, where the user ticked it;
+      // a Google login for an existing account needs none.
+      await onGoogleLogin(
+        idToken,
+        authMode === "signup" && hasConsent ? { accept_terms: true, confirm_age: true } : undefined,
+      );
     } catch (loginError) {
-      if (loginError instanceof AuthApiError) {
-        setError(loginError.message);
+      if (loginError instanceof AuthApiError && loginError.status === CONSENT_REQUIRED_STATUS) {
+        setAuthMode("signup");
+        setError(t("No Unibridge account uses this Google account yet. Tick both boxes below, then continue with Google to create one."));
+      } else if (loginError instanceof AuthApiError) {
+        setError(translateApiError(t, loginError.message));
       } else {
-        setError(t("Could not connect to the API. Check the backend URL and try again."));
+        setError(t(NETWORK_ERROR_MESSAGE));
       }
     } finally {
       setLoading(false);
     }
   }
 
-  return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={loginStyles.container}>
-      <ScrollView
-        contentContainerStyle={[loginStyles.scrollContent, !isWide && loginStyles.scrollContentCompact]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={[loginStyles.shell, { width: shellWidth }, !isWide && loginStyles.shellNarrow, isWide && loginStyles.shellWide]}>
-          <View style={[loginStyles.heroPanel, isWide && loginStyles.heroPanelWide, isCompact && loginStyles.heroPanelCompact]}>
-            <View
-              {...(Platform.OS === "web" ? {} : { pointerEvents: "none" as const })}
-              style={[StyleSheet.absoluteFill, loginStyles.heroChromeLayer]}
+  const passwordToggle = (
+    <PasswordVisibilityToggle
+      hideLabel={t("Hide password")}
+      onToggle={() => setShowPassword((visible) => !visible)}
+      showLabel={t("Show password")}
+      visible={showPassword}
+    />
+  );
+
+  const formCard = (
+    <View
+      style={[
+        loginStyles.card,
+        isWide ? loginStyles.cardWide : loginStyles.cardStacked,
+        isCompact && loginStyles.cardCompact,
+      ]}
+    >
+      <View style={loginStyles.formHeader}>
+        <Text style={loginStyles.formEyebrow}>
+          {displayUppercase(authMode === "login" ? t("Existing users") : t("New users"), language)}
+        </Text>
+        <Text {...headingProps(2)} style={[loginStyles.formTitle, isCompact && loginStyles.formTitleCompact]}>
+          {authMode === "login" ? t("Log in to Unibridge") : t("Create account")}
+        </Text>
+        <Text style={loginStyles.formIntro}>
+          {authMode === "login"
+            ? DEMO_LOGINS_ENABLED
+              ? isCompact
+                ? t("Use a demo role preset or working credentials.")
+                : t("Use a demo role preset or enter working credentials manually.")
+              : t("Sign in with your Unibridge credentials.")
+            : GOOGLE_OAUTH_CLIENT_ID
+              ? t("Member accounts can browse, save, apply, and connect. Students and faculty join with their university Google account.")
+              : t("Member accounts can browse, save, apply, and connect. Student and faculty roles are granted by university administrators.")}
+        </Text>
+      </View>
+
+      <View style={loginStyles.modeSwitch}>
+        {authModes.map((mode) => {
+          const active = authMode === mode.value;
+          const Icon = mode.icon;
+
+          return (
+            <PressableScale
+              accessibilityRole="button"
+              {...selectedButtonProps(active)}
+              key={mode.value}
+              onPress={() => switchAuthMode(mode.value)}
+              scaleTo={0.98}
+              style={[loginStyles.modeOption, active && loginStyles.modeOptionActive]}
             >
-              <View style={loginStyles.heroGridLineTop} />
-              <View style={loginStyles.heroGridLineBottom} />
-              <View style={loginStyles.heroGridLineLeft} />
-              <View style={loginStyles.heroGridLineRight} />
-              <View style={loginStyles.heroDiagonalOne} />
-              <View style={loginStyles.heroDiagonalTwo} />
-              <View style={loginStyles.heroAccentBlock} />
-            </View>
+              <Icon color={active ? palette.caspian : palette.muted} size={17} strokeWidth={2.4} />
+              <Text numberOfLines={1} style={[loginStyles.modeLabel, active && loginStyles.modeLabelActive]}>
+                {t(isCompact ? mode.compactLabel ?? mode.label : mode.label)}
+              </Text>
+            </PressableScale>
+          );
+        })}
+      </View>
 
-            <View style={[loginStyles.heroContent, isCompact && loginStyles.heroContentCompact]}>
-              <View style={loginStyles.heroBrandRow}>
-                <View style={loginStyles.assetMark}>
-                  <Image
-                    accessibilityIgnoresInvertColors
-                    resizeMode="cover"
-                    source={require("../../assets/icon.png")}
-                    style={loginStyles.assetImage}
-                  />
-                </View>
-                <View style={loginStyles.heroBrandText}>
-                  <Text
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.82}
-                    numberOfLines={1}
-                    style={[loginStyles.heroBrandTitle, isCompact && loginStyles.heroBrandTitleCompact]}
-                  >
-                    Unibridge
-                  </Text>
-                  <Text style={loginStyles.heroBrandSubtitle}>{t("Academic and professional network")}</Text>
-                </View>
+      {authMode === "login" ? (
+        <>
+          {DEMO_LOGINS_ENABLED ? (
+            <View style={loginStyles.roleSection}>
+              <View style={loginStyles.sectionLabelRow}>
+                <Text style={loginStyles.sectionLabel}>{t("Choose a role to continue")}</Text>
+                {!isCompact ? <Text style={loginStyles.sectionMeta}>{t("Tap to fill")}</Text> : null}
               </View>
 
-              <View style={loginStyles.heroCopy}>
-                <Text style={loginStyles.heroEyebrow}>{t("University access portal")}</Text>
-                <Text style={[loginStyles.heroTitle, isCompact && loginStyles.heroTitleCompact]}>
-                  {isCompact ? t("Unibridge access for campus roles.") : t("Connect classroom work to real campus opportunity.")}
-                </Text>
-                <Text style={[loginStyles.heroBody, isCompact && loginStyles.heroBodyCompact]}>
-                  {DEMO_LOGINS_ENABLED
-                    ? isCompact
-                      ? "Log in with a demo role or create a member account."
-                      : "Sign in as a member, student, or teacher to test a role-specific network for projects, applications, mentorship, and academic review."
-                    : isCompact
-                      ? t("Log in or create a member account.")
-                      : t("Sign in to a role-aware campus network for projects, applications, mentorship, and academic review.")}
-                </Text>
-              </View>
-
-              <HeroPaperScene compact={isCompact} />
-
-              {visibleHighlights.length > 0 ? (
-                <View style={[loginStyles.heroHighlights, isWide && loginStyles.heroHighlightsWide]}>
-                  {visibleHighlights.map((item) => {
-                    const Icon = item.icon;
-
-                    return (
-                      <View key={item.title} style={loginStyles.highlightTile}>
-                        <View style={loginStyles.highlightIcon}>
-                          <Icon color="#7DD3FC" size={18} strokeWidth={2.5} />
-                        </View>
-                        <View style={loginStyles.highlightCopy}>
-                          <Text style={loginStyles.highlightTitle}>{t(item.title)}</Text>
-                          <Text style={loginStyles.highlightBody}>{t(item.body)}</Text>
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
-              ) : null}
-            </View>
-          </View>
-
-          <View style={[loginStyles.authColumn, isWide && loginStyles.authColumnWide]}>
-            <View style={[loginStyles.loginPanel, isWide && loginStyles.loginPanelWide, isCompact && loginStyles.loginPanelCompact]}>
-              <View style={[loginStyles.formHeader, isCompact && loginStyles.formHeaderCompact]}>
-                <Text style={loginStyles.formEyebrow}>{authMode === "login" ? t("Existing users") : t("New users")}</Text>
-                <Text
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.84}
-                  numberOfLines={isCompact ? 1 : 2}
-                  style={[loginStyles.formTitle, isCompact && loginStyles.formTitleCompact]}
-                >
-                  {authMode === "login" ? (isCompact ? t("Unibridge login") : t("Log in to Unibridge")) : t("Create account")}
-                </Text>
-                <Text style={[loginStyles.formIntro, isCompact && loginStyles.formIntroCompact]}>
-                  {authMode === "login"
-                    ? DEMO_LOGINS_ENABLED
-                      ? isCompact
-                        ? "Use a demo role preset or working credentials."
-                        : "Use a demo role preset or enter working credentials manually."
-                      : t("Sign in with your Unibridge credentials.")
-                    : t("Member accounts can browse, save, apply, and connect. Students and faculty join with their university Google account.")}
-                </Text>
-              </View>
-
-              <View style={[loginStyles.modeSwitch, isCompact && loginStyles.modeSwitchCompact]}>
-                {authModes.map((mode) => {
-                  const active = authMode === mode.value;
-                  const Icon = mode.icon;
+              <View style={[loginStyles.roleStack, isCompact && loginStyles.roleStackCompact]}>
+                {loginPresets.map((preset) => {
+                  const Icon = preset.icon;
+                  const active = selectedRole === preset.role;
 
                   return (
-                    <Pressable
+                    <PressableScale
                       accessibilityRole="button"
-                      key={mode.value}
-                      onPress={() => switchAuthMode(mode.value)}
-                      style={({ pressed }) => [
-                        loginStyles.modeOption,
-                        isCompact && loginStyles.modeOptionCompact,
-                        active && loginStyles.modeOptionActive,
-                        pressed && styles.pressed,
+                      {...selectedButtonProps(active)}
+                      key={preset.role}
+                      onPress={() => selectPreset(preset.role)}
+                      scaleTo={0.98}
+                      style={[
+                        loginStyles.roleCard,
+                        isCompact && loginStyles.roleCardCompact,
+                        active && loginStyles.roleCardActive,
                       ]}
                     >
-                      <View style={[loginStyles.modeIcon, isCompact && loginStyles.modeIconCompact, active && loginStyles.modeIconActive]}>
-                        <Icon color={active ? palette.surface : palette.teal} size={isCompact ? 16 : 17} strokeWidth={2.6} />
+                      <View style={[loginStyles.roleCardHeader, isCompact && loginStyles.roleCardHeaderCompact]}>
+                        <View style={[loginStyles.roleIcon, active && loginStyles.roleIconActive]}>
+                          <Icon color={active ? palette.surface : palette.caspian} size={isCompact ? 18 : 20} strokeWidth={2.4} />
+                        </View>
+                        <View style={[loginStyles.roleTextBlock, isCompact && loginStyles.roleTextBlockCompact]}>
+                          <View style={loginStyles.roleTitleRow}>
+                            <Text
+                              numberOfLines={1}
+                              style={[loginStyles.roleTitle, active && loginStyles.roleTitleActive]}
+                            >
+                              {t(preset.label)}
+                            </Text>
+                            {active && !isCompact ? <Text style={loginStyles.activeBadge}>{t("Loaded")}</Text> : null}
+                          </View>
+                          {!isCompact ? (
+                            <>
+                              <Text style={loginStyles.roleDescription}>{t(preset.description)}</Text>
+                              <Text numberOfLines={1} style={loginStyles.roleCredential}>
+                                {preset.email}
+                              </Text>
+                            </>
+                          ) : null}
+                        </View>
                       </View>
-                      <View style={loginStyles.modeCopy}>
-                        <Text style={[loginStyles.modeLabel, active && loginStyles.modeLabelActive]} numberOfLines={1}>
-                          {t(isCompact ? mode.compactLabel ?? mode.label : mode.label)}
-                        </Text>
-                        {!isCompact ? (
-                          <Text style={[loginStyles.modeDescription, active && loginStyles.modeDescriptionActive]}>
-                            {t(mode.description)}
-                          </Text>
-                        ) : null}
-                      </View>
-                    </Pressable>
+
+                      {!isCompact ? (
+                        <View style={loginStyles.permissionWrap}>
+                          {preset.permissions.map((permission) => (
+                            <Text
+                              key={`${preset.role}-${permission}`}
+                              style={[loginStyles.permissionBadge, active && loginStyles.permissionBadgeActive]}
+                            >
+                              {t(permission)}
+                            </Text>
+                          ))}
+                        </View>
+                      ) : null}
+                    </PressableScale>
                   );
                 })}
               </View>
-
-              {authMode === "login" ? (
-                <>
-                  {DEMO_LOGINS_ENABLED ? (
-                  <View style={[loginStyles.roleSection, isCompact && loginStyles.roleSectionCompact]}>
-                    <View style={loginStyles.sectionLabelRow}>
-                      <Text style={[loginStyles.sectionLabel, isCompact && loginStyles.sectionLabelCompact]}>
-                        Choose a role to continue
-                      </Text>
-                      {!isCompact ? <Text style={loginStyles.sectionMeta}>Tap to fill</Text> : null}
-                    </View>
-
-                    <View style={[loginStyles.roleStack, isCompact && loginStyles.roleStackCompact]}>
-                      {loginPresets.map((preset) => {
-                        const Icon = preset.icon;
-                        const active = selectedRole === preset.role;
-
-                        return (
-                          <Pressable
-                            accessibilityRole="button"
-                            key={preset.role}
-                            onPress={() => selectPreset(preset.role)}
-                            style={({ pressed }) => [
-                              loginStyles.roleCard,
-                              isCompact && loginStyles.roleCardCompact,
-                              active && loginStyles.roleCardActive,
-                              pressed && styles.pressed,
-                            ]}
-                          >
-                            <View style={[loginStyles.roleCardHeader, isCompact && loginStyles.roleCardHeaderCompact]}>
-                              <View style={[loginStyles.roleIcon, isCompact && loginStyles.roleIconCompact, active && loginStyles.roleIconActive]}>
-                                <Icon color={active ? palette.surface : palette.teal} size={isCompact ? 20 : 24} strokeWidth={2.45} />
-                              </View>
-                              <View style={[loginStyles.roleTextBlock, isCompact && loginStyles.roleTextBlockCompact]}>
-                                <View style={[loginStyles.roleTitleRow, isCompact && loginStyles.roleTitleRowCompact]}>
-                                  <Text
-                                    style={[loginStyles.roleTitle, isCompact && loginStyles.roleTitleCompact, active && loginStyles.roleTitleActive]}
-                                    numberOfLines={1}
-                                  >
-                                    {preset.label}
-                                  </Text>
-                                  {active && !isCompact ? <Text style={loginStyles.activeBadge}>Loaded</Text> : null}
-                                </View>
-                                {!isCompact ? (
-                                  <Text style={[loginStyles.roleDescription, active && loginStyles.roleDescriptionActive]}>
-                                    {preset.description}
-                                  </Text>
-                                ) : null}
-                                <Text style={[loginStyles.roleCredential, isCompact && loginStyles.roleCredentialCompact]} numberOfLines={1}>
-                                  {preset.email}
-                                </Text>
-                              </View>
-                            </View>
-
-                            {!isCompact ? (
-                              <View style={loginStyles.permissionWrap}>
-                                {preset.permissions.map((permission) => (
-                                  <Text
-                                    key={`${preset.role}-${permission}`}
-                                    style={[loginStyles.permissionBadge, active && loginStyles.permissionBadgeActive]}
-                                  >
-                                    {permission}
-                                  </Text>
-                                ))}
-                              </View>
-                            ) : null}
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                  </View>
-                  ) : null}
-
-                  <View style={[loginStyles.formStack, isCompact && loginStyles.formStackCompact]}>
-                    <View style={loginStyles.field}>
-                      <Text style={loginStyles.label}>{t("Email")}</Text>
-                      <View style={[loginStyles.inputFrame, isCompact && loginStyles.inputFrameCompact]}>
-                        <TextInput
-                          autoCapitalize="none"
-                          autoComplete="email"
-                          autoCorrect={false}
-                          keyboardType="email-address"
-                          onChangeText={(value) => {
-                            setEmail(value);
-                            setSelectedRole(null);
-                          }}
-                          placeholder={DEMO_LOGINS_ENABLED ? "member@example.edu" : t("you@university.edu")}
-                          placeholderTextColor={palette.faint}
-                          returnKeyType="next"
-                          style={[loginStyles.textInput, isCompact && loginStyles.textInputCompact]}
-                          textContentType="emailAddress"
-                          value={email}
-                        />
-                      </View>
-                    </View>
-
-                    <View style={loginStyles.field}>
-                      <Text style={loginStyles.label}>{t("Password")}</Text>
-                      <View style={[loginStyles.inputFrame, isCompact && loginStyles.inputFrameCompact]}>
-                        <TextInput
-                          autoCapitalize="none"
-                          autoComplete="password"
-                          onChangeText={(value) => {
-                            setPassword(value);
-                            setSelectedRole(null);
-                          }}
-                          onSubmitEditing={submit}
-                          placeholder={t("Password")}
-                          placeholderTextColor={palette.faint}
-                          returnKeyType="go"
-                          secureTextEntry={!showPassword}
-                          style={[loginStyles.textInput, isCompact && loginStyles.textInputCompact]}
-                          textContentType="password"
-                          value={password}
-                        />
-                        <Pressable
-                          accessibilityLabel={showPassword ? t("Hide password") : t("Show password")}
-                          accessibilityRole="button"
-                          hitSlop={8}
-                          onPress={() => setShowPassword((visible) => !visible)}
-                          style={({ pressed }) => [loginStyles.passwordToggle, pressed && styles.pressed]}
-                        >
-                          {showPassword ? (
-                            <EyeOff color={palette.muted} size={18} strokeWidth={2.4} />
-                          ) : (
-                            <Eye color={palette.muted} size={18} strokeWidth={2.4} />
-                          )}
-                        </Pressable>
-                      </View>
-                    </View>
-                  </View>
-
-                  {error ? (
-                    <View style={loginStyles.errorPanel}>
-                      <Text style={loginStyles.errorText}>{error}</Text>
-                    </View>
-                  ) : null}
-
-                  {loading && showSlowHint ? (
-                    <View style={loginStyles.slowHintPanel}>
-                      <Text style={loginStyles.slowHintText}>
-                        {t("Still connecting - the campus server may be waking up. The first login after a quiet period can take up to a minute.")}
-                      </Text>
-                    </View>
-                  ) : null}
-
-                  <Pressable
-                    accessibilityRole="button"
-                    disabled={loading}
-                    onPress={submit}
-                    style={({ pressed }) => [
-                      loginStyles.submitButton,
-                      isCompact && loginStyles.submitButtonCompact,
-                      loading && loginStyles.disabled,
-                      pressed && !loading && styles.pressed,
-                    ]}
-                  >
-                    {loading ? (
-                      <ActivityIndicator color={palette.surface} size="small" />
-                    ) : (
-                      <LogIn color={palette.surface} size={18} strokeWidth={2.6} />
-                    )}
-                    <Text style={loginStyles.submitButtonText}>{loading ? t("Logging in") : t("Log in")}</Text>
-                  </Pressable>
-
-                  {GOOGLE_OAUTH_CLIENT_ID && onGoogleLogin ? (
-                    <GoogleSsoButton
-                      clientId={GOOGLE_OAUTH_CLIENT_ID}
-                      disabled={loading}
-                      onError={setError}
-                      onIdToken={(idToken) => void submitGoogleToken(idToken)}
-                    />
-                  ) : null}
-                </>
-              ) : (
-                <>
-                  <View style={[loginStyles.formStack, isCompact && loginStyles.formStackCompact]}>
-                    <View style={loginStyles.field}>
-                      <Text style={loginStyles.label}>{t("Full name")}</Text>
-                      <View style={[loginStyles.inputFrame, isCompact && loginStyles.inputFrameCompact]}>
-                        <TextInput
-                          autoComplete="name"
-                          autoCorrect={false}
-                          onChangeText={setFullName}
-                          placeholder={t("Your name")}
-                          placeholderTextColor={palette.faint}
-                          returnKeyType="next"
-                          style={[loginStyles.textInput, isCompact && loginStyles.textInputCompact]}
-                          textContentType="name"
-                          value={fullName}
-                        />
-                      </View>
-                    </View>
-
-                    <View style={loginStyles.field}>
-                      <Text style={loginStyles.label}>{t("Email")}</Text>
-                      <View style={[loginStyles.inputFrame, isCompact && loginStyles.inputFrameCompact]}>
-                        <TextInput
-                          autoCapitalize="none"
-                          autoComplete="email"
-                          autoCorrect={false}
-                          keyboardType="email-address"
-                          onChangeText={setEmail}
-                          placeholder={t("you@university.edu")}
-                          placeholderTextColor={palette.faint}
-                          returnKeyType="next"
-                          style={[loginStyles.textInput, isCompact && loginStyles.textInputCompact]}
-                          textContentType="emailAddress"
-                          value={email}
-                        />
-                      </View>
-                    </View>
-
-                    <View style={loginStyles.field}>
-                      <Text style={loginStyles.label}>{t("Password")}</Text>
-                      <View style={[loginStyles.inputFrame, isCompact && loginStyles.inputFrameCompact]}>
-                        <TextInput
-                          autoCapitalize="none"
-                          autoComplete="password-new"
-                          onChangeText={setPassword}
-                          onSubmitEditing={submitSignup}
-                          placeholder={t("At least 8 characters")}
-                          placeholderTextColor={palette.faint}
-                          returnKeyType="go"
-                          secureTextEntry={!showPassword}
-                          style={[loginStyles.textInput, isCompact && loginStyles.textInputCompact]}
-                          textContentType="newPassword"
-                          value={password}
-                        />
-                        <Pressable
-                          accessibilityLabel={showPassword ? t("Hide password") : t("Show password")}
-                          accessibilityRole="button"
-                          hitSlop={8}
-                          onPress={() => setShowPassword((visible) => !visible)}
-                          style={({ pressed }) => [loginStyles.passwordToggle, pressed && styles.pressed]}
-                        >
-                          {showPassword ? (
-                            <EyeOff color={palette.muted} size={18} strokeWidth={2.4} />
-                          ) : (
-                            <Eye color={palette.muted} size={18} strokeWidth={2.4} />
-                          )}
-                        </Pressable>
-                      </View>
-                    </View>
-                  </View>
-
-                  {error ? (
-                    <View style={loginStyles.errorPanel}>
-                      <Text style={loginStyles.errorText}>{error}</Text>
-                    </View>
-                  ) : null}
-
-                  {loading && showSlowHint ? (
-                    <View style={loginStyles.slowHintPanel}>
-                      <Text style={loginStyles.slowHintText}>
-                        {t("Still connecting - the campus server may be waking up. The first signup after a quiet period can take up to a minute.")}
-                      </Text>
-                    </View>
-                  ) : null}
-
-                  <Pressable
-                    accessibilityRole="button"
-                    disabled={loading}
-                    onPress={submitSignup}
-                    style={({ pressed }) => [
-                      loginStyles.submitButton,
-                      isCompact && loginStyles.submitButtonCompact,
-                      loading && loginStyles.disabled,
-                      pressed && !loading && styles.pressed,
-                    ]}
-                  >
-                    {loading ? (
-                      <ActivityIndicator color={palette.surface} size="small" />
-                    ) : (
-                      <UserPlus color={palette.surface} size={18} strokeWidth={2.6} />
-                    )}
-                    <Text style={loginStyles.submitButtonText}>
-                      {loading ? t("Creating account") : t("Create member account")}
-                    </Text>
-                  </Pressable>
-
-                  {GOOGLE_OAUTH_CLIENT_ID && onGoogleLogin ? (
-                    <GoogleSsoButton
-                      clientId={GOOGLE_OAUTH_CLIENT_ID}
-                      disabled={loading}
-                      onError={setError}
-                      onIdToken={(idToken) => void submitGoogleToken(idToken)}
-                    />
-                  ) : null}
-                </>
-              )}
-
-              {DEMO_LOGINS_ENABLED ? (
-                <View style={loginStyles.apiHint}>
-                  <Server color={palette.navy} size={16} strokeWidth={2.4} />
-                  <View style={loginStyles.apiHintText}>
-                    <Text style={loginStyles.hintLabel}>API endpoint</Text>
-                    <Text style={loginStyles.hintValue} numberOfLines={2}>
-                      {API_BASE_URL}
-                    </Text>
-                  </View>
-                </View>
-              ) : null}
             </View>
-            <DashboardPreview compact={isCompact} />
+          ) : null}
+
+          <View style={loginStyles.formStack}>
+            <AuthField
+              accessibilityLabel={t("Email")}
+              autoCapitalize="none"
+              autoComplete="email"
+              autoCorrect={false}
+              icon={Mail}
+              keyboardType="email-address"
+              label={t("Email")}
+              onChangeText={(value) => {
+                setEmail(value);
+                setSelectedRole(null);
+              }}
+              placeholder={DEMO_LOGINS_ENABLED ? "member@example.edu" : t("you@university.edu")}
+              returnKeyType="next"
+              textContentType="emailAddress"
+              value={email}
+            />
+            <AuthField
+              accessibilityLabel={t("Password")}
+              autoCapitalize="none"
+              autoComplete="password"
+              icon={Lock}
+              label={t("Password")}
+              onChangeText={(value) => {
+                setPassword(value);
+                setSelectedRole(null);
+              }}
+              onSubmitEditing={submit}
+              placeholder={t("Password")}
+              returnKeyType="go"
+              secureTextEntry={!showPassword}
+              textContentType="password"
+              trailing={passwordToggle}
+              value={password}
+            />
+          </View>
+
+          {error ? <ErrorPanel message={error} /> : null}
+
+          {loading && showSlowHint ? (
+            <SlowHintPanel
+              message={t("Still connecting - the campus server may be waking up. The first login after a quiet period can take up to a minute.")}
+            />
+          ) : null}
+
+          <View style={loginStyles.actions}>
+            <PressableScale
+              accessibilityRole="button"
+              disabled={loading}
+              haptic="action"
+              onPress={submit}
+              style={[loginStyles.submitButton, loading && loginStyles.disabled]}
+            >
+              {loading ? (
+                <ActivityIndicator color={palette.surface} size="small" />
+              ) : (
+                <LogIn color={palette.surface} size={18} strokeWidth={2.6} />
+              )}
+              <Text style={loginStyles.submitButtonText}>{loading ? t("Logging in") : t("Log in")}</Text>
+            </PressableScale>
+
+            {GOOGLE_OAUTH_CLIENT_ID && onGoogleLogin ? (
+              <GoogleSsoButton
+                clientId={GOOGLE_OAUTH_CLIENT_ID}
+                disabled={loading}
+                onError={setError}
+                onIdToken={(idToken) => void submitGoogleToken(idToken)}
+              />
+            ) : null}
+          </View>
+        </>
+      ) : (
+        <>
+          <View style={loginStyles.formStack}>
+            <AuthField
+              accessibilityLabel={t("Full name")}
+              autoComplete="name"
+              autoCorrect={false}
+              icon={UserRound}
+              label={t("Full name")}
+              onChangeText={setFullName}
+              placeholder={t("Your name")}
+              returnKeyType="next"
+              textContentType="name"
+              value={fullName}
+            />
+            <AuthField
+              accessibilityLabel={t("Email")}
+              autoCapitalize="none"
+              autoComplete="email"
+              autoCorrect={false}
+              icon={Mail}
+              keyboardType="email-address"
+              label={t("Email")}
+              onChangeText={setEmail}
+              placeholder={t("you@university.edu")}
+              returnKeyType="next"
+              textContentType="emailAddress"
+              value={email}
+            />
+            <AuthField
+              accessibilityLabel={t("Password")}
+              autoCapitalize="none"
+              autoComplete="password-new"
+              icon={Lock}
+              label={t("Password")}
+              onChangeText={setPassword}
+              onSubmitEditing={submitSignup}
+              placeholder={t("At least 8 characters")}
+              returnKeyType="go"
+              secureTextEntry={!showPassword}
+              textContentType="newPassword"
+              trailing={passwordToggle}
+              value={password}
+            />
+          </View>
+
+          <View style={loginStyles.consentPanel}>
+            <ConsentCheckboxes
+              acceptTerms={acceptTerms}
+              confirmAge={confirmAge}
+              onAcceptTermsChange={(next) => {
+                setAcceptTerms(next);
+                setError(null);
+              }}
+              onConfirmAgeChange={(next) => {
+                setConfirmAge(next);
+                setError(null);
+              }}
+            />
+          </View>
+
+          {error ? <ErrorPanel message={error} /> : null}
+
+          {loading && showSlowHint ? (
+            <SlowHintPanel
+              message={t("Still connecting - the campus server may be waking up. The first signup after a quiet period can take up to a minute.")}
+            />
+          ) : null}
+
+          <View style={loginStyles.actions}>
+            <PressableScale
+              accessibilityRole="button"
+              disabled={loading}
+              haptic="action"
+              onPress={submitSignup}
+              style={[loginStyles.submitButton, loading && loginStyles.disabled]}
+            >
+              {loading ? (
+                <ActivityIndicator color={palette.surface} size="small" />
+              ) : (
+                <UserPlus color={palette.surface} size={18} strokeWidth={2.6} />
+              )}
+              <Text style={loginStyles.submitButtonText}>
+                {loading ? t("Creating account") : t("Create member account")}
+              </Text>
+            </PressableScale>
+
+            {GOOGLE_OAUTH_CLIENT_ID && onGoogleLogin ? (
+              <GoogleSsoButton
+                canPrompt={() => {
+                  if (!hasConsent) {
+                    setError(t("Tick both boxes to create an account."));
+                    return false;
+                  }
+                  return true;
+                }}
+                clientId={GOOGLE_OAUTH_CLIENT_ID}
+                disabled={loading}
+                onError={setError}
+                onIdToken={(idToken) => void submitGoogleToken(idToken)}
+              />
+            ) : null}
+          </View>
+        </>
+      )}
+
+      {authMode === "login" ? <LegalLinks align="center" /> : null}
+
+      {DEMO_LOGINS_ENABLED ? (
+        <View style={loginStyles.apiHint}>
+          <Server color={palette.muted} size={16} strokeWidth={2.4} />
+          <View style={loginStyles.apiHintText}>
+            <Text style={loginStyles.hintLabel}>{t("API endpoint")}</Text>
+            <Text numberOfLines={2} style={loginStyles.hintValue}>
+              {API_BASE_URL}
+            </Text>
           </View>
         </View>
+      ) : null}
+    </View>
+  );
+
+  return (
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={loginStyles.container}>
+      <ScrollView
+        contentContainerStyle={[loginStyles.scrollContent, isWide && loginStyles.scrollContentWide]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {isWide ? (
+          <View style={loginStyles.wideShell}>
+            <View style={[loginStyles.heroColumn, webStickyHero]}>
+              <LoginHeroPanel
+                body={
+                  DEMO_LOGINS_ENABLED
+                    ? t("Sign in as a member, student, or teacher to test a role-specific network for projects, applications, mentorship, and academic review.")
+                    : t("Sign in to a role-aware campus network for projects, applications, mentorship, and academic review.")
+                }
+                eyebrow={t("University access portal")}
+                height={Math.max(windowHeight - 48, 660)}
+                highlights={heroHighlights.map((item) => ({
+                  body: t(item.body),
+                  icon: item.icon,
+                  title: t(item.title),
+                }))}
+                title={t("Connect classroom work to real campus opportunity.")}
+              />
+            </View>
+            <View style={loginStyles.formColumn}>{formCard}</View>
+          </View>
+        ) : (
+          <>
+            <LoginBanner
+              body={
+                isCompact
+                  ? undefined
+                  : DEMO_LOGINS_ENABLED
+                    ? t("Log in with a demo role or create a member account.")
+                    : t("Log in or create a member account.")
+              }
+              compact={isCompact}
+              title={authMode === "login" ? t("Welcome back") : t("Join as a member")}
+            />
+            <View style={[loginStyles.stackedBody, isCompact && loginStyles.stackedBodyCompact]}>{formCard}</View>
+          </>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
+// On web the hero panel stays in view while a long form (e.g. with the demo
+// presets) scrolls past it. Native has no sticky positioning, hence the cast.
+const webStickyHero = (Platform.OS === "web" ? { position: "sticky", top: 24 } : {}) as ViewStyle;
+
 const loginStyles = StyleSheet.create({
   container: {
-    flex: 1,
     backgroundColor: palette.page,
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
+  },
+  scrollContentWide: {
     justifyContent: "center",
-    padding: 18,
+    padding: 24,
   },
-  scrollContentCompact: {
-    justifyContent: "flex-start",
-    padding: 12,
-    paddingBottom: 24,
-  },
-  shell: {
+
+  // Layout ---------------------------------------------------------------
+  wideShell: {
+    alignItems: "stretch",
     alignSelf: "center",
-    gap: 18,
+    flexDirection: "row",
+    gap: 24,
     maxWidth: 1180,
     width: "100%",
   },
-  shellNarrow: {
-    alignSelf: "center",
-    flexDirection: "column-reverse",
+  heroColumn: {
+    // Sized to the viewport rather than stretched to the (often taller) form.
+    alignSelf: "flex-start",
+    flex: 1.05,
+    minWidth: 0,
   },
-  shellWide: {
-    alignItems: "stretch",
-    flexDirection: "row",
-    gap: 22,
-  },
-  heroPanel: {
-    alignSelf: "stretch",
-    backgroundColor: "#09233D",
-    borderColor: "rgba(255, 255, 255, 0.14)",
-    borderRadius: 12,
-    borderWidth: 1,
-    overflow: "hidden",
-    padding: 24,
-    ...platformShadow({
-      color: "#03101E",
-      offset: { height: 18, width: 0 },
-      opacity: 0.22,
-      radius: 32,
-    }),
-  },
-  heroPanelWide: {
-    flex: 1.02,
+  formColumn: {
+    flex: 1,
     justifyContent: "center",
-    minHeight: 760,
-    padding: 44,
+    minWidth: 0,
   },
-  heroPanelCompact: {
-    minHeight: 214,
-    padding: 18,
+  stackedBody: {
+    alignItems: "center",
+    // The card rides up over the banner's bottom edge.
+    marginTop: -BANNER_CARD_OVERLAP,
+    paddingBottom: 32,
+    paddingHorizontal: 24,
   },
-  heroChromeLayer: {
-    pointerEvents: "none",
+  stackedBodyCompact: {
+    paddingBottom: 24,
+    paddingHorizontal: 14,
   },
-  heroGridLineTop: {
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    height: 1,
-    left: 0,
-    position: "absolute",
-    right: 0,
-    top: 72,
-  },
-  heroGridLineBottom: {
-    backgroundColor: "rgba(255, 255, 255, 0.12)",
-    bottom: 116,
-    height: 1,
-    left: 0,
-    position: "absolute",
-    right: 0,
-  },
-  heroGridLineLeft: {
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
-    bottom: 0,
-    left: 76,
-    position: "absolute",
-    top: 0,
-    width: 1,
-  },
-  heroGridLineRight: {
-    backgroundColor: "rgba(255, 255, 255, 0.07)",
-    bottom: 0,
-    position: "absolute",
-    right: 118,
-    top: 0,
-    width: 1,
-  },
-  heroDiagonalOne: {
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
-    borderRadius: 12,
-    height: 134,
-    position: "absolute",
-    right: -86,
-    top: 104,
-    transform: [{ rotate: "-22deg" }],
-    width: 420,
-  },
-  heroDiagonalTwo: {
-    backgroundColor: "rgba(15, 118, 110, 0.28)",
-    borderRadius: 12,
-    bottom: 108,
-    height: 92,
-    left: -96,
-    position: "absolute",
-    transform: [{ rotate: "-22deg" }],
-    width: 380,
-  },
-  heroAccentBlock: {
-    backgroundColor: "rgba(255, 253, 248, 0.1)",
-    borderColor: "rgba(255, 253, 248, 0.16)",
+
+  // Card -------------------------------------------------------------------
+  card: {
+    backgroundColor: palette.surface,
+    borderColor: palette.hairline,
+    borderRadius: 28,
     borderWidth: 1,
-    bottom: 24,
-    height: 118,
-    position: "absolute",
-    right: 26,
-    transform: [{ rotate: "-8deg" }],
-    width: 118,
+    gap: 20,
+    padding: 28,
+    width: "100%",
+    ...paperShadow("sheet"),
   },
-  heroContent: {
-    gap: 24,
+  cardWide: {
+    padding: 36,
   },
-  heroContentCompact: {
+  cardStacked: {
+    maxWidth: 560,
+  },
+  cardCompact: {
     gap: 18,
-  },
-  heroBrandRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 12,
-  },
-  assetMark: {
-    alignItems: "center",
-    backgroundColor: palette.teal,
-    borderColor: "rgba(255, 255, 255, 0.32)",
-    borderRadius: 12,
-    borderWidth: 1,
-    height: 58,
-    justifyContent: "center",
-    overflow: "hidden",
-    width: 58,
-    ...platformShadow({
-      color: "#020617",
-      offset: { height: 10, width: 0 },
-      opacity: 0.34,
-      radius: 18,
-    }),
-  },
-  assetImage: {
-    height: 58,
-    width: 58,
-  },
-  heroBrandText: {
-    flex: 1,
-    minWidth: 0,
-  },
-  heroBrandTitle: {
-    color: palette.surface,
-    fontSize: 28,
-    fontWeight: "700",
-    lineHeight: 34,
-  },
-  heroBrandTitleCompact: {
-    fontSize: 24,
-    lineHeight: 30,
-  },
-  heroBrandSubtitle: {
-    color: "#E1E8EF",
-    fontSize: 14,
-    fontWeight: "600",
-    marginTop: 2,
-  },
-  heroCopy: {
-    gap: 12,
-    maxWidth: 620,
-  },
-  heroEyebrow: {
-    color: "#2DD4BF",
-    fontSize: 12,
-    fontWeight: "700",
-    textTransform: "uppercase",
-  },
-  heroTitle: {
-    color: palette.surface,
-    fontSize: 45,
-    fontWeight: "700",
-    lineHeight: 53,
-    ...webSafeTextShadow({
-      color: "rgba(2, 6, 23, 0.36)",
-      offset: { height: 3, width: 0 },
-      radius: 0,
-    }),
-  },
-  heroTitleCompact: {
-    fontSize: 24,
-    lineHeight: 30,
-  },
-  heroBody: {
-    color: "#E5ECF4",
-    fontSize: 16,
-    fontWeight: "600",
-    lineHeight: 26,
-    maxWidth: 520,
-  },
-  heroBodyCompact: {
-    fontSize: 14,
-    lineHeight: 21,
-  },
-  heroHighlights: {
-    gap: 13,
-  },
-  heroHighlightsWide: {
-    flexDirection: "column",
-    maxWidth: 430,
-  },
-  highlightTile: {
-    alignItems: "center",
-    backgroundColor: "rgba(7, 29, 51, 0.72)",
-    borderColor: "rgba(255, 255, 255, 0.16)",
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 14,
-    minWidth: 0,
-    padding: 12,
-    ...platformShadow({
-      color: "#020617",
-      offset: { height: 8, width: 0 },
-      opacity: 0.18,
-      radius: 16,
-    }),
-  },
-  highlightIcon: {
-    alignItems: "center",
-    backgroundColor: "#0A2540",
-    borderColor: "rgba(255, 255, 255, 0.16)",
-    borderRadius: 12,
-    borderWidth: 1,
-    height: 52,
-    justifyContent: "center",
-    width: 52,
-  },
-  highlightTitle: {
-    color: palette.surface,
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  highlightBody: {
-    color: "#D5E0EE",
-    flex: 1,
-    fontSize: 13,
-    fontWeight: "700",
-    lineHeight: 19,
-  },
-  highlightCopy: {
-    flex: 1,
-    gap: 3,
-    minWidth: 0,
-  },
-  authColumn: {
-    alignSelf: "stretch",
-    gap: 18,
-    minWidth: 0,
-  },
-  authColumnWide: {
-    flexBasis: 540,
-    flexShrink: 0,
-    maxWidth: 540,
-  },
-  loginPanel: {
-    alignSelf: "stretch",
-    backgroundColor: "#FFFFFF",
-    borderColor: "rgba(221, 214, 202, 0.96)",
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 16,
-    minWidth: 0,
-    padding: 22,
-    ...platformShadow({
-      color: "#0A2540",
-      offset: { height: 22, width: 0 },
-      opacity: 0.18,
-      radius: 30,
-    }),
-  },
-  loginPanelWide: {
-    padding: 24,
-  },
-  loginPanelCompact: {
-    gap: 12,
-    padding: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 22,
   },
   formHeader: {
     gap: 6,
-    minWidth: 0,
-  },
-  formHeaderCompact: {
-    gap: 4,
   },
   formEyebrow: {
-    color: palette.teal,
+    color: palette.caspian,
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: "700",
-    textTransform: "uppercase",
+    letterSpacing: 0.8,
   },
   formTitle: {
     color: palette.text,
-    flexShrink: 1,
-    fontSize: 26,
-    fontWeight: "700",
-    lineHeight: 32,
+    fontFamily: fonts.extrabold,
+    fontSize: 28,
+    letterSpacing: -0.6,
+    lineHeight: 34,
   },
   formTitleCompact: {
     fontSize: 24,
-    lineHeight: 29,
+    letterSpacing: -0.4,
+    lineHeight: 30,
   },
   formIntro: {
     color: palette.muted,
-    fontSize: 13,
-    fontWeight: "700",
-    lineHeight: 19,
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    lineHeight: 21,
   },
-  formIntroCompact: {
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  formStack: {
-    gap: 12,
-  },
-  formStackCompact: {
-    gap: 9,
-  },
+
+  // Segmented mode switch -------------------------------------------------
   modeSwitch: {
-    backgroundColor: "#F1F4F8",
-    borderColor: "rgba(221, 214, 202, 0.66)",
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 0,
-    minWidth: 0,
-    padding: 4,
-  },
-  modeSwitchCompact: {
+    backgroundColor: palette.surfaceAlt,
+    borderRadius: 16,
     flexDirection: "row",
     gap: 4,
+    padding: 4,
   },
   modeOption: {
     alignItems: "center",
@@ -1253,137 +828,84 @@ const loginStyles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     gap: 8,
-    minHeight: 56,
+    justifyContent: "center",
+    minHeight: 46,
+    minWidth: 0,
     paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  modeOptionCompact: {
-    gap: 6,
-    minHeight: 42,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
   },
   modeOptionActive: {
     backgroundColor: palette.surface,
-    ...platformShadow({
-      color: "#0A2540",
-      offset: { height: 8, width: 0 },
-      opacity: 0.12,
-      radius: 16,
-    }),
-  },
-  modeIcon: {
-    alignItems: "center",
-    backgroundColor: palette.tealSoft,
-    borderRadius: 12,
-    height: 34,
-    justifyContent: "center",
-    width: 34,
-  },
-  modeIconCompact: {
-    height: 30,
-    width: 30,
-  },
-  modeIconActive: {
-    backgroundColor: palette.teal,
-  },
-  modeCopy: {
-    flex: 1,
-    minWidth: 0,
+    ...paperShadow("strip"),
   },
   modeLabel: {
-    color: palette.text,
-    fontSize: 13,
-    fontWeight: "700",
-    lineHeight: 17,
+    color: palette.muted,
+    flexShrink: 1,
+    fontFamily: fonts.semibold,
+    fontSize: 14,
+    lineHeight: 19,
   },
   modeLabelActive: {
-    color: palette.teal,
-  },
-  modeDescription: {
-    color: palette.muted,
-    fontSize: 10,
-    fontWeight: "600",
-    lineHeight: 14,
-    marginTop: 1,
-  },
-  modeDescriptionActive: {
     color: palette.text,
+    fontFamily: fonts.bold,
   },
+
+  // Demo role presets -----------------------------------------------------
   roleSection: {
     gap: 10,
-    minWidth: 0,
-  },
-  roleSectionCompact: {
-    gap: 8,
   },
   sectionLabelRow: {
     alignItems: "center",
     flexDirection: "row",
+    gap: 10,
     justifyContent: "space-between",
   },
   sectionLabel: {
     color: palette.text,
+    flexShrink: 1,
+    fontFamily: fonts.semibold,
     fontSize: 13,
-    fontWeight: "700",
-  },
-  sectionLabelCompact: {
-    fontSize: 12,
-    lineHeight: 16,
+    lineHeight: 18,
   },
   sectionMeta: {
     color: palette.faint,
+    fontFamily: fonts.semibold,
     fontSize: 11,
-    fontWeight: "700",
+    letterSpacing: 0.6,
     textTransform: "uppercase",
   },
   roleStack: {
     gap: 10,
-    minWidth: 0,
   },
   roleStackCompact: {
     flexDirection: "row",
-    gap: 7,
+    gap: 8,
   },
   roleCard: {
-    alignItems: "stretch",
-    alignSelf: "stretch",
-    backgroundColor: "#FFFFFF",
-    borderColor: "#DFE5EE",
-    borderRadius: 12,
-    borderWidth: 1,
+    backgroundColor: palette.surface,
+    borderColor: palette.border,
+    borderRadius: radii.lg,
+    borderWidth: 1.5,
     gap: 10,
-    minHeight: 108,
-    minWidth: 0,
+    minHeight: 44,
     padding: 14,
-    ...platformShadow({
-      color: "#0A2540",
-      offset: { height: 8, width: 0 },
-      opacity: 0.08,
-      radius: 16,
-    }),
   },
   roleCardCompact: {
-    alignItems: "center",
+    borderRadius: radii.md,
     flex: 1,
-    gap: 0,
-    minHeight: 86,
-    padding: 8,
+    justifyContent: "center",
+    minHeight: 76,
+    minWidth: 0,
+    paddingHorizontal: 6,
+    paddingVertical: 10,
   },
   roleCardActive: {
-    backgroundColor: "#F3FBF9",
-    borderColor: palette.teal,
-    ...platformShadow({
-      color: "#2563EB",
-      offset: { height: 12, width: 0 },
-      opacity: 0.18,
-      radius: 20,
-    }),
+    backgroundColor: palette.caspianSoft,
+    borderColor: palette.caspian,
   },
   roleCardHeader: {
-    alignItems: "center",
+    alignItems: "flex-start",
     flexDirection: "row",
-    gap: 10,
+    gap: 12,
   },
   roleCardHeaderCompact: {
     alignItems: "center",
@@ -1392,625 +914,205 @@ const loginStyles = StyleSheet.create({
   },
   roleIcon: {
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderColor: "rgba(221, 214, 202, 0.88)",
+    backgroundColor: palette.caspianSoft,
     borderRadius: 12,
-    borderWidth: 1,
-    height: 58,
+    height: 40,
     justifyContent: "center",
-    width: 58,
-    ...platformShadow({
-      color: "#0A2540",
-      offset: { height: 8, width: 0 },
-      opacity: 0.1,
-      radius: 14,
-    }),
-  },
-  roleIconCompact: {
-    height: 36,
-    width: 36,
+    width: 40,
   },
   roleIconActive: {
-    backgroundColor: palette.teal,
-    borderColor: palette.teal,
+    backgroundColor: palette.caspian,
   },
   roleTextBlock: {
     flex: 1,
+    gap: 2,
     minWidth: 0,
   },
   roleTextBlockCompact: {
     alignItems: "center",
-    alignSelf: "stretch",
     flex: 0,
+    maxWidth: "100%",
   },
   roleTitleRow: {
     alignItems: "center",
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 7,
-  },
-  roleTitleRowCompact: {
-    justifyContent: "center",
+    gap: 8,
   },
   roleTitle: {
     color: palette.text,
     flexShrink: 1,
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  roleTitleCompact: {
-    fontSize: 13,
-    lineHeight: 16,
-    textAlign: "center",
+    fontFamily: fonts.semibold,
+    fontSize: 14,
+    lineHeight: 19,
   },
   roleTitleActive: {
-    color: palette.teal,
+    color: palette.caspianDeep,
+    fontFamily: fonts.bold,
   },
   activeBadge: {
-    backgroundColor: palette.teal,
-    borderRadius: 10,
+    backgroundColor: palette.caspian,
+    borderRadius: radii.pill,
     color: palette.surface,
-    fontSize: 10,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
+    fontSize: 11,
     overflow: "hidden",
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    textTransform: "uppercase",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
   },
   roleDescription: {
     color: palette.muted,
-    flexShrink: 1,
-    fontSize: 14,
-    fontWeight: "700",
-    lineHeight: 20,
-    marginTop: 2,
-  },
-  roleDescriptionActive: {
-    color: palette.text,
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    lineHeight: 18,
   },
   roleCredential: {
-    color: palette.muted,
-    flexShrink: 1,
-    fontSize: 11,
-    fontWeight: "600",
-    lineHeight: 15,
+    color: palette.caspian,
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    lineHeight: 17,
     marginTop: 2,
-  },
-  roleCredentialCompact: {
-    fontSize: 9,
-    lineHeight: 12,
-    marginTop: 1,
-    maxWidth: "100%",
-    textAlign: "center",
   },
   permissionWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 6,
-    minWidth: 0,
+    paddingLeft: 52,
   },
   permissionBadge: {
-    backgroundColor: "#F1F5F9",
-    borderColor: palette.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    color: palette.text,
-    fontSize: 10,
-    fontWeight: "700",
-    lineHeight: 13,
+    backgroundColor: palette.surfaceAlt,
+    borderRadius: radii.pill,
+    color: palette.muted,
+    fontFamily: fonts.semibold,
+    fontSize: 11,
     overflow: "hidden",
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
   },
   permissionBadgeActive: {
-    backgroundColor: palette.tealSoft,
-    borderColor: "#A5DED4",
-    color: palette.teal,
+    backgroundColor: palette.surface,
+    color: palette.caspianDeep,
   },
-  field: {
-    gap: 7,
-    minWidth: 0,
+
+  // Fields & actions ------------------------------------------------------
+  formStack: {
+    gap: 16,
   },
-  label: {
-    color: palette.text,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  inputFrame: {
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderColor: "#DBE2EB",
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: "row",
-    minHeight: 48,
-    minWidth: 0,
+  consentPanel: {
+    backgroundColor: palette.page,
+    borderRadius: radii.md,
     paddingHorizontal: 12,
+    paddingVertical: 6,
   },
-  inputFrameCompact: {
-    minHeight: 44,
-    paddingHorizontal: 11,
-  },
-  textInput: {
-    color: palette.text,
-    flex: 1,
-    fontSize: 14,
-    fontWeight: "600",
-    minHeight: 44,
-  },
-  textInputCompact: {
-    minHeight: 40,
-  },
-  errorPanel: {
-    backgroundColor: palette.redSoft,
-    borderColor: "#F6C4C2",
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 10,
-  },
-  slowHintPanel: {
-    backgroundColor: palette.tealSoft,
-    borderColor: "#B6E3DB",
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 10,
-  },
-  slowHintText: {
-    color: palette.teal,
-    fontSize: 13,
-    fontWeight: "600",
-    lineHeight: 18,
-  },
-  passwordToggle: {
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 44,
-    width: 36,
-  },
-  errorText: {
-    color: palette.red,
-    fontSize: 13,
-    fontWeight: "600",
-    lineHeight: 18,
-  },
-  disabled: {
-    opacity: 0.66,
+  actions: {
+    gap: 12,
   },
   submitButton: {
     alignItems: "center",
-    backgroundColor: palette.teal,
-    borderRadius: 12,
+    backgroundColor: palette.caspian,
+    borderRadius: radii.md,
     flexDirection: "row",
-    gap: 9,
+    gap: 10,
     justifyContent: "center",
     minHeight: 52,
-    paddingHorizontal: 16,
-    ...platformShadow({
-      color: "#2563EB",
-      offset: { height: 10, width: 0 },
-      opacity: 0.26,
-      radius: 18,
-    }),
-  },
-  submitButtonCompact: {
-    minHeight: 48,
+    paddingHorizontal: 20,
+    ...paperShadow("cutout"),
   },
   submitButtonText: {
     color: palette.surface,
-    fontSize: 14,
-    fontWeight: "700",
-    textAlign: "center",
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    letterSpacing: 0.1,
   },
   secondaryButton: {
     alignItems: "center",
     backgroundColor: palette.surface,
-    borderColor: palette.border,
-    borderRadius: 12,
+    borderColor: palette.fieldBorder,
+    borderRadius: radii.md,
     borderWidth: 1,
     flexDirection: "row",
-    gap: 8,
+    gap: 10,
     justifyContent: "center",
-    minHeight: 48,
-    paddingHorizontal: 14,
+    minHeight: 52,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
   secondaryButtonText: {
     color: palette.text,
+    flexShrink: 1,
+    fontFamily: fonts.semibold,
+    fontSize: 15,
+    lineHeight: 20,
+    textAlign: "center",
+  },
+  disabled: {
+    opacity: 0.6,
+  },
+
+  // Notices ---------------------------------------------------------------
+  noticeIcon: {
+    paddingTop: 1,
+  },
+  errorPanel: {
+    alignItems: "flex-start",
+    backgroundColor: palette.redSoft,
+    borderColor: "#F2C9C4",
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  errorText: {
+    color: palette.red,
+    flex: 1,
+    fontFamily: fonts.semibold,
     fontSize: 14,
-    fontWeight: "700",
+    lineHeight: 20,
+  },
+  slowHintPanel: {
+    alignItems: "flex-start",
+    backgroundColor: palette.amberSoft,
+    borderColor: palette.buffBorder,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  slowHintText: {
+    color: palette.amber,
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    lineHeight: 19,
   },
   apiHint: {
     alignItems: "center",
-    backgroundColor: "#F8FAFC",
-    borderColor: "#DFE5EE",
-    borderRadius: 12,
-    borderWidth: 1,
+    backgroundColor: palette.surfaceAlt,
+    borderRadius: radii.md,
     flexDirection: "row",
-    gap: 9,
-    padding: 12,
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   apiHintText: {
     flex: 1,
     minWidth: 0,
   },
   hintLabel: {
-    color: palette.muted,
+    color: palette.faint,
+    fontFamily: fonts.semibold,
     fontSize: 11,
-    fontWeight: "700",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
   },
   hintValue: {
     color: palette.text,
-    fontSize: 12,
-    fontWeight: "700",
-    lineHeight: 17,
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    lineHeight: 18,
     marginTop: 1,
-  },
-  paperScene: {
-    height: 210,
-    marginBottom: 4,
-    marginTop: 6,
-    overflow: "hidden",
-    position: "relative",
-    width: "100%",
-  },
-  paperMoon: {
-    backgroundColor: "rgba(255, 253, 248, 0.08)",
-    borderColor: "rgba(255, 253, 248, 0.12)",
-    borderRadius: 90,
-    borderWidth: 1,
-    height: 180,
-    position: "absolute",
-    right: -58,
-    top: -34,
-    width: 180,
-  },
-  paperHillBack: {
-    backgroundColor: "#0D7A70",
-    borderColor: "rgba(255, 255, 255, 0.14)",
-    borderTopLeftRadius: 90,
-    borderTopRightRadius: 120,
-    borderWidth: 1,
-    bottom: 10,
-    height: 88,
-    left: -28,
-    position: "absolute",
-    right: 68,
-    transform: [{ rotate: "5deg" }],
-  },
-  paperHillFront: {
-    backgroundColor: "#0B2F55",
-    borderColor: "rgba(255, 255, 255, 0.14)",
-    borderTopLeftRadius: 130,
-    borderTopRightRadius: 80,
-    borderWidth: 1,
-    bottom: -38,
-    height: 98,
-    left: -38,
-    position: "absolute",
-    right: -28,
-    transform: [{ rotate: "-5deg" }],
-  },
-  paperTreeLeft: {
-    backgroundColor: "#11897C",
-    borderColor: "rgba(255, 255, 255, 0.16)",
-    borderRadius: 46,
-    borderWidth: 1,
-    bottom: 32,
-    height: 76,
-    left: 4,
-    position: "absolute",
-    width: 76,
-  },
-  paperTreeRight: {
-    backgroundColor: "#2F9E90",
-    borderColor: "rgba(255, 255, 255, 0.16)",
-    borderRadius: 52,
-    borderWidth: 1,
-    bottom: 40,
-    height: 94,
-    position: "absolute",
-    right: 10,
-    width: 94,
-  },
-  paperBuilding: {
-    alignItems: "center",
-    backgroundColor: "#F3F6FA",
-    borderColor: "#DCE3EC",
-    borderRadius: 3,
-    borderWidth: 1,
-    bottom: 44,
-    height: 86,
-    justifyContent: "flex-end",
-    left: 80,
-    paddingBottom: 9,
-    position: "absolute",
-    width: 172,
-    ...platformShadow({
-      color: "#020617",
-      offset: { height: 8, width: 0 },
-      opacity: 0.22,
-      radius: 12,
-    }),
-  },
-  paperRoof: {
-    backgroundColor: "#FFFFFF",
-    borderColor: "#DCE3EC",
-    borderRadius: 2,
-    borderWidth: 1,
-    height: 48,
-    position: "absolute",
-    top: -27,
-    transform: [{ rotate: "45deg" }],
-    width: 48,
-  },
-  paperFlagPole: {
-    backgroundColor: "#E2E9F1",
-    height: 42,
-    left: 85,
-    position: "absolute",
-    top: -58,
-    width: 3,
-  },
-  paperFlag: {
-    backgroundColor: "#FFFFFF",
-    borderColor: "#DCE3EC",
-    borderRadius: 3,
-    borderWidth: 1,
-    height: 20,
-    left: 88,
-    position: "absolute",
-    top: -58,
-    width: 38,
-  },
-  paperColumnRow: {
-    flexDirection: "row",
-    gap: 11,
-  },
-  paperColumn: {
-    backgroundColor: "#E2E9F1",
-    borderColor: "#DCE3EC",
-    borderRadius: 2,
-    borderWidth: 1,
-    height: 52,
-    width: 18,
-  },
-  paperSteps: {
-    backgroundColor: "#D5DDE7",
-    borderRadius: 2,
-    bottom: 0,
-    height: 8,
-    left: 20,
-    position: "absolute",
-    right: 20,
-  },
-  paperClockTower: {
-    alignItems: "center",
-    backgroundColor: "#EDF1F7",
-    borderColor: "#DCE3EC",
-    borderRadius: 3,
-    borderWidth: 1,
-    bottom: 44,
-    height: 110,
-    justifyContent: "center",
-    position: "absolute",
-    right: 52,
-    width: 62,
-    ...platformShadow({
-      color: "#020617",
-      offset: { height: 8, width: 0 },
-      opacity: 0.16,
-      radius: 12,
-    }),
-  },
-  paperTowerRoof: {
-    backgroundColor: "#FFFFFF",
-    borderColor: "#DCE3EC",
-    borderRadius: 2,
-    borderWidth: 1,
-    height: 38,
-    position: "absolute",
-    top: -20,
-    transform: [{ rotate: "45deg" }],
-    width: 38,
-  },
-  paperClockFace: {
-    backgroundColor: "#FFFFFF",
-    borderColor: "#AFBDCD",
-    borderRadius: 15,
-    borderWidth: 2,
-    height: 30,
-    width: 30,
-  },
-  previewStack: {
-    alignSelf: "stretch",
-    gap: 14,
-  },
-  previewSearchRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 10,
-  },
-  previewSearch: {
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderColor: "#DFE5EE",
-    borderRadius: 12,
-    borderWidth: 1,
-    flex: 1,
-    flexDirection: "row",
-    gap: 10,
-    minHeight: 58,
-    paddingHorizontal: 14,
-    ...platformShadow({
-      color: "#0A2540",
-      offset: { height: 10, width: 0 },
-      opacity: 0.1,
-      radius: 18,
-    }),
-  },
-  previewSearchText: {
-    color: palette.muted,
-    flex: 1,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  previewFilterButton: {
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderColor: "#DFE5EE",
-    borderRadius: 12,
-    borderWidth: 1,
-    height: 58,
-    justifyContent: "center",
-    width: 58,
-    ...platformShadow({
-      color: "#0A2540",
-      offset: { height: 10, width: 0 },
-      opacity: 0.1,
-      radius: 18,
-    }),
-  },
-  previewSectionHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  previewSectionTitle: {
-    color: palette.text,
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  previewSectionAction: {
-    color: palette.navy,
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  previewProfileRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  previewProfileCard: {
-    alignItems: "flex-start",
-    backgroundColor: "#FFFFFF",
-    borderColor: "#DFE5EE",
-    borderRadius: 12,
-    borderWidth: 1,
-    flex: 1,
-    gap: 7,
-    minHeight: 132,
-    minWidth: 0,
-    padding: 12,
-    ...platformShadow({
-      color: "#0A2540",
-      offset: { height: 10, width: 0 },
-      opacity: 0.12,
-      radius: 18,
-    }),
-  },
-  previewAvatar: {
-    alignItems: "center",
-    borderRadius: 12,
-    height: 40,
-    justifyContent: "center",
-    width: 40,
-  },
-  previewAvatarMentor: {
-    backgroundColor: palette.violetSoft,
-  },
-  previewAvatarStudent: {
-    backgroundColor: palette.blueSoft,
-  },
-  previewProfileName: {
-    color: palette.text,
-    fontSize: 13,
-    fontWeight: "700",
-    lineHeight: 17,
-  },
-  previewRolePill: {
-    borderRadius: 10,
-    fontSize: 10,
-    fontWeight: "700",
-    overflow: "hidden",
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-  },
-  previewRolePillMentor: {
-    backgroundColor: palette.violetSoft,
-    color: palette.violet,
-  },
-  previewRolePillStudent: {
-    backgroundColor: palette.blueSoft,
-    color: palette.blue,
-  },
-  previewOpportunityRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  previewOpportunityCard: {
-    backgroundColor: "#FFFFFF",
-    borderColor: "#DFE5EE",
-    borderRadius: 12,
-    borderWidth: 1,
-    flex: 1,
-    gap: 8,
-    minHeight: 118,
-    minWidth: 0,
-    padding: 12,
-    ...platformShadow({
-      color: "#0A2540",
-      offset: { height: 10, width: 0 },
-      opacity: 0.12,
-      radius: 18,
-    }),
-  },
-  previewOpportunityIcon: {
-    alignItems: "center",
-    backgroundColor: palette.teal,
-    borderRadius: 12,
-    height: 36,
-    justifyContent: "center",
-    width: 36,
-  },
-  previewOpportunityTitle: {
-    color: palette.text,
-    fontSize: 12,
-    fontWeight: "700",
-    lineHeight: 16,
-  },
-  previewOpportunityMeta: {
-    color: palette.muted,
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  previewBottomNav: {
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderColor: "#DFE5EE",
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 5,
-    justifyContent: "space-between",
-    minHeight: 64,
-    paddingHorizontal: 10,
-    ...platformShadow({
-      color: "#0A2540",
-      offset: { height: 12, width: 0 },
-      opacity: 0.14,
-      radius: 20,
-    }),
-  },
-  previewNavItem: {
-    alignItems: "center",
-    flex: 1,
-    gap: 3,
-    minWidth: 0,
-  },
-  previewNavText: {
-    color: palette.navy,
-    fontSize: 10,
-    fontWeight: "600",
-  },
-  previewNavTextActive: {
-    color: palette.teal,
   },
 });

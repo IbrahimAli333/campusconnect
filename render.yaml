@@ -37,8 +37,29 @@ services:
       # app hides the panel while this is unset.
       - key: UNIVERSITY_PORTAL_ANTHROPIC_API_KEY
         sync: false
+      # The retired attendance/grades/schedule API is not used by the app.
+      - key: UNIVERSITY_PORTAL_ENABLE_LEGACY_ACADEMIC_API
+        value: "false"
+      # Server-side Terms gate (HTTP 428 until the current terms are
+      # accepted). Turn on only once app 1.1.0+ is the oldest build in use;
+      # older builds have no acceptance screen.
+      - key: UNIVERSITY_PORTAL_ENFORCE_TERMS_ACCEPTANCE
+        value: "false"
       # Crash/error reporting. Unset = reporting stays off entirely.
       - key: UNIVERSITY_PORTAL_SENTRY_DSN
+        sync: false
+      # Moderation alert emails (optional; admins always get push alerts).
+      # Gmail: host smtp.gmail.com, username/from = the Gmail address,
+      # password = a Google app password (not the account password).
+      - key: UNIVERSITY_PORTAL_MODERATION_ALERT_EMAIL
+        value: ibrahimaliworkacc@gmail.com
+      - key: UNIVERSITY_PORTAL_SMTP_HOST
+        sync: false
+      - key: UNIVERSITY_PORTAL_SMTP_USERNAME
+        sync: false
+      - key: UNIVERSITY_PORTAL_SMTP_PASSWORD
+        sync: false
+      - key: UNIVERSITY_PORTAL_SMTP_FROM
         sync: false
       # Moderation + store-review accounts, provisioned by the preDeployCommand.
       # The accounts are only created once their password is set in the Render

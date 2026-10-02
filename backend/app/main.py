@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.starlette import StarletteIntegration
 
-from app.api.v1 import api_router
+from app.api.v1 import api_router, legacy_academic_router
 from app.core.config import DEVELOPMENT_CORS_ORIGIN_REGEX, get_settings
 
 
@@ -31,6 +31,9 @@ def init_error_reporting() -> bool:
         # Request bodies can carry passwords and profile content, so no PII
         # is attached to events.
         send_default_pii=False,
+        # Stack-frame locals can hold names, emails, and message bodies; keep
+        # them out of error reports (data minimisation).
+        include_local_variables=False,
     )
     logger.info("Sentry error reporting enabled for %s", settings.environment)
     return True
@@ -61,6 +64,8 @@ def create_app() -> FastAPI:
         return {"status": "ok"}
 
     app.include_router(api_router, prefix=settings.api_v1_prefix)
+    if settings.enable_legacy_academic_api:
+        app.include_router(legacy_academic_router, prefix=settings.api_v1_prefix)
     return app
 
 

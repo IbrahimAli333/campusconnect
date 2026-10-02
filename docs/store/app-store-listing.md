@@ -25,14 +25,25 @@ campus,university,research,startup,internship,networking,students,faculty,mentor
 ```
 
 - **Primary category:** Social Networking (secondary: Education)
-- **Age rating questionnaire:** answers match the IARC section in
-  play-listing.md; expect 4+ with the unrestricted-web/UGC disclosures
-  (report + block + contact info are all present, which Apple requires
-  for UGC apps under Guideline 1.2).
-- **Support URL:** https://github.com/IbrahimAli333/campusconnect
+- **Age rating: 18+.** The audience is university students and staff and
+  the app requires every user to confirm they are 18 or older at signup
+  (see COMPLIANCE.md). Answer the age rating questionnaire truthfully
+  (user-generated content: yes; messaging/chat: yes; no mature themes,
+  violence, gambling, or unrestricted web access), then YOU set the
+  minimum age to **18+** using the option to apply a higher age rating
+  than the questionnaire result. Report + block + contact info are all
+  present, which Apple requires for UGC apps under Guideline 1.2.
+- **License agreement (EULA):** YOU set a custom EULA in App Store Connect
+  (App Information → License Agreement) pointing to the Terms of Service
+  once the lawyer has approved them; the Terms include the zero-tolerance
+  clause Guideline 1.2 expects.
+- **Support URL:** https://ibrahimali333.github.io/campusconnect/ (the
+  public landing page with support email, Terms, Privacy Policy, and
+  account deletion links; the GitHub repo is not a support page)
 - **Privacy policy URL:** https://ibrahimali333.github.io/campusconnect/privacy-policy.html
+- **Terms of Service URL:** https://ibrahimali333.github.io/campusconnect/terms.html
 - **Contact email:** ibrahimaliworkacc@gmail.com
-- **Copyright:** 2026 Ibrahim Ali (user's preferred public name; "2026 Unibridge" is the no-personal-name alternative)
+- **Copyright:** `2026 Ibrahim Ali Khudiyev`
 
 ## App Review Information (sign-in required)
 
@@ -50,8 +61,11 @@ is unavailable, since the reviewer will see the Create account button.
 ```
 Email: reviewer@example.edu
 Password: <UNIVERSITY_PORTAL_REVIEWER_PASSWORD from the Render dashboard>
-Notes: Log in with the credentials above to review the full app. Anyone can
-also create a Member account with the "Create account" button; Member
+Notes: Log in with the credentials above to review the full app. On first
+login the app asks you to accept the Terms of Service and Privacy Policy
+and confirm you are 18 or older; tick both boxes and tap "Agree and
+continue". Anyone can also create a Member account with the "Create
+account" button (it requires the same two confirmations); Member
 accounts can browse, save, apply, connect, and message. Posting
 opportunities requires a student or teacher role, which is granted by
 university administrators, so the provided account is the easiest way to
@@ -81,6 +95,24 @@ the native iPhone 17 Pro Max capture (1320x2868); it accepts 1284x2778.
 - **UGC moderation (1.2):** report + block + in-app contact are already
   implemented; mention them in Review Notes if asked.
 
+## Contact details
+
+Unibridge is run by an individual, not a company, so there is no business
+address, phone, or registration number to publish.
+
+- **Seller / developer name:** Ibrahim Ali Khudiyev (personal Apple Developer account;
+  Apple shows the account holder's name)
+- **Support / contact email:** ibrahimaliworkacc@gmail.com
+- **EU DSA trader status:** YOU declare it in App Store Connect
+  (Business → Trader status). A free app with no income, run by an
+  individual, is normally declared **non-trader**, so no address or phone
+  is published. Choose "trader" only if you start earning from the app.
+
+## Release 1.1.0
+
+Release steps, "What's New" text (AZ/EN/RU), and updated App Review notes
+are in `release-1.1.0.md`.
+
 ## Checklist before submitting
 
 - [ ] YOU: Apple Developer Program enrollment approved ($99/yr).
@@ -97,6 +129,11 @@ the native iPhone 17 Pro Max capture (1320x2868); it accepts 1284x2778.
       (APNs path is separate from the verified FCM path), session restore,
       report/block/delete flows.
 - [ ] Screenshots captured at an accepted iPhone size (see above).
-- [ ] App Privacy questionnaire filled in (app-privacy.md).
+- [ ] App Privacy questionnaire filled in (app-privacy.md) — re-check it:
+      the data types changed on 2026-10-02 (messages, diagnostics).
+- [ ] YOU: age rating set to 18+ (see App details).
+- [ ] YOU: custom EULA set to the approved Terms URL.
+- [ ] Lawyer has approved terms.html and privacy-policy.html and the DRAFT
+      banners have been removed (COMPLIANCE.md).
 - [ ] Reviewer account credentials filled into App Review Information.
 - [ ] Submit for review.

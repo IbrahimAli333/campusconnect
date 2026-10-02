@@ -60,7 +60,7 @@ def _post_line(post: dict) -> str:
     skills = ", ".join(post.get("required_skills") or []) or "none listed"
     return (
         f"id={post['id']} | type={post['type']} | title={post['title']} | "
-        f"posted by {post['owner']} | skills: {skills}\n"
+        f"skills: {skills}\n"
         f"  {post['description']}"
     )
 
@@ -68,7 +68,9 @@ def _post_line(post: dict) -> str:
 def find_matching_posts(query: str, posts: list[dict]) -> dict:
     """Return {"reply": str, "match_ids": [int]} for the user's query.
 
-    ``posts`` entries carry id/type/title/description/required_skills/owner.
+    ``posts`` entries carry id/type/title/description/required_skills. Poster
+    names are deliberately not sent to the model (data minimisation): ranking
+    does not need them, and the app shows the owner from its own records.
     Raises AssistantError on any API failure so the route can map it to 502.
     """
     settings = get_settings()

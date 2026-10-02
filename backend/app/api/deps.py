@@ -8,6 +8,8 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
+from app.core.legal import CURRENT_TERMS_VERSION, TERMS_ACCEPTANCE_REQUIRED_DETAIL
 from app.core.security import decode_access_token
 from app.db.session import get_db
 from app.models.user import User, UserRole
@@ -50,6 +52,28 @@ def get_current_active_user(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Inactive user",
+        )
+    return current_user
+
+
+def require_current_terms(
+    current_user: User = Depends(get_current_active_user),
+) -> User:
+    """Refuse feature endpoints until the current terms are accepted.
+
+    Only active when UNIVERSITY_PORTAL_ENFORCE_TERMS_ACCEPTANCE is on. Account
+    endpoints (me, accept-terms, data export, delete-account) never use this,
+    so people can always read, accept, export, or leave.
+    """
+    if not get_settings().enforce_terms_acceptance:
+        return current_user
+    if (
+        current_user.terms_version != CURRENT_TERMS_VERSION
+        or current_user.age_confirmed_at is None
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_428_PRECONDITION_REQUIRED,
+            detail=TERMS_ACCEPTANCE_REQUIRED_DETAIL,
         )
     return current_user
 

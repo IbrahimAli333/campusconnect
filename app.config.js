@@ -4,7 +4,7 @@ const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "10.0.2.2"]);
 const baseConfig = {
   name: "Unibridge",
   slug: "campusconnect",
-  version: "1.0.1",
+  version: "1.1.0",
   orientation: "portrait",
   icon: "./assets/icon.png",
   userInterfaceStyle: "light",
@@ -22,6 +22,10 @@ const baseConfig = {
       // HTTPS-only networking qualifies for the standard exemption; declaring
       // it here skips the export-compliance prompt on every TestFlight upload.
       ITSAppUsesNonExemptEncryption: false,
+      // Azerbaijani-first: system UI (share sheet, permission dialogs) uses
+      // these languages when the phone is set to one of them.
+      CFBundleDevelopmentRegion: "az",
+      CFBundleLocalizations: ["az", "en", "ru"],
     },
   },
   android: {
@@ -38,6 +42,9 @@ const baseConfig = {
   },
   web: {
     favicon: "./assets/favicon.png",
+    // Azerbaijani is the app's default language; the app updates this when
+    // the user switches language.
+    lang: "az",
   },
   // Sentry's plugin wires up native crash capture and source-map upload.
   // Org/project/auth come from SENTRY_ORG, SENTRY_PROJECT, and

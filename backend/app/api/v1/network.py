@@ -17,7 +17,7 @@ from sqlalchemy import and_, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.api.deps import get_current_active_user
+from app.api.deps import get_current_active_user, require_current_terms
 from app.core.action_rate_limit import (
     application_rate_limiter,
     assistant_rate_limiter,
@@ -73,10 +73,15 @@ from app.schemas.network import (
     UserSkillRead,
     UserSkillUpdate,
 )
+from app.services.email_alerts import queue_moderation_email
 from app.services.push import queue_push_to_users
 
 
-router = APIRouter(prefix="/network", tags=["network"])
+router = APIRouter(
+    prefix="/network",
+    tags=["network"],
+    dependencies=[Depends(require_current_terms)],
+)
 
 OWNER_REVIEWABLE_APPLICATION_STATUSES = {"submitted", "reviewing"}
 RECOMMENDATION_LIMIT = 20
@@ -267,7 +272,13 @@ def _can_view_profile(viewer_profile: UserProfile, profile: UserProfile) -> bool
 
 
 def _blocked_profile_ids(db: Session, profile_id: int) -> set[int]:
-    """Profiles hidden from this viewer: anyone they blocked or who blocked them."""
+    """Profiles hidden from this viewer: anyone they blocked or who blocked
+    them, plus every deactivated account.
+
+    Deactivation is the moderation action for abusive users, so their
+    profile, posts, and messages disappear wherever blocked users do
+    (discovery, recommendations, post lists, applying, connecting, messaging).
+    """
     pairs = db.execute(
         select(ProfileBlock.blocker_profile_id, ProfileBlock.blocked_profile_id).where(
             or_(
@@ -276,9 +287,18 @@ def _blocked_profile_ids(db: Session, profile_id: int) -> set[int]:
             )
         )
     ).all()
-    return {
+    hidden = {
         blocked if blocker == profile_id else blocker for blocker, blocked in pairs
     }
+    hidden.update(
+        db.scalars(
+            select(UserProfile.id)
+            .join(User, User.id == UserProfile.user_id)
+            .where(User.is_active.is_(False))
+        ).all()
+    )
+    hidden.discard(profile_id)
+    return hidden
 
 
 def _normalized_text(value: str | None) -> str:
@@ -1090,7 +1110,12 @@ def list_my_applications(
         .limit(limit)
         .offset(offset)
     ).all()
-    return [_my_application_response(application) for application in applications]
+    hidden_ids = _blocked_profile_ids(db, profile.id)
+    return [
+        _my_application_response(application)
+        for application in applications
+        if application.opportunity.owner_profile_id not in hidden_ids
+    ]
 
 
 @router.get(
@@ -1195,11 +1220,8 @@ def update_application_status(
             db,
             background_tasks,
             [application.applicant_profile.user_id],
-            title="Application update",
-            body=(
-                f'Your application to "{application.opportunity.title}" was '
-                f"{request.status}."
-            ),
+            template=f"application_{request.status}",
+            values={"title": application.opportunity.title},
             data={"tab": "applications"},
         )
     return _owner_application_response(_get_owner_loaded_application(db, application.id))
@@ -1314,7 +1336,6 @@ def ask_assistant(
             "title": opportunity.title,
             "description": opportunity.description,
             "required_skills": opportunity.required_skills,
-            "owner": opportunity.owner_profile.user.full_name,
         }
         for opportunity in opportunities
     ]
@@ -1399,7 +1420,12 @@ def list_opportunity_applications(
             OpportunityApplication.id.desc(),
         )
     ).all()
-    return [_owner_application_response(application) for application in applications]
+    hidden_ids = _blocked_profile_ids(db, profile.id)
+    return [
+        _owner_application_response(application)
+        for application in applications
+        if application.applicant_profile_id not in hidden_ids
+    ]
 
 
 @router.post(
@@ -1533,6 +1559,8 @@ def list_my_connections(
     db: Session = Depends(get_db),
 ) -> MyConnectionsRead:
     profile = _get_or_create_profile(db, current_user)
+    # Blocked and deactivated accounts drop out of the network lists too.
+    hidden_ids = _blocked_profile_ids(db, profile.id)
     sent_connections = db.scalars(
         select(ConnectionRequest)
         .options(*_connection_load_options())
@@ -1549,10 +1577,12 @@ def list_my_connections(
         sent=[
             _connection_response(connection)
             for connection in sent_connections
+            if connection.receiver_profile_id not in hidden_ids
         ],
         received=[
             _connection_response(connection)
             for connection in received_connections
+            if connection.requester_profile_id not in hidden_ids
         ],
     )
 
@@ -1631,8 +1661,8 @@ def request_connection(
         db,
         background_tasks,
         [receiver_profile.user_id],
-        title="New connection request",
-        body=f"{current_user.full_name} wants to connect with you.",
+        template="connection_request",
+        values={"name": current_user.full_name},
         data={"tab": "connections"},
     )
     return _connection_response(connection_request)
@@ -1685,8 +1715,8 @@ def update_connection_status(
             db,
             background_tasks,
             [connection.requester_profile.user_id],
-            title="Connection accepted",
-            body=f"{current_user.full_name} accepted your connection request.",
+            template="connection_accepted",
+            values={"name": current_user.full_name},
             data={"tab": "connections"},
         )
     return _connection_response(connection)
@@ -1753,9 +1783,48 @@ def unsave_opportunity(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+def _alert_moderators(
+    db: Session,
+    background_tasks: BackgroundTasks,
+    target_type: str,
+    target_label: str,
+    report: ContentReport,
+) -> None:
+    """Tell every active admin about a new report straight away (push, plus
+    email when configured), so reports can be acted on within the 8 hours
+    the Terms promise. The reporter's identity is never included."""
+    admin_ids = list(
+        db.scalars(
+            select(User.id).where(User.role == "admin", User.is_active.is_(True))
+        ).all()
+    )
+    label = target_label if len(target_label) <= 80 else f"{target_label[:79]}…"
+    queue_push_to_users(
+        db,
+        background_tasks,
+        admin_ids,
+        template=f"content_report_{target_type}",
+        values={"label": label},
+        data={"tab": "profile"},
+    )
+    kind = "Profile" if target_type == "profile" else "Post"
+    queue_moderation_email(
+        background_tasks,
+        subject=f"[Unibridge] New report #{report.id}: {kind.lower()} \"{label}\"",
+        body=(
+            f"{kind} reported: {target_label}\n"
+            f"Reason: {report.reason or '(none given)'}\n"
+            f"Report #{report.id}, filed {report.created_at:%Y-%m-%d %H:%M} UTC.\n\n"
+            "Review it within 8 hours in the Unibridge app (Me tab, Moderation) "
+            "with the admin account.\n"
+        ),
+    )
+
+
 @router.post("/reports", response_model=ContentReportRead, status_code=status.HTTP_201_CREATED)
 def report_content(
     request: ContentReportCreate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ) -> ContentReportRead:
@@ -1772,6 +1841,7 @@ def report_content(
                 detail="You cannot report your own profile",
             )
         target_profile_id = target.id
+        target_label = target.user.full_name
     else:
         opportunity = _get_opportunity(db, request.target_id)
         if opportunity.owner_profile_id == reporter_profile.id:
@@ -1780,6 +1850,7 @@ def report_content(
                 detail="You cannot report your own post",
             )
         target_opportunity_id = opportunity.id
+        target_label = opportunity.title
 
     existing = db.scalar(
         select(ContentReport).where(
@@ -1805,6 +1876,7 @@ def report_content(
     db.add(report)
     db.commit()
     db.refresh(report)
+    _alert_moderators(db, background_tasks, request.target_type, target_label, report)
     return ContentReportRead(
         id=report.id,
         target_type=request.target_type,
