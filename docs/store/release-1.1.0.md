@@ -1,7 +1,7 @@
 # Release 1.1.0 — redesign, Azerbaijani-first, compliance
 
 Release preparation draft, audited 2026-10-02. Store text below requires
-final build/provider verification and real-device QA before submission.
+final release verification and real-device QA before submission.
 Legal pages remain DRAFT with unresolved placeholders; see COMPLIANCE.md.
 
 ## Verified release facts and unresolved gates
@@ -12,12 +12,41 @@ Legal pages remain DRAFT with unresolved placeholders; see COMPLIANCE.md.
   state in App Store Connect before editing.
 - EAS production environment listing contained the required
   `EXPO_PUBLIC_API_URL=https://campusconnect-api-u7tq.onrender.com` and no
-  `EXPO_PUBLIC_SENTRY_DSN`. Verify the actual build inputs; backend Sentry,
-  Anthropic, Google OAuth and SMTP configuration are still **UNVERIFIED**.
-- Do not describe legal pages as approved or complete. Effective date,
-  provider/retention details and other legal placeholders require resolution.
-- A simulator/web preview is not real-phone QA. Neither store's final review
-  submission is ready until the required phone checks below have passed.
+  `EXPO_PUBLIC_SENTRY_DSN`; production profile flags do not enable it.
+- Read-only Render inspection found service `srv-d91q087avr4c73fqpus0` on
+  commit `d030f20015d2e897c91b92f50de269834a615612`. Its 14 environment-variable
+  names contained no Sentry DSN, Anthropic API key, Google OAuth client IDs
+  or SMTP keys, with values masked; no linked environment groups or secret
+  files were shown. Dockerfile/settings inspection supports that those
+  optional providers are **not configured in this deployment**.
+- Render migration logs confirm `202610020010` and `202610020011` applied
+  on October 2, 2026 at **10:39:41 EDT (14:39:41 UTC)**; subsequent predeploy
+  and health checks succeeded. The release consent fixes have **not** been
+  deployed to the older backend commit above.
+
+## Build and store progress — October 2, 2026
+
+| Platform | Verified result |
+|---|---|
+| iOS | **FINISHED**, 1.1.0 (4), build `1fc72115-2a41-4b32-ae7d-610b8b365d2c`, release commit `3872057` |
+| iOS upload | Submission `5d41c53b-782a-4827-9d9d-263db58ffc45` **FINISHED at 18:57:49 UTC** |
+| Apple processing | 1.1.0 (4) **VALID / IN_BETA_TESTING**; external testing **READY_FOR_BETA_SUBMISSION**. This does not establish external-tester access or App Review submission. |
+| Android | **FINISHED at 19:08:03 UTC**, 1.1.0 (8), build `a9de5156-a908-468f-9a08-cda6a1860ccf`; original AAB manifest confirms compile/target SDK **36** |
+| Android upload | EAS Submit could not schedule because no Google service account is configured. No key was created. The manual internal release remains a draft awaiting AAB upload. |
+
+Android artifact: `../artifacts/unibridge-1.1.0-8.aab` relative to the repository
+root (59,255,227 bytes). Resume the existing [Play internal release draft](https://play.google.com/console/u/1/developers/8812445908314987117/app/4975225834609246994/tracks/4701542745689890167/releases/2/prepare).
+
+Google Play has saved the Azerbaijani default listing plus English/Russian
+drafts, reused the existing icon/feature graphic, and saved the 18+ target
+audience. Matching native phone screenshots remain missing. The Apple browser
+session is not logged in; use a secure owner sign-in for console metadata work.
+
+**No final store reviews were submitted.** Real-phone QA, legal DRAFT
+resolution, final privacy/data-safety category mapping and native screenshots
+remain pending. Effective date and provider/retention placeholders are not
+legal approval. Simulator/web previews do not count as real-phone QA.
+No backend-fix deployment or rollout-enforcement change was made.
 
 ## Order of operations
 
@@ -27,12 +56,13 @@ Legal pages remain DRAFT with unresolved placeholders; see COMPLIANCE.md.
    creation or legal-agreement acceptance.
 2. Review backend compatibility and consent fixes before deployment. Merging
    `main` can trigger Render and public legal-page deployment; do not do that
-   as an incidental build step. Before launch, verify deployed migrations
-   `202610020010` and `202610020011`, required provisioning, and server-side
+   as an incidental build step. The migrations above are confirmed applied;
+   before launch, verify required provisioning and server-side
    consent enforcement for content writes, including old clients. Leaving
    the global terms flag off must not leave a path to create UGC without
    accepting current terms. Coordinate any backend deployment separately.
-3. Build a full native binary once per platform from the verified release
+3. Both native builds above are complete. Reuse them unless a material fix
+   requires rebuilding. For any necessary rebuild, use the verified release
    source. Check current store SDK/target requirements and EAS image first.
    EAS increments build numbers; record each build ID and actual version.
    ```
@@ -41,8 +71,8 @@ Legal pages remain DRAFT with unresolved placeholders; see COMPLIANCE.md.
    ```
    Added native modules require a new binary, not an OTA update. Monitor each
    build to completion. Rebuild only if a material fix requires it.
-4. Upload those exact successful build IDs to TestFlight and Play **internal
-   testing**. Inspect submit profile/track first; do not use an ambiguous
+4. The iOS upload above is complete. Finish the Android AAB upload in the
+   existing Play **internal testing** draft and verify tester access. Inspect submit profile/track first; do not use an ambiguous
    `--latest` or let an upload release directly to production. iOS EAS Submit
    uploads to TestFlight; it does not submit App Review. Verify processing
    and tester availability in both consoles.
@@ -74,9 +104,9 @@ alert delivery before launch:
    retrieve or paste credentials into chat. Every new report then arrives as
    "New report to review"; tapping it opens Me → Moderation.
 2. **Email (optional, recommended as a backup):**
-   - First confirm whether SMTP is already configured and which provider is
-     in use. New app passwords, grants or account-security changes require
-     owner approval and a secure owner-operated handoff.
+   - SMTP is not configured in the inspected deployment. If the owner chooses
+     to enable email alerts, new app passwords, grants or account-security
+     changes require approval and a secure owner-operated handoff.
    - In Render, set `UNIVERSITY_PORTAL_SMTP_HOST=smtp.gmail.com`,
      `UNIVERSITY_PORTAL_SMTP_USERNAME` and `UNIVERSITY_PORTAL_SMTP_FROM` to
      the Gmail address, and `UNIVERSITY_PORTAL_SMTP_PASSWORD` to the app
@@ -85,8 +115,9 @@ alert delivery before launch:
      ibrahimaliworkacc@gmail.com in render.yaml.
    - Update the privacy provider table only after the actual configuration
      and provider processing have been verified; do not assume Gmail is active.
-3. Test it: file a report from another account and check that both the
-   push and the email arrive.
+3. Test it: file a report from another account and check the admin push.
+   Test email separately only after SMTP is configured; do not expect it in
+   the current deployment.
 
 ## What's New
 
@@ -107,8 +138,8 @@ A fresh new look inspired by Azerbaijan, with a bottom tab bar and slide-up pane
 
 ## App Review Information → Notes (App Store) / App access (Play)
 
-**DRAFT — not ready to paste.** Resolve every bracketed verification item,
-verify the reviewer role/login on the final build, and have the owner enter
+**DRAFT — not ready to paste until release gates pass.** Verify the reviewer
+role/login and stated flows on the final build, and have the owner enter
 credentials directly in each console using a secure handoff.
 
 ```
@@ -120,15 +151,18 @@ Anyone can create a Member account with "Create account" (it requires the same t
 
 Safety and account controls: Report and Block are on every profile and post (tap a card to open it). The Me tab contains Download my data (shares JSON text on iOS/Android), the push notification switch, links to the Terms, Privacy Policy, Child Safety Standards, and open-source licences, and Delete Account at the bottom.
 
-External services: our own API on Render (FastAPI/PostgreSQL, HTTPS); Expo Push Notification Service (APNs on iOS / FCM on Android). [VERIFY FINAL BINARY: native Sentry is expected off with the audited production environment; if enabled, describe crash/error reporting and 10% performance sampling.] [VERIFY BACKEND: Sentry, Anthropic Opportunity Assistant, SMTP provider and Google OAuth configuration; list only the services actually enabled and describe their data and retention accurately.] No payments, in-app purchases or advertising were found in the audited app. Personalized profile/opportunity recommendations use account/profile data. [VERIFY partner practices before asserting no tracking.] Google sign-in is not offered on iOS in the audited configuration.
+External services: our own API on Render (FastAPI/PostgreSQL, HTTPS) and Expo Push Notification Service (APNs on iOS / FCM on Android). No payments, in-app purchases or advertising are offered. Personalized profile/opportunity recommendations use account/profile data. Third-party sign-in and the optional AI assistant are not enabled in the inspected deployment.
 
 Audience: university students and staff aged 18+.
 ```
 
-Removing the native Sentry reference does not establish that backend Sentry
-is off. `sendDefaultPii: false` is not a guarantee that no personal data is
-present in diagnostics. Verify provider state without copying secrets into
-chat; revise the privacy/data safety drafts to match final deployed behavior.
+The current external-services paragraph reflects the inspected EAS inputs and
+Render deployment; Sentry and Anthropic are omitted because they are not
+configured, not because the SDKs are absent. If either is enabled later,
+revise the notes and privacy/data safety answers before release. Sentry can
+collect crash and performance data; disabling default PII is not an anonymity
+guarantee. Render retention/backup details and legal placeholders remain
+unresolved. No backend deployment or rollout-enforcement change was made.
 
 ## Console changes for this release (YOU)
 

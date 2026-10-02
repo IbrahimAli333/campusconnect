@@ -1,7 +1,7 @@
 # Google Play Data safety — Unibridge 1.1.0 draft
 
-Source-audited 2026-10-02. **Do not submit until production providers and
-retention, location classification, and final build inputs are verified.**
+Source-audited 2026-10-02. **Do not submit until provider retention/sharing,
+location classification and required device QA are resolved.**
 The legal pages remain DRAFT with unresolved placeholders.
 
 ## Overview
@@ -11,8 +11,9 @@ The legal pages remain DRAFT with unresolved placeholders.
   under Google's definitions. Service-provider and user-initiated-transfer
   exceptions may apply, but do not assert “does not share” solely because a
   vendor is described as a processor. Check contracts and actual use.
-- Encrypted in transit: release API is HTTPS; confirm every enabled provider
-  path (including optional SMTP TLS) before answering Yes for all data.
+- Encrypted in transit: the configured release API and Expo Push use HTTPS.
+  SMTP is not configured in the inspected deployment; reassess transport if
+  another provider is enabled.
 - Users can request deletion: **Yes**, through Me → Delete Account or email
   to ibrahimaliworkacc@gmail.com. Retention details still need legal review.
 - Delete-account URL: https://ibrahimali333.github.io/campusconnect/delete-account.html
@@ -43,11 +44,30 @@ appropriate categories (including App interactions where applicable) before
 finalizing the form; absence of a phone-contacts permission is insufficient
 to decide every social-data category.
 
-## Conditional collection — verify before answering
+## Inspected provider configuration
 
-The release audit's EAS production listing showed the correct Render API URL
-and no `EXPO_PUBLIC_SENTRY_DSN`. Verify the final build environment too.
-Backend Sentry, Anthropic, Google OAuth and SMTP remain **UNVERIFIED**.
+The 2026-10-02 read-only release inspection found:
+
+- EAS production supplied the required
+  `EXPO_PUBLIC_API_URL=https://campusconnect-api-u7tq.onrender.com` and
+  production profile flags, with no `EXPO_PUBLIC_SENTRY_DSN`.
+- Render service `srv-d91q087avr4c73fqpus0` was running commit
+  `d030f20015d2e897c91b92f50de269834a615612`. Its 14 environment-variable
+  names showed no Sentry DSN, Anthropic API key, Google OAuth client IDs or
+  SMTP settings; values remained masked. No linked environment groups or
+  secret files were shown. The Dockerfile copies the app/alembic content,
+  and the corresponding settings default to empty.
+
+Accordingly, native Sentry is not enabled by the inspected build inputs, and
+backend Sentry, Anthropic, Google OAuth and SMTP are **not configured in the
+inspected deployment**. Current external services are the Render API/database
+and Expo Push delivery through APNs/FCM. Recheck if deployment or build inputs
+change; provider retention and contractual details remain separate questions.
+
+## Future conditional collection
+
+Do not include the following services as current collection with the inspected
+configuration above. If enabled later, assess and update the form first.
 
 | Service/data | When applicable | User choice / purpose |
 |---|---|---|
@@ -68,7 +88,8 @@ JSON text via the system share sheet; web downloads a JSON file.
 
 ## Security practices
 
-- Data encrypted in transit: pending full enabled-provider verification.
+- Data encrypted in transit: Yes for the inspected HTTPS API/push paths;
+  recheck if configuration changes.
 - Users can request deletion: Yes.
 - Families policy: adult audience, 18+ only; do not claim Families compliance.
 - Independent security review: no completed review evidence in this audit.

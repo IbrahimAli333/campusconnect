@@ -1,16 +1,27 @@
 # App Store Connect App Privacy — Unibridge 1.1.0 draft
 
-Source-audited 2026-10-02. **Not ready to submit:** confirm the final binary,
-production backend providers, provider retention/linkage, and the unresolved
-location classification below. Legal pages remain DRAFT with unresolved
-placeholders; this document does not certify legal compliance.
+Source-audited 2026-10-02. **Not ready to submit:** final device QA, provider
+retention/linkage and the unresolved location classification below remain.
+Legal pages remain DRAFT with unresolved placeholders; this document does
+not certify legal compliance.
 
-The release audit's EAS production environment listing contained
-`EXPO_PUBLIC_API_URL=https://campusconnect-api-u7tq.onrender.com` and no
-`EXPO_PUBLIC_SENTRY_DSN`. This is evidence about that environment listing,
-not proof about the eventual build inputs or the backend's separate Sentry
-configuration. Do not infer that Anthropic, SMTP, Google OAuth, or backend
-Sentry is disabled from a missing client variable.
+The 2026-10-02 read-only release inspection found:
+
+- EAS production supplied the required
+  `EXPO_PUBLIC_API_URL=https://campusconnect-api-u7tq.onrender.com` and
+  production profile flags, with no `EXPO_PUBLIC_SENTRY_DSN`.
+- Render service `srv-d91q087avr4c73fqpus0` was running commit
+  `d030f20015d2e897c91b92f50de269834a615612`. Its 14 environment-variable
+  names showed no Sentry DSN, Anthropic API key, Google OAuth client IDs or
+  SMTP settings; values remained masked. No linked environment groups or
+  secret files were shown. The Dockerfile copies the app/alembic content,
+  and the corresponding settings default to empty.
+
+Accordingly, native Sentry is not enabled by the inspected build inputs, and
+backend Sentry, Anthropic, Google OAuth and SMTP are **not configured in the
+inspected deployment**. Current external services are the Render API/database
+and Expo Push delivery through APNs/FCM. Recheck if deployment or build inputs
+change; provider retention and contractual details remain separate questions.
 
 ## Top-level questions
 
@@ -49,29 +60,31 @@ applications and related activity also require a Product Interaction mapping
 check before the final form. There is no camera/photo/address-book permission
 flow in the audited app; this is not a blanket exemption for user content.
 
-## Conditional SDK/server collection
+## Future conditional SDK/server collection
+
+These services are not enabled in the inspected configuration above. Do not
+list them as current release collection solely because their SDK is present.
+If enabled later, update the disclosures before that change is released.
 
 - Native Sentry initializes only with `EXPO_PUBLIC_SENTRY_DSN`, with
   `tracesSampleRate: 0.1`. If enabled, disclose **Diagnostics > Crash Data**
   and **Diagnostics > Performance Data**. App stability/performance analysis
   has an Analytics purpose; include App Functionality where applicable.
 - Backend Sentry is independent (`UNIVERSITY_PORTAL_SENTRY_DSN`, sample rate
-  configurable, default 0.1). Its production state is **UNVERIFIED**. Include
-  relevant server collection in the final assessment even with native
-  Sentry off.
+  configurable, default 0.1). If enabled later, include relevant server
+  collection even when native Sentry remains off.
 - `sendDefaultPii: false` / `send_default_pii=False` and disabled backend
   locals reduce collection; they do not prove all events are anonymous or
   free of personal data. Inspect SDK payloads, IP handling, scrubbing and
   retention before choosing “not linked.” Do not assume diagnostics are
   unlinked; add identifiers, activity or other categories if payloads require.
 - Optional Opportunity Assistant sends query text and selected open-post
-  content to Anthropic when configured. Server state and provider retention
-  are **UNVERIFIED**; do not claim no collection merely because the app does
-  not store the request. Review under Other User Content and applicable
-  categories before submission.
-- Verify Render logs, optional Google sign-in and SMTP provider processing,
-  retention and purposes with the owner. Source defaults do not establish
-  production configuration.
+  content to Anthropic when configured. Before enabling it, verify provider
+  retention; do not claim no collection merely because the app does not
+  store the request. Review under Other User Content and applicable categories.
+- Verify Render log and backup retention with the owner. If Google sign-in
+  or SMTP is enabled in future, assess its provider processing, retention
+  and purposes before updating these answers.
 
 ## Age and account controls
 
