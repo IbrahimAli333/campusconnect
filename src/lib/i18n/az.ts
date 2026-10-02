@@ -503,4 +503,5 @@ export const az: Record<string, string> = {
   "Your portfolio, privacy, and account settings.": "Portfoliunuz, məxfilik və hesab parametrləri.",
   "My network": "Şəbəkəm",
   "Connections, requests, and messages.": "Əlaqələr, sorğular və mesajlar.",
+  "Welcome back": "Yenidən xoş gəlmisiniz",
 };

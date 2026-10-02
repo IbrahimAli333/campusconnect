@@ -255,8 +255,9 @@ function AppInner() {
 
   if (!auth.isAuthenticated || !auth.user) {
     return (
-      <SafeAreaView edges={["top", "left", "right"]} style={styles.safeArea}>
-        <StatusBar style="dark" />
+      // Navy behind the status bar so it blends into the login banner.
+      <SafeAreaView edges={["top", "left", "right"]} style={[styles.safeArea, appStyles.loginSafeArea]}>
+        <StatusBar style="light" />
         <LoginScreen onGoogleLogin={auth.loginWithGoogle} onLogin={auth.login} onRegister={auth.register} />
       </SafeAreaView>
     );
@@ -332,6 +333,9 @@ function AppInner() {
 const appStyles = StyleSheet.create({
   root: {
     flex: 1,
+  },
+  loginSafeArea: {
+    backgroundColor: palette.navy,
   },
   centered: {
     flex: 1,

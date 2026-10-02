@@ -18,6 +18,16 @@ const LANGUAGE_NAMES: Record<string, string> = {
   ru: "Русский",
 };
 
+/**
+ * Upper-cases a short label for display. `textTransform: "uppercase"` turns
+ * Azerbaijani "i" into a dotless "I" ("ISTIFADƏÇI"), so map the dotted and
+ * dotless pairs first to get "İSTİFADƏÇİ".
+ */
+export function displayUppercase(text: string, language: string): string {
+  const prepared = language === "az" ? text.replace(/i/g, "İ").replace(/ı/g, "I") : text;
+  return prepared.toUpperCase();
+}
+
 /** How far the auth card overlaps the bottom edge of the phone banner. */
 export const BANNER_CARD_OVERLAP = 36;
 
@@ -125,41 +135,60 @@ export interface HeroHighlight {
 export function LoginHeroPanel({
   body,
   eyebrow,
+  height,
   highlights,
   title,
 }: {
   body: string;
   eyebrow: string;
+  /** Usually the viewport height, so the skyline shows on the first screen. */
+  height: number;
   highlights: HeroHighlight[];
   title: string;
 }) {
+  const { language } = useI18n();
+
   return (
-    <LinearGradient colors={heroGradient} end={{ x: 1, y: 1 }} start={{ x: 0, y: 0 }} style={heroStyles.panel}>
+    <LinearGradient
+      colors={heroGradient}
+      end={{ x: 1, y: 1 }}
+      start={{ x: 0, y: 0 }}
+      style={[heroStyles.panel, { minHeight: height }]}
+    >
       <HeroPattern opacity={0.12} />
+      {/* Caspian glow along the bottom edge that the skyline stands on. */}
+      <LinearGradient
+        {...decorativeProps}
+        colors={["rgba(0, 181, 226, 0)", "rgba(0, 181, 226, 0.2)"]}
+        pointerEvents="none"
+        style={heroStyles.seaWash}
+      />
       <View style={heroStyles.panelContent}>
         <BrandRow large />
 
-        <View style={heroStyles.panelCopy}>
-          <View style={heroStyles.eyebrowRow}>
-            <EightPointStar color={palette.saffron} size={14} />
-            <Text style={heroStyles.panelEyebrow}>{eyebrow}</Text>
+        <View style={heroStyles.panelMiddle}>
+          <View style={heroStyles.panelCopy}>
+            <View style={heroStyles.eyebrowRow}>
+              <EightPointStar color={palette.saffron} size={14} />
+              <Text style={heroStyles.panelEyebrow}>{displayUppercase(eyebrow, language)}</Text>
+            </View>
+            <Text {...headingProps(2)} style={heroStyles.panelTitle}>
+              {title}
+            </Text>
+            <Text style={heroStyles.panelBody}>{body}</Text>
+            <FlagStripe height={4} style={heroStyles.flagAccentWide} />
           </View>
-          <Text {...headingProps(2)} style={heroStyles.panelTitle}>
-            {title}
-          </Text>
-          <Text style={heroStyles.panelBody}>{body}</Text>
-          <FlagStripe height={4} style={heroStyles.flagAccentWide} />
-        </View>
 
-        <View style={heroStyles.highlights}>
-          {highlights.map((item) => (
-            <HighlightTile icon={item.icon} key={item.title} title={item.title}>
-              {item.body}
-            </HighlightTile>
-          ))}
+          <View style={heroStyles.highlights}>
+            {highlights.map((item) => (
+              <HighlightTile icon={item.icon} key={item.title} title={item.title}>
+                {item.body}
+              </HighlightTile>
+            ))}
+          </View>
         </View>
       </View>
-      <FlameSkyline height={170} style={heroStyles.panelSkyline} />
+      <FlameSkyline height={150} style={heroStyles.panelSkyline} />
     </LinearGradient>
   );
 }
@@ -324,15 +353,18 @@ const heroStyles = StyleSheet.create({
   // Wide hero panel -------------------------------------------------------
   panel: {
     borderRadius: 28,
-    flex: 1,
-    minHeight: 720,
     overflow: "hidden",
   },
   panelContent: {
     flex: 1,
-    gap: 30,
+    gap: 26,
     paddingHorizontal: 40,
     paddingTop: 36,
+  },
+  panelMiddle: {
+    flex: 1,
+    gap: 24,
+    justifyContent: "center",
   },
   panelCopy: {
     gap: 12,
@@ -347,14 +379,13 @@ const heroStyles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 12,
     letterSpacing: 1,
-    textTransform: "uppercase",
   },
   panelTitle: {
     color: "#FFFFFF",
     fontFamily: fonts.extrabold,
-    fontSize: 38,
-    letterSpacing: -0.9,
-    lineHeight: 45,
+    fontSize: 36,
+    letterSpacing: -0.8,
+    lineHeight: 43,
     maxWidth: 520,
   },
   panelBody: {
@@ -407,6 +438,13 @@ const heroStyles = StyleSheet.create({
     lineHeight: 19,
   },
   panelSkyline: {
-    marginTop: 12,
+    marginTop: 8,
+  },
+  seaWash: {
+    bottom: 0,
+    height: 64,
+    left: 0,
+    position: "absolute",
+    right: 0,
   },
 });

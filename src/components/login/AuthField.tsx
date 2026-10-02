@@ -1,15 +1,28 @@
 import { useState, type ReactNode } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from "react-native";
 import { Eye, EyeOff } from "lucide-react-native";
 
 import { decorativeProps } from "../common/a11y";
 import type { IconComponent } from "../common/types";
 import { fonts, palette, radii, webInputReset } from "../../styles/theme";
 
+// The app-wide `input:focus-visible` outline (styles/webFocus.ts) would draw a
+// second, square ring inside the field. AuthField already draws the same 2px
+// Caspian ring on its rounded frame whenever the input has focus, so drop the
+// inner one for these inputs only (higher specificity wins between !important
+// rules). `dataSet` becomes a data-* attribute on web and is ignored natively.
+const AUTH_INPUT_DATASET = { authInput: "true" };
+if (Platform.OS === "web" && typeof document !== "undefined" && !document.getElementById("auth-input-focus")) {
+  const style = document.createElement("style");
+  style.id = "auth-input-focus";
+  style.textContent = 'input[data-auth-input="true"]:focus-visible { outline: none !important; }';
+  document.head.appendChild(style);
+}
+
 /**
  * Labelled text field for the auth forms: 52pt frame with a 3:1
- * `fieldBorder` boundary that turns into a 2px Caspian ring while focused
- * (the browser outline on the inner input is reset in favour of it).
+ * `fieldBorder` boundary that turns into a 2px Caspian ring while focused,
+ * which is the field's focus indicator on every platform.
  */
 export function AuthField({
   icon: Icon,
@@ -38,6 +51,7 @@ export function AuthField({
         <TextInput
           placeholderTextColor={palette.faint}
           {...inputProps}
+          {...({ dataSet: AUTH_INPUT_DATASET } as object)}
           onBlur={(event) => {
             setFocused(false);
             onBlur?.(event);

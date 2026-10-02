@@ -504,4 +504,5 @@ export const ru: Record<string, string> = {
   "Your portfolio, privacy, and account settings.": "Ваше портфолио, конфиденциальность и настройки аккаунта.",
   "My network": "Моя сеть",
   "Connections, requests, and messages.": "Контакты, запросы и сообщения.",
+  "Welcome back": "С возвращением",
 };
