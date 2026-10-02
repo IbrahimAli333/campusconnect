@@ -148,6 +148,7 @@ import type {
   SkillDraft,
 } from "./shared";
 import { networkStyles } from "./styles";
+import { translateApiError } from "../../lib/i18n/apiErrors";
 
 export function OpportunitiesScreen({ token }: { token: string | null }) {
   const { t } = useI18n();
@@ -635,7 +636,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
   if (!opportunitiesState.data) {
     return (
       <ErrorState
-        message={opportunitiesState.error?.message ?? t("Unibridge opportunities are not available.")}
+        message={opportunitiesState.error ? translateApiError(t, opportunitiesState.error.message) : t("Unibridge opportunities are not available.")}
         onRetry={opportunitiesState.retry}
         title={t("Could not load opportunities")}
       />
@@ -646,7 +647,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
     <View style={styles.stack}>
       {opportunitiesState.error ? (
         <ErrorState
-          message={opportunitiesState.error.message}
+          message={translateApiError(t, opportunitiesState.error.message)}
           onRetry={opportunitiesState.retry}
           title={t("Could not refresh opportunities")}
         />
@@ -748,7 +749,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
             <FilterChip
               active={universityFilter === option.value}
               key={option.value}
-              label={option.label}
+              label={t(option.label)}
               onPress={setUniversityFilter}
               value={option.value}
             />
@@ -814,7 +815,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
         <>
           {ownedOpportunitiesState.error ? (
             <ErrorState
-              message={ownedOpportunitiesState.error.message}
+              message={translateApiError(t, ownedOpportunitiesState.error.message)}
               onRetry={ownedOpportunitiesState.retry}
               title={t("Could not refresh My Posts")}
             />
@@ -879,7 +880,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
                       <View style={networkStyles.metaRow}>
                         <CalendarDays color={palette.faint} size={15} strokeWidth={2.4} />
                         <Text style={networkStyles.metaText} numberOfLines={1}>
-                          {t("Posted {date}", { date: formatFullDate(opportunity.created_at) })}
+                          {t("Posted {date}", { date: formatFullDate(opportunity.created_at, t) })}
                         </Text>
                       </View>
                       <SkillList emptyLabel={t("No required skills listed.")} items={opportunity.required_skills} />
@@ -993,7 +994,7 @@ export function OpportunitiesScreen({ token }: { token: string | null }) {
 
       {recommendedOpportunitiesState.error ? (
         <ErrorState
-          message={recommendedOpportunitiesState.error.message}
+          message={translateApiError(t, recommendedOpportunitiesState.error.message)}
           onRetry={recommendedOpportunitiesState.retry}
           title={t("Could not refresh recommendations")}
         />

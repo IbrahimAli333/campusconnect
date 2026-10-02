@@ -199,6 +199,10 @@ speaker's review**, especially the legal wording.
    "Unibridge".
 
 ### Should do soon
+- **Azerbaijani legal pages:** publish Azerbaijani (and Russian) versions
+  of `docs/terms.html`, `privacy-policy.html`, `child-safety.html`, and
+  `delete-account.html` once the English drafts are approved, and link the
+  app to the version matching its language (see the lawyer questions).
 - **Server-side terms enforcement:** the backend records consent and
   refuses signups without it. Existing users who have not re-accepted are
   gated by the app, but the API itself does not block them. A
@@ -424,6 +428,12 @@ it is needed for the feature named.
     Flame Towers silhouette free of building-design or trademark claims?
 19. **EU DSA trader status** for the App Store and Play: is the operator
     a "trader"? If so, its address and phone become public.
+21. **Language of legal documents:** the app is Azerbaijani-first, but
+    the Terms, Privacy Policy, Child Safety, and account-deletion pages are
+    English drafts. Does Azerbaijani law (e.g. the Law on the State
+    Language, consumer-protection rules) require them in Azerbaijani, and
+    which language version prevails if they differ? Plan: translate them
+    to Azerbaijani (and Russian) after the English text is approved.
 20. **Open-source licences:** confirm the plan for notices (ISC/MIT/BSD)
     and that server-side LGPL `psycopg` use needs no further action.
 

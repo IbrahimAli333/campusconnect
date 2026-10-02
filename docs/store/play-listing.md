@@ -38,6 +38,74 @@ Create your own member account in the app, or sign in with credentials provided 
 - **Privacy policy URL:** https://ibrahimali333.github.io/campusconnect/privacy-policy.html
 - **Delete account URL (Data safety):** https://ibrahimali333.github.io/campusconnect/delete-account.html
 
+## Azerbaijani listing (primary — Play Console language az-AZ)
+
+Unibridge is Azerbaijani-first, so set **Azərbaycan dili (az-AZ)** as the
+default listing language in Play Console → Store presence → Main store
+listing → Manage translations, and paste this. Have a native speaker
+proof-read it before publishing.
+
+- **App name:** Unibridge
+- **Short description (max 80 chars, 75):**
+  `Universitet şəbəkəsi: tədqiqat, startap, təcrübə, müraciətlər və mentorluq.`
+- **Full description:**
+
+```
+Unibridge Azərbaycan universitet icmaları üçün akademik və peşəkar şəbəkədir.
+
+Üzvlər, tələbələr və müəllimlər üçün:
+- İnsanları bacarıq, rol, fakültə və universitetə görə tapın; uyğunluq balı kimin niyə tövsiyə olunduğunu izah edir.
+- Universitet icmanızın paylaşdığı tədqiqat, startap, layihə, təcrübə və iş imkanlarına baxın.
+- Bir toxunuşla müraciət edin və hər müraciəti göndərişdən qərara qədər izləyin.
+- İmkan paylaşın (tələbələr startap və layihə, müəllimlər tədqiqat paylaşır) və namizədlərin bacarıqlarını və portfoliosunu bir yerdə nəzərdən keçirin.
+- Bacarıqlar və CV qeydləri ilə portfolio profili qurun və onu kimin görəcəyini seçin (hamı, yalnız universitet və ya gizli).
+- Əlaqə sorğuları ilə şəbəkənizi genişləndirin və yeni fəaliyyəti nişanlarla bir baxışda görün.
+
+Təhlükəsizlik və nəzarət:
+- İstənilən profil və ya elan barədə şikayət edin.
+- İstifadəçiləri bloklayın: onların məzmunu sizə, sizinki onlara görünməz.
+- Məlumatlarınızın surətini endirin, push bildirişlərini söndürün və ya hesabınızı (ona bağlı məlumatlarla birlikdə) istənilən vaxt "Mən" bölməsindən silin.
+
+Unibridge universitet icmalarındakı yetkinlər (18+) üçündür. Tətbiq Azərbaycan, ingilis və rus dillərindədir.
+
+Tətbiqdə üzv hesabı yaradın və ya universitet proqramınızın verdiyi məlumatlarla daxil olun.
+```
+
+## Russian listing (Play Console language ru-RU)
+
+- **Short description (max 80 chars, 71):**
+  `Сеть университета: исследования, стартапы, стажировки и наставничество.`
+- **Full description:**
+
+```
+Unibridge — академическая и профессиональная сеть для университетских сообществ Азербайджана.
+
+Для участников, студентов и преподавателей:
+- Находите людей по навыкам, роли, факультету и университету — оценка совпадения объясняет, почему вам кого-то рекомендуют.
+- Просматривайте исследования, стартапы, проекты, стажировки и вакансии от вашего университетского сообщества.
+- Откликайтесь в одно касание и следите за каждым откликом от отправки до решения.
+- Публикуйте возможности (студенты — стартапы и проекты, преподаватели — исследования) и просматривайте кандидатов с их навыками и портфолио в одном месте.
+- Создайте профиль-портфолио с навыками и записями резюме и выберите, кто его видит (все, только университет или никто).
+- Расширяйте сеть с помощью запросов на контакт и видите новую активность по значкам на вкладках.
+
+Безопасность и контроль:
+- Пожалуйтесь на любой профиль или публикацию.
+- Блокируйте пользователей: их контент скрыт от вас, а ваш — от них.
+- Скачайте копию своих данных, отключите push-уведомления или удалите аккаунт (вместе со связанными данными) в любое время на вкладке «Я».
+
+Unibridge предназначен для взрослых (18+) в университетских сообществах. Приложение доступно на азербайджанском, английском и русском языках.
+
+Создайте аккаунт участника в приложении или войдите с данными, выданными вашей университетской программой.
+```
+
+## App Store localisations
+
+The app itself is Azerbaijani-first. Check App Store Connect's list of
+listing languages when you add localisations; as far as I know it does not
+include Azerbaijani. If so, keep English as the primary listing, add Russian
+(paste the Russian text above into the App Store fields), and mention in the
+description that the app is in Azerbaijani, English, and Russian.
+
 ## Access instructions for Google reviewers (App access form)
 
 Anyone can create a Member account in-app, but posting requires a

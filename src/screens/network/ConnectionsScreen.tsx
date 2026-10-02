@@ -148,6 +148,7 @@ import type {
 } from "./shared";
 import { MessagesSection } from "./MessagesSection";
 import { networkStyles } from "./styles";
+import { translateApiError } from "../../lib/i18n/apiErrors";
 
 export function ConnectionsScreen({ token }: { token: string | null }) {
   const { t } = useI18n();
@@ -234,7 +235,7 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
   if (!connections) {
     return (
       <ErrorState
-        message={connectionsState.error?.message ?? t("Your academic network is not available.")}
+        message={connectionsState.error ? translateApiError(t, connectionsState.error.message) : t("Your academic network is not available.")}
         onRetry={connectionsState.retry}
         title={t("Could not load network")}
       />
@@ -245,7 +246,7 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
     <View style={styles.stack}>
       {connectionsState.error ? (
         <ErrorState
-          message={connectionsState.error.message}
+          message={translateApiError(t, connectionsState.error.message)}
           onRetry={connectionsState.retry}
           title={t("Could not refresh network")}
         />
@@ -266,7 +267,7 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
                       {connection.receiver_profile.user.full_name}
                     </Text>
                     <Text style={styles.rowMeta} numberOfLines={2}>
-                      {[profileMeta(connection.receiver_profile, t), formatFullDate(connection.created_at)].join(" - ")}
+                      {[profileMeta(connection.receiver_profile, t), formatFullDate(connection.created_at, t)].join(" - ")}
                     </Text>
                     {connection.message ? (
                       <View style={networkStyles.requestNote}>
@@ -317,7 +318,7 @@ export function ConnectionsScreen({ token }: { token: string | null }) {
                       {connection.requester_profile.user.full_name}
                     </Text>
                     <Text style={styles.rowMeta} numberOfLines={2}>
-                      {[profileMeta(connection.requester_profile, t), formatFullDate(connection.created_at)].join(" - ")}
+                      {[profileMeta(connection.requester_profile, t), formatFullDate(connection.created_at, t)].join(" - ")}
                     </Text>
                     {connection.message ? (
                       <View style={networkStyles.requestNote}>

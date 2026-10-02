@@ -9,11 +9,13 @@ from app.schemas.base import ReadSchema
 
 
 PushPlatform = Literal["ios", "android"]
+PushLanguage = Literal["az", "en", "ru"]
 
 
 class PushTokenRegister(BaseModel):
     token: str = Field(min_length=1, max_length=255)
     platform: Optional[PushPlatform] = None
+    language: Optional[PushLanguage] = None
 
 
 class PushTokenUnregister(BaseModel):
@@ -24,4 +26,5 @@ class PushTokenRead(ReadSchema):
     id: int
     token: str
     platform: Optional[PushPlatform]
+    language: Optional[PushLanguage] = None
     created_at: datetime

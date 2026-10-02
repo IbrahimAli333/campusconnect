@@ -97,11 +97,15 @@ def _register_push_token(
     token: str,
     push_token: str,
     platform: str = "android",
+    language: str | None = "en",
 ) -> dict[str, Any]:
+    payload: dict[str, Any] = {"token": push_token, "platform": platform}
+    if language is not None:
+        payload["language"] = language
     response = client.post(
         "/api/v1/notifications/tokens",
         headers=_auth_headers(token),
-        json={"token": push_token, "platform": platform},
+        json=payload,
     )
     assert response.status_code == 201
     return response.json()
@@ -417,3 +421,69 @@ def test_device_not_registered_ticket_prunes_token(
             select(PushToken).where(PushToken.token == "ExponentPushToken[gone]")
         )
     assert remaining is None
+
+
+def test_pushes_default_to_azerbaijani_without_a_language(
+    seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+    captured_pushes: list[list[dict[str, Any]]],
+) -> None:
+    client, testing_session_local = seeded_client_and_sessionmaker
+    student_token = _login(client, "student")
+    teacher_token = _login(client, "teacher")
+    # Older app builds register without a language.
+    _register_push_token(client, teacher_token, "ExponentPushToken[teacher]", language=None)
+    teacher_profile_id = _profile_id_for_email(
+        testing_session_local, DEV_CREDENTIALS["teacher"]["email"]
+    )
+
+    response = client.post(
+        f"/api/v1/network/connections/{teacher_profile_id}/request",
+        headers=_auth_headers(student_token),
+    )
+
+    assert response.status_code == 201
+    pushes = _all_pushes(captured_pushes)
+    assert pushes[0]["title"] == "Yeni əlaqə sorğusu"
+    assert pushes[0]["body"].endswith("sizinlə əlaqə qurmaq istəyir.")
+
+
+def test_each_device_gets_its_own_language_and_switching_updates_it(
+    seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+    captured_pushes: list[list[dict[str, Any]]],
+) -> None:
+    client, testing_session_local = seeded_client_and_sessionmaker
+    student_token = _login(client, "student")
+    teacher_token = _login(client, "teacher")
+    _register_push_token(client, teacher_token, "ExponentPushToken[phone]", language="ru")
+    _register_push_token(client, teacher_token, "ExponentPushToken[tablet]", language="az")
+    teacher_profile_id = _profile_id_for_email(
+        testing_session_local, DEV_CREDENTIALS["teacher"]["email"]
+    )
+
+    client.post(
+        f"/api/v1/network/connections/{teacher_profile_id}/request",
+        headers=_auth_headers(student_token),
+    )
+    titles = {push["to"]: push["title"] for push in _all_pushes(captured_pushes)}
+    assert titles == {
+        "ExponentPushToken[phone]": "Новый запрос на контакт",
+        "ExponentPushToken[tablet]": "Yeni əlaqə sorğusu",
+    }
+
+    # The app re-registers when the user switches language.
+    registered = _register_push_token(client, teacher_token, "ExponentPushToken[phone]", language="en")
+    assert registered["language"] == "en"
+
+
+def test_message_push_uses_the_recipient_language(
+    seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+    captured_pushes: list[list[dict[str, Any]]],
+) -> None:
+    from app.services.push_messages import render_push
+
+    title, body = render_push("message", "az", {"name": "Aydın", "preview": "Salam!"})
+    assert (title, body) == ("Aydın sizə yazdı", "Salam!")
+    title, _ = render_push("message", "ru", {"name": "Aydın", "preview": "Salam!"})
+    assert title == "Сообщение от Aydın"
+    # Unknown or missing language falls back to Azerbaijani.
+    assert render_push("application_accepted", None, {"title": "X"})[0] == "Müraciət yeniliyi"

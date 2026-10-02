@@ -142,6 +142,7 @@ import type {
   SkillDraft,
 } from "./shared";
 import { networkStyles } from "./styles";
+import { translateApiError } from "../../lib/i18n/apiErrors";
 
 export function DiscoverScreen({ token }: { token: string | null }) {
   const { t } = useI18n();
@@ -290,7 +291,7 @@ export function DiscoverScreen({ token }: { token: string | null }) {
   if (!data) {
     return (
       <ErrorState
-        message={discoverState.error?.message ?? t("Unibridge profiles are not available.")}
+        message={discoverState.error ? translateApiError(t, discoverState.error.message) : t("Unibridge profiles are not available.")}
         onRetry={discoverState.retry}
         title={t("Could not load Discover")}
       />
@@ -301,7 +302,7 @@ export function DiscoverScreen({ token }: { token: string | null }) {
     <View style={[styles.stack, isCompact && networkStyles.mobileStack]}>
       {discoverState.error ? (
         <ErrorState
-          message={discoverState.error.message}
+          message={translateApiError(t, discoverState.error.message)}
           onRetry={discoverState.retry}
           title={t("Could not refresh profiles")}
         />
@@ -323,7 +324,7 @@ export function DiscoverScreen({ token }: { token: string | null }) {
             <FilterChip
               active={universityFilter === option.value}
               key={option.value}
-              label={option.label}
+              label={t(option.label)}
               onPress={setUniversityFilter}
               value={option.value}
             />

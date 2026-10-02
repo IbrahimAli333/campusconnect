@@ -142,6 +142,7 @@ import type {
   SkillDraft,
 } from "./shared";
 import { networkStyles } from "./styles";
+import { translateApiError } from "../../lib/i18n/apiErrors";
 
 export function ApplicationsScreen({ token }: { token: string | null }) {
   const { t } = useI18n();
@@ -296,7 +297,7 @@ export function ApplicationsScreen({ token }: { token: string | null }) {
   if (!applicationsState.data) {
     return (
       <ErrorState
-        message={applicationsState.error?.message ?? t("Your Unibridge applications are not available.")}
+        message={applicationsState.error ? translateApiError(t, applicationsState.error.message) : t("Your Unibridge applications are not available.")}
         onRetry={applicationsState.retry}
         title={t("Could not load applications")}
       />
@@ -307,7 +308,7 @@ export function ApplicationsScreen({ token }: { token: string | null }) {
     <View style={styles.stack}>
       {applicationsState.error ? (
         <ErrorState
-          message={applicationsState.error.message}
+          message={translateApiError(t, applicationsState.error.message)}
           onRetry={applicationsState.retry}
           title={t("Could not refresh applications")}
         />
@@ -388,7 +389,7 @@ export function ApplicationsScreen({ token }: { token: string | null }) {
                 <View style={networkStyles.metaRow}>
                   <CalendarDays color={palette.faint} size={15} strokeWidth={2.4} />
                   <Text style={networkStyles.metaText} numberOfLines={1}>
-                    {t("Applied {date}", { date: formatFullDate(application.created_at) })}
+                    {t("Applied {date}", { date: formatFullDate(application.created_at, t) })}
                   </Text>
                 </View>
               </Pressable>

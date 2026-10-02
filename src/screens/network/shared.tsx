@@ -73,6 +73,8 @@ import type {
 } from "../../types/network";
 
 import { networkStyles } from "./styles";
+import { translateApiError } from "../../lib/i18n/apiErrors";
+import { knownUniversity } from "../../lib/universities";
 
 type Translate = (source: string, vars?: Record<string, string | number>) => string;
 
@@ -188,7 +190,7 @@ export function titleCase(value: string): string {
 
 export function toErrorMessage(error: unknown, t: Translate = englishT): string {
   if (error instanceof Error) {
-    return error.message;
+    return translateApiError(t, error.message);
   }
 
   return t("Request failed");
@@ -233,14 +235,54 @@ export function universityShortName(name: string): string {
     .toUpperCase();
 }
 
+/**
+ * University names are stored in English (canonical, used for filtering);
+ * known universities are shown under their official name in the app
+ * language ("Bakı Dövlət Universiteti"). Free text is shown as typed.
+ */
+export function universityDisplayName(value: string, t: Translate = englishT): string {
+  return knownUniversity(value) ? t(value.trim()) : value;
+}
+
+function universityAcronym(value: string, t: Translate): string {
+  const known = knownUniversity(value);
+  return known ? t(known.short) : universityShortName(value);
+}
+
 export function profileMeta(profile: ProfileSummary, t: Translate = englishT): string {
   const faculty = profile.faculty?.replace(/^Faculty of\s+/i, "");
   const parts = [
-    profile.university ? universityShortName(profile.university) : null,
+    profile.university ? universityAcronym(profile.university, t) : null,
     faculty,
     profile.location,
   ].filter(Boolean);
   return parts.length ? parts.join(" · ") : t("Unibridge member");
+}
+
+// Month names and date order come from the dictionaries (not the device
+// locale), so dates follow the app language on every platform:
+// "2 okt 2026" in Azerbaijani, "2 окт. 2026" in Russian, "Oct 2, 2026" in English.
+// Short names follow a day ("2 okt", "2 мая"); full names stand alone in
+// month-year ranges ("Oktyabr 2026", "май 2026"), which Russian inflects
+// differently.
+const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS_FULL = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+function monthLabel(date: Date, t: Translate, names: string[] = MONTHS_SHORT): string {
+  return t(names[date.getMonth()] ?? "");
 }
 
 export function formatDate(value: string | null, t: Translate = englishT): string {
@@ -253,16 +295,16 @@ export function formatDate(value: string | null, t: Translate = englishT): strin
     return value;
   }
 
-  return date.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+  return t("{month} {year}", { month: monthLabel(date, t, MONTHS_FULL), year: date.getFullYear() });
 }
 
-export function formatFullDate(value: string): string {
+export function formatFullDate(value: string, t: Translate = englishT): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return value;
   }
 
-  return date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  return t("{month} {day}, {year}", { day: date.getDate(), month: monthLabel(date, t), year: date.getFullYear() });
 }
 
 export function resumeDateRange(entry: ResumeEntryRead, t: Translate = englishT): string {
@@ -1201,7 +1243,9 @@ export function ProfileDetailPanel({
         <View style={networkStyles.profileMetaItem}>
           <GraduationCap color={palette.teal} size={18} strokeWidth={2.4} />
           <Text style={networkStyles.metaText} numberOfLines={2}>
-            {[profile.university, profile.faculty].filter(Boolean).join(" - ") || t("University affiliation not set")}
+            {[profile.university ? universityDisplayName(profile.university, t) : null, profile.faculty]
+              .filter(Boolean)
+              .join(" - ") || t("University affiliation not set")}
           </Text>
         </View>
         <View style={networkStyles.profileMetaItem}>
@@ -1477,7 +1521,7 @@ export function OwnerApplicationsPanel({
                 <View style={networkStyles.metaRow}>
                   <CalendarDays color={palette.faint} size={15} strokeWidth={2.4} />
                   <Text style={networkStyles.metaText} numberOfLines={1}>
-                    {t("Applied {date}", { date: formatFullDate(application.created_at) })}
+                    {t("Applied {date}", { date: formatFullDate(application.created_at, t) })}
                   </Text>
                 </View>
 

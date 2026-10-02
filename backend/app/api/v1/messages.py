@@ -287,8 +287,8 @@ def send_message(
         db,
         background_tasks,
         [other_profile.user_id],
-        title=f"Message from {current_user.full_name}",
-        body=preview,
+        template="message",
+        values={"name": current_user.full_name, "preview": preview},
         data={"tab": "connections"},
     )
     return _message_response(message)

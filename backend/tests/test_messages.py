@@ -387,7 +387,8 @@ def test_new_message_pushes_to_recipient(
     pushes = [message for batch in captured_pushes for message in batch]
     assert len(pushes) == 1
     assert pushes[0]["to"] == "ExponentPushToken[teacher]"
-    assert pushes[0]["title"] == "Message from Aydin Mammadli"
+    # No language registered: Azerbaijani, the app default.
+    assert pushes[0]["title"] == "Aydin Mammadli sizə yazdı"
     assert pushes[0]["body"] == "Quick question"
     assert pushes[0]["data"] == {"tab": "connections"}
 

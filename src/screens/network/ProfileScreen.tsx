@@ -133,6 +133,7 @@ import {
   skillToDraft,
   statusTone,
   titleCase,
+  universityDisplayName,
   toErrorMessage,
   visibilityOptions,
 } from "./shared";
@@ -147,6 +148,7 @@ import type {
 } from "./shared";
 import { networkStyles } from "./styles";
 import { AccountPrivacySection } from "./AccountPrivacySection";
+import { translateApiError } from "../../lib/i18n/apiErrors";
 
 export function ProfileScreen({
   account,
@@ -474,7 +476,7 @@ export function ProfileScreen({
       onAccountDeleted?.();
     } catch (error) {
       setDeleteState("error");
-      setDeleteMessage(error instanceof Error ? error.message : t("Could not delete the account."));
+      setDeleteMessage(error instanceof Error ? translateApiError(t, error.message) : t("Could not delete the account."));
     }
   }
 
@@ -485,7 +487,7 @@ export function ProfileScreen({
   if (!profile || !draft) {
     return (
       <ErrorState
-        message={profileState.error?.message ?? t("Your Unibridge portfolio is not available.")}
+        message={profileState.error ? translateApiError(t, profileState.error.message) : t("Your Unibridge portfolio is not available.")}
         onRetry={profileState.retry}
         title={t("Could not load portfolio")}
       />
@@ -496,7 +498,7 @@ export function ProfileScreen({
     <View style={styles.stack}>
       {profileState.error ? (
         <ErrorState
-          message={profileState.error.message}
+          message={translateApiError(t, profileState.error.message)}
           onRetry={profileState.retry}
           title={t("Could not refresh portfolio")}
         />
@@ -521,7 +523,9 @@ export function ProfileScreen({
           <View style={networkStyles.profileMetaItem}>
             <GraduationCap color={palette.teal} size={18} strokeWidth={2.4} />
             <Text style={networkStyles.metaText}>
-              {[profile.university, profile.faculty].filter(Boolean).join(" - ") || t("University affiliation not set")}
+              {[profile.university ? universityDisplayName(profile.university, t) : null, profile.faculty]
+                .filter(Boolean)
+                .join(" - ") || t("University affiliation not set")}
             </Text>
           </View>
           <View style={networkStyles.profileMetaItem}>

@@ -20,6 +20,7 @@ import {
 import { fonts, palette, styles } from "../../styles/theme";
 import { ActionMessage, InlineAction, formatFullDate } from "./shared";
 import { networkStyles } from "./styles";
+import { translateApiError } from "../../lib/i18n/apiErrors";
 
 function saveJsonFile(fileName: string, json: string): Promise<unknown> {
   if (Platform.OS === "web" && typeof document !== "undefined") {
@@ -44,7 +45,7 @@ function saveJsonFile(fileName: string, json: string): Promise<unknown> {
  * Rendered above "Delete Account" so all account controls sit together.
  */
 export function AccountPrivacySection({ account, token }: { account?: AuthUser | null; token: string | null }) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const [pushEnabled, setPushEnabled] = useState<boolean | null>(null);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushMessage, setPushMessage] = useState<string | null>(null);
@@ -69,7 +70,7 @@ export function AccountPrivacySection({ account, token }: { account?: AuthUser |
     }
     setPushBusy(true);
     setPushMessage(null);
-    const result = await setPushNotificationsEnabled(token, next);
+    const result = await setPushNotificationsEnabled(token, next, language);
     setPushBusy(false);
 
     if (result === "enabled") {
@@ -100,7 +101,7 @@ export function AccountPrivacySection({ account, token }: { account?: AuthUser |
       setExportMessage(t("Your data export is ready."));
     } catch (error) {
       setExportState("error");
-      setExportMessage(error instanceof Error ? error.message : t("Could not export your data. Try again."));
+      setExportMessage(error instanceof Error ? translateApiError(t, error.message) : t("Could not export your data. Try again."));
     }
   }
 
@@ -169,7 +170,7 @@ export function AccountPrivacySection({ account, token }: { account?: AuthUser |
         {account?.terms_accepted_at && account.terms_version ? (
           <Text style={styles.smallText}>
             {t("You accepted the Terms and Privacy Policy version {version} on {date}.", {
-              date: formatFullDate(account.terms_accepted_at),
+              date: formatFullDate(account.terms_accepted_at, t),
               version: account.terms_version,
             })}
           </Text>

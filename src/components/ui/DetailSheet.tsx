@@ -1,13 +1,17 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
-import { Platform, StyleSheet } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import {
   BottomSheetBackdrop,
+  BottomSheetHandle,
   BottomSheetModal,
   BottomSheetScrollView,
   type BottomSheetBackdropProps,
+  type BottomSheetBackgroundProps,
+  type BottomSheetHandleProps,
 } from "@gorhom/bottom-sheet";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useI18n } from "../../lib/i18n";
 import { palette } from "../../styles/theme";
 
 interface DetailSheetValue {
@@ -22,8 +26,38 @@ export function useDetailSheet(): DetailSheetValue | null {
   return useContext(DetailSheetContext);
 }
 
+// The library ships English accessibility labels ("Bottom Sheet", "Bottom
+// sheet handle", "Bottom sheet backdrop"); these replace them with
+// translated ones, and the background is purely decorative.
 function Backdrop(props: BottomSheetBackdropProps) {
-  return <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} opacity={0.45} pressBehavior="close" />;
+  const { t } = useI18n();
+  return (
+    <BottomSheetBackdrop
+      {...props}
+      accessibilityHint={t("Closes the panel")}
+      accessibilityLabel={t("Close")}
+      appearsOnIndex={0}
+      disappearsOnIndex={-1}
+      opacity={0.45}
+      pressBehavior="close"
+    />
+  );
+}
+
+function Handle(props: BottomSheetHandleProps) {
+  const { t } = useI18n();
+  return (
+    <BottomSheetHandle
+      {...props}
+      accessibilityHint={t("Drag down to close the panel")}
+      accessibilityLabel={t("Panel handle")}
+      indicatorStyle={sheetStyles.handle}
+    />
+  );
+}
+
+function Background({ style }: BottomSheetBackgroundProps) {
+  return <View accessible={false} pointerEvents="none" style={[style, sheetStyles.background]} />;
 }
 
 /**
@@ -81,9 +115,9 @@ export function DetailSheet({
     <BottomSheetModal
       accessibilityLabel={accessibilityLabel}
       backdropComponent={Backdrop}
-      backgroundStyle={sheetStyles.background}
+      backgroundComponent={Background}
       enableDynamicSizing={false}
-      handleIndicatorStyle={sheetStyles.handle}
+      handleComponent={Handle}
       onDismiss={handleDismiss}
       ref={ref}
       snapPoints={["92%"]}

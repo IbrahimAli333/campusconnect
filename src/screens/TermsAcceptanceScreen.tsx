@@ -8,6 +8,7 @@ import { DELETE_ACCOUNT_URL } from "../lib/legal";
 import type { AuthUser } from "../lib/api/auth";
 import { useI18n } from "../lib/i18n";
 import { fonts, palette, styles } from "../styles/theme";
+import { translateApiError } from "../lib/i18n/apiErrors";
 
 /**
  * Shown instead of the app whenever the signed-in user has not accepted the
@@ -43,7 +44,7 @@ export function TermsAcceptanceScreen({
     try {
       await onAccept(user.current_terms_version);
     } catch (acceptError) {
-      setError(acceptError instanceof Error ? acceptError.message : t("Could not save your answer. Try again."));
+      setError(acceptError instanceof Error ? translateApiError(t, acceptError.message) : t("Could not save your answer. Try again."));
     } finally {
       setSaving(false);
     }

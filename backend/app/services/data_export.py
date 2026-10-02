@@ -67,6 +67,7 @@ def build_user_data_export(db: Session, user: User) -> dict[str, Any]:
         "push_notification_devices": [
             {
                 "platform": token.platform,
+                "language": token.language,
                 "token": _mask_token(token.token),
                 "registered_at": _iso(token.created_at),
                 "updated_at": _iso(token.updated_at),

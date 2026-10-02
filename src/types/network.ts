@@ -247,6 +247,7 @@ export interface PushTokenRead {
   id: number;
   token: string;
   platform: PushPlatform | null;
+  language: "az" | "en" | "ru" | null;
   created_at: string;
 }
 

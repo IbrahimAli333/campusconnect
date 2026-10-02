@@ -1210,11 +1210,8 @@ def update_application_status(
             db,
             background_tasks,
             [application.applicant_profile.user_id],
-            title="Application update",
-            body=(
-                f'Your application to "{application.opportunity.title}" was '
-                f"{request.status}."
-            ),
+            template=f"application_{request.status}",
+            values={"title": application.opportunity.title},
             data={"tab": "applications"},
         )
     return _owner_application_response(_get_owner_loaded_application(db, application.id))
@@ -1645,8 +1642,8 @@ def request_connection(
         db,
         background_tasks,
         [receiver_profile.user_id],
-        title="New connection request",
-        body=f"{current_user.full_name} wants to connect with you.",
+        template="connection_request",
+        values={"name": current_user.full_name},
         data={"tab": "connections"},
     )
     return _connection_response(connection_request)
@@ -1699,8 +1696,8 @@ def update_connection_status(
             db,
             background_tasks,
             [connection.requester_profile.user_id],
-            title="Connection accepted",
-            body=f"{current_user.full_name} accepted your connection request.",
+            template="connection_accepted",
+            values={"name": current_user.full_name},
             data={"tab": "connections"},
         )
     return _connection_response(connection)

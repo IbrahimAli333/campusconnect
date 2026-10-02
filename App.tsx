@@ -186,7 +186,7 @@ function TabPage({
 }
 
 function AppInner() {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const auth = useAuthStore();
   const [activeTab, setActiveTab] = useState<NetworkTab>("discover");
   const { badges, markApplicationsSeen } = useNetworkBadges(auth.token, activeTab);
@@ -234,11 +234,12 @@ function AppInner() {
   // Ask for notification permission and register the device only once a
   // session exists and the current terms are accepted, so the prompt never
   // shows on the login or consent screens. Users can opt out in the Me tab.
+  // Re-runs when the language changes so notifications follow it.
   useEffect(() => {
     if (auth.token && !termsAcceptanceRequired) {
-      void registerForPushNotifications(auth.token);
+      void registerForPushNotifications(auth.token, language);
     }
-  }, [auth.token, termsAcceptanceRequired]);
+  }, [auth.token, language, termsAcceptanceRequired]);
 
   useEffect(() => subscribeToNotificationTaps(openTab), [openTab]);
 

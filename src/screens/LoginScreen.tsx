@@ -39,6 +39,7 @@ import { AuthField, PasswordVisibilityToggle } from "../components/login/AuthFie
 import { BANNER_CARD_OVERLAP, LoginBanner, LoginHeroPanel, displayUppercase } from "../components/login/LoginHero";
 import { fonts, palette, paperShadow, radii } from "../styles/theme";
 import type { IconComponent } from "../components/common/types";
+import { NETWORK_ERROR_MESSAGE, translateApiError } from "../lib/i18n/apiErrors";
 
 type LoginRole = "member" | "student" | "teacher";
 type AuthMode = "login" | "signup";
@@ -261,9 +262,9 @@ export function LoginScreen({
       await onLogin(normalizedEmail, password);
     } catch (loginError) {
       if (loginError instanceof AuthApiError) {
-        setError(loginError.message);
+        setError(translateApiError(t, loginError.message));
       } else {
-        setError(t("Could not connect to the API. Check the backend URL and try again."));
+        setError(t(NETWORK_ERROR_MESSAGE));
       }
     } finally {
       clearTimeout(slowHintTimer);
@@ -300,9 +301,9 @@ export function LoginScreen({
       });
     } catch (registerError) {
       if (registerError instanceof AuthApiError) {
-        setError(registerError.message);
+        setError(translateApiError(t, registerError.message));
       } else {
-        setError(t("Could not connect to the API. Check the backend URL and try again."));
+        setError(t(NETWORK_ERROR_MESSAGE));
       }
     } finally {
       clearTimeout(slowHintTimer);
@@ -331,9 +332,9 @@ export function LoginScreen({
         setAuthMode("signup");
         setError(t("No Unibridge account uses this Google account yet. Tick both boxes below, then continue with Google to create one."));
       } else if (loginError instanceof AuthApiError) {
-        setError(loginError.message);
+        setError(translateApiError(t, loginError.message));
       } else {
-        setError(t("Could not connect to the API. Check the backend URL and try again."));
+        setError(t(NETWORK_ERROR_MESSAGE));
       }
     } finally {
       setLoading(false);
@@ -368,8 +369,8 @@ export function LoginScreen({
           {authMode === "login"
             ? DEMO_LOGINS_ENABLED
               ? isCompact
-                ? "Use a demo role preset or working credentials."
-                : "Use a demo role preset or enter working credentials manually."
+                ? t("Use a demo role preset or working credentials.")
+                : t("Use a demo role preset or enter working credentials manually.")
               : t("Sign in with your Unibridge credentials.")
             : GOOGLE_OAUTH_CLIENT_ID
               ? t("Member accounts can browse, save, apply, and connect. Students and faculty join with their university Google account.")
@@ -405,8 +406,8 @@ export function LoginScreen({
           {DEMO_LOGINS_ENABLED ? (
             <View style={loginStyles.roleSection}>
               <View style={loginStyles.sectionLabelRow}>
-                <Text style={loginStyles.sectionLabel}>Choose a role to continue</Text>
-                {!isCompact ? <Text style={loginStyles.sectionMeta}>Tap to fill</Text> : null}
+                <Text style={loginStyles.sectionLabel}>{t("Choose a role to continue")}</Text>
+                {!isCompact ? <Text style={loginStyles.sectionMeta}>{t("Tap to fill")}</Text> : null}
               </View>
 
               <View style={[loginStyles.roleStack, isCompact && loginStyles.roleStackCompact]}>
@@ -437,13 +438,13 @@ export function LoginScreen({
                               numberOfLines={1}
                               style={[loginStyles.roleTitle, active && loginStyles.roleTitleActive]}
                             >
-                              {preset.label}
+                              {t(preset.label)}
                             </Text>
-                            {active && !isCompact ? <Text style={loginStyles.activeBadge}>Loaded</Text> : null}
+                            {active && !isCompact ? <Text style={loginStyles.activeBadge}>{t("Loaded")}</Text> : null}
                           </View>
                           {!isCompact ? (
                             <>
-                              <Text style={loginStyles.roleDescription}>{preset.description}</Text>
+                              <Text style={loginStyles.roleDescription}>{t(preset.description)}</Text>
                               <Text numberOfLines={1} style={loginStyles.roleCredential}>
                                 {preset.email}
                               </Text>
@@ -459,7 +460,7 @@ export function LoginScreen({
                               key={`${preset.role}-${permission}`}
                               style={[loginStyles.permissionBadge, active && loginStyles.permissionBadgeActive]}
                             >
-                              {permission}
+                              {t(permission)}
                             </Text>
                           ))}
                         </View>
@@ -655,7 +656,7 @@ export function LoginScreen({
         <View style={loginStyles.apiHint}>
           <Server color={palette.muted} size={16} strokeWidth={2.4} />
           <View style={loginStyles.apiHintText}>
-            <Text style={loginStyles.hintLabel}>API endpoint</Text>
+            <Text style={loginStyles.hintLabel}>{t("API endpoint")}</Text>
             <Text numberOfLines={2} style={loginStyles.hintValue}>
               {API_BASE_URL}
             </Text>
@@ -678,7 +679,7 @@ export function LoginScreen({
               <LoginHeroPanel
                 body={
                   DEMO_LOGINS_ENABLED
-                    ? "Sign in as a member, student, or teacher to test a role-specific network for projects, applications, mentorship, and academic review."
+                    ? t("Sign in as a member, student, or teacher to test a role-specific network for projects, applications, mentorship, and academic review.")
                     : t("Sign in to a role-aware campus network for projects, applications, mentorship, and academic review.")
                 }
                 eyebrow={t("University access portal")}
@@ -700,7 +701,7 @@ export function LoginScreen({
                 isCompact
                   ? undefined
                   : DEMO_LOGINS_ENABLED
-                    ? "Log in with a demo role or create a member account."
+                    ? t("Log in with a demo role or create a member account.")
                     : t("Log in or create a member account.")
               }
               compact={isCompact}

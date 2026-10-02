@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
 from app.models.push_token import PushToken
+from app.services.push_messages import render_push
 
 
 logger = logging.getLogger("app.push")
@@ -85,11 +86,12 @@ def queue_push_to_users(
     db: Session,
     background_tasks: BackgroundTasks,
     user_ids: list[int],
-    title: str,
-    body: str,
+    template: str,
+    values: dict[str, str],
     data: Optional[dict[str, Any]] = None,
 ) -> None:
-    """Queue a push to every registered device of the given users.
+    """Queue a push to every registered device of the given users, written in
+    each device's app language (see app.services.push_messages).
 
     Tokens are read before the request finishes (the session closes with it);
     actual delivery happens in the background.
@@ -97,20 +99,22 @@ def queue_push_to_users(
     if not user_ids:
         return
 
-    tokens = db.scalars(
-        select(PushToken.token).where(PushToken.user_id.in_(user_ids))
+    devices = db.execute(
+        select(PushToken.token, PushToken.language).where(PushToken.user_id.in_(user_ids))
     ).all()
-    if not tokens:
+    if not devices:
         return
 
-    messages: list[dict[str, Any]] = [
-        {
-            "to": token,
-            "title": title,
-            "body": body,
-            "sound": "default",
-            **({"data": data} if data else {}),
-        }
-        for token in tokens
-    ]
+    messages: list[dict[str, Any]] = []
+    for token, language in devices:
+        title, body = render_push(template, language, values)
+        messages.append(
+            {
+                "to": token,
+                "title": title,
+                "body": body,
+                "sound": "default",
+                **({"data": data} if data else {}),
+            }
+        )
     background_tasks.add_task(_deliver_expo_pushes, messages)

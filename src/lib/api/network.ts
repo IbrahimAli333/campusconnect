@@ -349,10 +349,12 @@ export function registerPushToken(
   token: string,
   pushToken: string,
   platform?: PushPlatform,
+  language?: "az" | "en" | "ru",
 ): Promise<PushTokenRead> {
+  // The server writes notifications in the device's app language.
   return requestNetworkJson<PushTokenRead>("/api/v1/notifications/tokens", token, {
     method: "POST",
-    ...jsonRequest(platform ? { token: pushToken, platform } : { token: pushToken }),
+    ...jsonRequest({ token: pushToken, ...(platform ? { platform } : {}), ...(language ? { language } : {}) }),
   });
 }
 

@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
 
+import { useI18n } from "../../lib/i18n";
+
 WebBrowser.maybeCompleteAuthSession();
 
 /**
@@ -22,6 +24,7 @@ export function GoogleIdTokenGate({
   onIdToken: (idToken: string) => void;
   children: (promptGoogleSignIn: () => void, ready: boolean) => ReactNode;
 }) {
+  const { t } = useI18n();
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
     clientId,
   });
@@ -36,10 +39,10 @@ export function GoogleIdTokenGate({
       if (idToken) {
         onIdToken(idToken);
       } else {
-        onError("Google sign-in did not return an identity token.");
+        onError(t("Google sign-in did not return an identity token."));
       }
     } else if (response.type === "error") {
-      onError(response.error?.message ?? "Google sign-in failed. Try again.");
+      onError(t("Google sign-in failed. Try again."));
     }
     // The callbacks are stable enough for these screens; re-running on
     // response changes only.

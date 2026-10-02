@@ -117,7 +117,7 @@ function ChatPanel({
               <View key={message.id} style={[networkStyles.chatBubble, isMine && networkStyles.chatBubbleMine]}>
                 <Text style={networkStyles.chatBubbleText}>{message.body}</Text>
                 <Text style={networkStyles.chatBubbleMeta}>
-                  {(isMine ? t("You") : profile.user.full_name.split(" ")[0]) + " - " + formatFullDate(message.created_at)}
+                  {(isMine ? t("You") : profile.user.full_name.split(" ")[0]) + " - " + formatFullDate(message.created_at, t)}
                 </Text>
               </View>
             );

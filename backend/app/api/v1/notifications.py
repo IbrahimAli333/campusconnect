@@ -36,12 +36,15 @@ def register_push_token(
             user_id=current_user.id,
             token=request.token,
             platform=request.platform,
+            language=request.language,
         )
         db.add(push_token)
     else:
-        # A device token follows whoever is signed in on that device.
+        # A device token follows whoever is signed in on that device. The app
+        # re-registers when its language changes, which updates it here.
         push_token.user_id = current_user.id
         push_token.platform = request.platform
+        push_token.language = request.language
 
     db.commit()
     db.refresh(push_token)

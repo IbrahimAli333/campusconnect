@@ -21,6 +21,9 @@ class PushToken(Base):
     )
     token: Mapped[str] = mapped_column(String(255), nullable=False)
     platform: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    # App language on this device ("az", "en", "ru"); notifications are
+    # written in it. NULL means Azerbaijani, the app default.
+    language: Mapped[Optional[str]] = mapped_column(String(8), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

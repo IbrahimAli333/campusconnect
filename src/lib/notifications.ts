@@ -4,6 +4,7 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
 import { registerPushToken, unregisterPushToken } from "./api/network";
+import type { Language } from "./i18n";
 import type { NetworkTab } from "../types/network";
 
 const NETWORK_TABS: NetworkTab[] = ["discover", "opportunities", "applications", "profile", "connections"];
@@ -77,7 +78,7 @@ function expoProjectId(): string | undefined {
  * with the backend. Called only after the user is authenticated, so the
  * permission prompt never appears on the login screen.
  */
-export async function registerForPushNotifications(apiToken: string): Promise<void> {
+export async function registerForPushNotifications(apiToken: string, language?: Language): Promise<void> {
   if (!isPushSupported || !(await getPushPreference())) {
     return;
   }
@@ -93,7 +94,7 @@ export async function registerForPushNotifications(apiToken: string): Promise<vo
 
     const projectId = expoProjectId();
     const pushToken = (await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined)).data;
-    await registerPushToken(apiToken, pushToken, Platform.OS === "ios" ? "ios" : "android");
+    await registerPushToken(apiToken, pushToken, Platform.OS === "ios" ? "ios" : "android", language);
     registeredPushToken = pushToken;
   } catch (error) {
     // Push registration is best-effort (e.g. Expo Go, simulators, offline).
@@ -123,7 +124,11 @@ export type PushToggleResult = "enabled" | "disabled" | "permission-denied" | "f
  * backend, so the server has nothing to deliver to; turning it on asks for OS
  * permission (if needed) and registers the device again.
  */
-export async function setPushNotificationsEnabled(apiToken: string, enabled: boolean): Promise<PushToggleResult> {
+export async function setPushNotificationsEnabled(
+  apiToken: string,
+  enabled: boolean,
+  language?: Language,
+): Promise<PushToggleResult> {
   if (!isPushSupported) {
     return "failed";
   }
@@ -151,7 +156,7 @@ export async function setPushNotificationsEnabled(apiToken: string, enabled: boo
     }
   }
 
-  await registerForPushNotifications(apiToken);
+  await registerForPushNotifications(apiToken, language);
   if (registeredPushToken) {
     return "enabled";
   }
