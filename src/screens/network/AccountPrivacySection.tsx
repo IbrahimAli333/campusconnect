@@ -9,6 +9,7 @@ import { useI18n } from "../../lib/i18n";
 import {
   CHILD_SAFETY_URL,
   DELETE_ACCOUNT_URL,
+  OPEN_SOURCE_LICENSES_URL,
   PRIVACY_POLICY_URL,
   TERMS_URL,
 } from "../../lib/legal";
@@ -110,6 +111,7 @@ export function AccountPrivacySection({ account, token }: { account?: AuthUser |
     { label: t("Privacy Policy"), url: PRIVACY_POLICY_URL },
     { label: t("Child Safety Standards"), url: CHILD_SAFETY_URL },
     { label: t("How account deletion works"), url: DELETE_ACCOUNT_URL },
+    { label: t("Open-source licences"), url: OPEN_SOURCE_LICENSES_URL },
   ];
 
   return (

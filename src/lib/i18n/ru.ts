@@ -641,4 +641,13 @@ export const ru: Record<string, string> = {
   "Closes the panel": "Закрывает панель",
   "Drag down to close the panel": "Потяните вниз, чтобы закрыть панель",
   "Panel handle": "Ручка панели",
+  "Accept the current Terms of Service and Privacy Policy to continue.": "Чтобы продолжить, примите актуальные Условия использования и Политику конфиденциальности.",
+  "Turn on notifications?": "Включить уведомления?",
+  "Unibridge only notifies you about things that involve you. You can change this anytime in the Me tab.": "Unibridge присылает уведомления только о том, что касается вас. Это можно изменить в любое время на вкладке «Я».",
+  "New messages from your connections": "Новые сообщения от ваших контактов",
+  "Connection requests and acceptances": "Запросы на контакт и их принятие",
+  "Decisions on your applications": "Решения по вашим откликам",
+  "Allow notifications": "Разрешить уведомления",
+  "Not now": "Не сейчас",
+  "Open-source licences": "Лицензии открытого ПО",
 };

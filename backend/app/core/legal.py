@@ -17,6 +17,10 @@ PUBLIC_DOCS_BASE_URL = "https://ibrahimali333.github.io/campusconnect"
 TERMS_URL = f"{PUBLIC_DOCS_BASE_URL}/terms.html"
 PRIVACY_POLICY_URL = f"{PUBLIC_DOCS_BASE_URL}/privacy-policy.html"
 
+TERMS_ACCEPTANCE_REQUIRED_DETAIL = (
+    "Accept the current Terms of Service and Privacy Policy to continue."
+)
+
 CONSENT_REQUIRED_DETAIL = (
     "Accept the Terms of Service and Privacy Policy and confirm you are "
     f"{MINIMUM_AGE} or older to create an account."

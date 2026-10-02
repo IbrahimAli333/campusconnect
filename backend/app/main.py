@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.starlette import StarletteIntegration
 
-from app.api.v1 import api_router
+from app.api.v1 import api_router, legacy_academic_router
 from app.core.config import DEVELOPMENT_CORS_ORIGIN_REGEX, get_settings
 
 
@@ -64,6 +64,8 @@ def create_app() -> FastAPI:
         return {"status": "ok"}
 
     app.include_router(api_router, prefix=settings.api_v1_prefix)
+    if settings.enable_legacy_academic_api:
+        app.include_router(legacy_academic_router, prefix=settings.api_v1_prefix)
     return app
 
 

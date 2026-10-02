@@ -362,3 +362,67 @@ class TestAccountDeletionCompleteness:
             assert count(Skill) == 1
             # Their application to the deleted user's post went with the post.
             assert count(OpportunityApplication) == 0
+
+
+class TestServerSideTermsEnforcement:
+    @pytest.fixture()
+    def enforced(self, monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+        from app.core.config import get_settings
+
+        monkeypatch.setenv("UNIVERSITY_PORTAL_ENFORCE_TERMS_ACCEPTANCE", "true")
+        get_settings.cache_clear()
+        yield
+        monkeypatch.delenv("UNIVERSITY_PORTAL_ENFORCE_TERMS_ACCEPTANCE")
+        get_settings.cache_clear()
+
+    def test_feature_endpoints_wait_for_acceptance_but_account_endpoints_do_not(
+        self,
+        client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+        enforced: None,
+    ) -> None:
+        client, session_local = client_and_sessionmaker
+        with session_local() as db:
+            _make_user(db, "legacy@example.edu", "Legacy User")
+            db.commit()
+        headers = _headers(_login(client, "legacy@example.edu"))
+
+        blocked = client.get("/api/v1/network/me", headers=headers)
+        assert blocked.status_code == 428
+        assert client.get("/api/v1/network/messages/unread", headers=headers).status_code == 428
+        assert (
+            client.post(
+                "/api/v1/notifications/tokens",
+                headers=headers,
+                json={"token": "ExponentPushToken[x]"},
+            ).status_code
+            == 428
+        )
+
+        # People can always read their account, export, unregister, or accept.
+        assert client.get("/api/v1/auth/me", headers=headers).status_code == 200
+        assert client.get("/api/v1/auth/me/export", headers=headers).status_code == 200
+        assert (
+            client.post(
+                "/api/v1/notifications/tokens/unregister",
+                headers=headers,
+                json={"token": "ExponentPushToken[x]"},
+            ).status_code
+            == 204
+        )
+        accepted = client.post(
+            "/api/v1/auth/accept-terms",
+            headers=headers,
+            json={"terms_version": CURRENT_TERMS_VERSION, "accept_terms": True, "confirm_age": True},
+        )
+        assert accepted.status_code == 200
+        assert client.get("/api/v1/network/me", headers=headers).status_code == 200
+
+    def test_enforcement_is_off_by_default(
+        self, client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]]
+    ) -> None:
+        client, session_local = client_and_sessionmaker
+        with session_local() as db:
+            _make_user(db, "legacy@example.edu", "Legacy User")
+            db.commit()
+        headers = _headers(_login(client, "legacy@example.edu"))
+        assert client.get("/api/v1/network/me", headers=headers).status_code == 200

@@ -11,7 +11,7 @@ import {
   type AuthUser,
   type TokenResponse,
 } from "../api/auth";
-import { setUnauthorizedHandler } from "../api/network";
+import { setTermsRequiredHandler, setUnauthorizedHandler } from "../api/network";
 import type { SignupConsent } from "../legal";
 import { clearPortalDataCache } from "../api/usePortalData";
 import { clearStoredSession, loadStoredSession, storeSession } from "./token-storage";
@@ -185,6 +185,15 @@ export function useAuthStore(): AuthStore {
     setUnauthorizedHandler(() => void refreshOrLogout());
     return () => setUnauthorizedHandler(null);
   }, [refreshOrLogout]);
+
+  // The server asks for the current terms: re-read the user so the app shows
+  // the acceptance screen.
+  useEffect(() => {
+    setTermsRequiredHandler(() => {
+      void refreshCurrentUser().catch(() => undefined);
+    });
+    return () => setTermsRequiredHandler(null);
+  }, [refreshCurrentUser]);
 
   // Refresh proactively so requests rarely hit an expired token at all.
   useEffect(() => {

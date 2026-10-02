@@ -17,7 +17,7 @@ from sqlalchemy import and_, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.api.deps import get_current_active_user
+from app.api.deps import get_current_active_user, require_current_terms
 from app.core.action_rate_limit import (
     application_rate_limiter,
     assistant_rate_limiter,
@@ -76,7 +76,11 @@ from app.schemas.network import (
 from app.services.push import queue_push_to_users
 
 
-router = APIRouter(prefix="/network", tags=["network"])
+router = APIRouter(
+    prefix="/network",
+    tags=["network"],
+    dependencies=[Depends(require_current_terms)],
+)
 
 OWNER_REVIEWABLE_APPLICATION_STATUSES = {"submitted", "reviewing"}
 RECOMMENDATION_LIMIT = 20
@@ -1105,7 +1109,12 @@ def list_my_applications(
         .limit(limit)
         .offset(offset)
     ).all()
-    return [_my_application_response(application) for application in applications]
+    hidden_ids = _blocked_profile_ids(db, profile.id)
+    return [
+        _my_application_response(application)
+        for application in applications
+        if application.opportunity.owner_profile_id not in hidden_ids
+    ]
 
 
 @router.get(
@@ -1410,7 +1419,12 @@ def list_opportunity_applications(
             OpportunityApplication.id.desc(),
         )
     ).all()
-    return [_owner_application_response(application) for application in applications]
+    hidden_ids = _blocked_profile_ids(db, profile.id)
+    return [
+        _owner_application_response(application)
+        for application in applications
+        if application.applicant_profile_id not in hidden_ids
+    ]
 
 
 @router.post(
@@ -1544,6 +1558,8 @@ def list_my_connections(
     db: Session = Depends(get_db),
 ) -> MyConnectionsRead:
     profile = _get_or_create_profile(db, current_user)
+    # Blocked and deactivated accounts drop out of the network lists too.
+    hidden_ids = _blocked_profile_ids(db, profile.id)
     sent_connections = db.scalars(
         select(ConnectionRequest)
         .options(*_connection_load_options())
@@ -1560,10 +1576,12 @@ def list_my_connections(
         sent=[
             _connection_response(connection)
             for connection in sent_connections
+            if connection.receiver_profile_id not in hidden_ids
         ],
         received=[
             _connection_response(connection)
             for connection in received_connections
+            if connection.requester_profile_id not in hidden_ids
         ],
     )
 

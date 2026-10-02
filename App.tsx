@@ -21,6 +21,7 @@ import "./src/styles/webFocus";
 import { LoadingState } from "./src/components/common/PortalState";
 import type { IconComponent } from "./src/components/common/types";
 import { AppHeader } from "./src/components/ui/AppHeader";
+import { PushPermissionPrompt } from "./src/components/ui/PushPermissionPrompt";
 import { useNetworkBadges } from "./src/lib/api/useNetworkBadges";
 import type { AuthUser } from "./src/lib/api/auth";
 import { useAuthStore } from "./src/lib/auth/auth-store";
@@ -327,6 +328,7 @@ function AppInner() {
           </Tab.Screen>
         ))}
       </Tab.Navigator>
+      <PushPermissionPrompt token={auth.token} />
     </NavigationContainer>
   );
 }

@@ -70,10 +70,13 @@ function Background({ style }: BottomSheetBackgroundProps) {
 export function DetailSheet({
   accessibilityLabel,
   children,
+  fitContent = false,
   onClose,
 }: {
   accessibilityLabel?: string;
   children: ReactNode;
+  /** Size to the content (short prompts) instead of nearly full height. */
+  fitContent?: boolean;
   onClose: () => void;
 }) {
   const ref = useRef<BottomSheetModal>(null);
@@ -116,11 +119,11 @@ export function DetailSheet({
       accessibilityLabel={accessibilityLabel}
       backdropComponent={Backdrop}
       backgroundComponent={Background}
-      enableDynamicSizing={false}
+      enableDynamicSizing={fitContent}
       handleComponent={Handle}
       onDismiss={handleDismiss}
       ref={ref}
-      snapPoints={["92%"]}
+      snapPoints={fitContent ? undefined : ["92%"]}
       stackBehavior="push"
     >
       <DetailSheetContext.Provider value={value}>

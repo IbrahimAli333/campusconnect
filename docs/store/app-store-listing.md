@@ -112,6 +112,11 @@ Never invent these; fill them in from real records.
 - **Company registration number (D-U-N-S for organisations):** TODO if
   the account is an organisation
 
+## Release 1.1.0
+
+Release steps, "What's New" text (AZ/EN/RU), and updated App Review notes
+are in `release-1.1.0.md`.
+
 ## Checklist before submitting
 
 - [ ] YOU: Apple Developer Program enrollment approved ($99/yr).

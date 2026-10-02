@@ -144,3 +144,23 @@ def test_error_reporting_initialises_when_dsn_is_set(
     # Request bodies carry credentials and profile content; PII must stay off.
     assert captured[0]["send_default_pii"] is False
     assert captured[0]["include_local_variables"] is False
+
+
+def test_legacy_academic_api_can_be_switched_off(monkeypatch) -> None:
+    from fastapi.testclient import TestClient
+
+    from app.core.config import get_settings
+    from app.main import create_app
+
+    monkeypatch.setenv("UNIVERSITY_PORTAL_ENABLE_LEGACY_ACADEMIC_API", "false")
+    get_settings.cache_clear()
+    try:
+        paths = set(create_app().openapi()["paths"])
+        assert not any(path.startswith("/api/v1/portal") for path in paths)
+        assert not any(path.startswith("/api/v1/attendance") for path in paths)
+        assert not any(path.startswith("/api/v1/grades") for path in paths)
+        assert "/api/v1/network/me" in paths
+        assert TestClient(create_app()).get("/api/v1/portal/me").status_code in (401, 404)
+    finally:
+        monkeypatch.delenv("UNIVERSITY_PORTAL_ENABLE_LEGACY_ACADEMIC_API")
+        get_settings.cache_clear()

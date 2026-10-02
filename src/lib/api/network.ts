@@ -49,6 +49,14 @@ export class NetworkApiError extends Error {
 }
 
 let unauthorizedHandler: (() => void) | null = null;
+let termsRequiredHandler: (() => void) | null = null;
+
+// 428 = the server wants the current Terms/Privacy accepted first (when
+// server-side enforcement is on). The auth store re-reads the user, which
+// brings up the acceptance screen.
+export function setTermsRequiredHandler(handler: (() => void) | null): void {
+  termsRequiredHandler = handler;
+}
 
 export function setUnauthorizedHandler(handler: (() => void) | null): void {
   unauthorizedHandler = handler;
@@ -99,6 +107,8 @@ async function requestNetworkJson<TResponse>(
   if (!response.ok) {
     if (response.status === 401) {
       unauthorizedHandler?.();
+    } else if (response.status === 428) {
+      termsRequiredHandler?.();
     }
     throw new NetworkApiError(await getErrorMessage(response), response.status);
   }
@@ -131,6 +141,8 @@ async function requestNetworkNoContent(
   if (!response.ok) {
     if (response.status === 401) {
       unauthorizedHandler?.();
+    } else if (response.status === 428) {
+      termsRequiredHandler?.();
     }
     throw new NetworkApiError(await getErrorMessage(response), response.status);
   }

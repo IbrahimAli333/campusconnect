@@ -651,4 +651,13 @@ export const az: Record<string, string> = {
   "Closes the panel": "Paneli bağlayır",
   "Drag down to close the panel": "Paneli bağlamaq üçün aşağı çəkin",
   "Panel handle": "Panel tutacağı",
+  "Accept the current Terms of Service and Privacy Policy to continue.": "Davam etmək üçün İstifadə Şərtlərinin və Məxfilik Siyasətinin son versiyasını qəbul edin.",
+  "Turn on notifications?": "Bildirişlər aktiv edilsin?",
+  "Unibridge only notifies you about things that involve you. You can change this anytime in the Me tab.": "Unibridge sizə yalnız sizinlə bağlı hadisələr barədə bildiriş göndərir. Bunu istənilən vaxt \"Mən\" bölməsində dəyişə bilərsiniz.",
+  "New messages from your connections": "Əlaqələrinizdən yeni mesajlar",
+  "Connection requests and acceptances": "Əlaqə sorğuları və qəbullar",
+  "Decisions on your applications": "Müraciətləriniz üzrə qərarlar",
+  "Allow notifications": "Bildirişlərə icazə ver",
+  "Not now": "İndi yox",
+  "Open-source licences": "Açıq mənbə lisenziyaları",
 };

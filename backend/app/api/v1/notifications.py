@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_active_user
+from app.api.deps import get_current_active_user, require_current_terms
 from app.db.session import get_db
 from app.models.push_token import PushToken
 from app.models.user import User
@@ -25,7 +25,8 @@ router = APIRouter(prefix="/notifications", tags=["notifications"])
 )
 def register_push_token(
     request: PushTokenRegister,
-    current_user: User = Depends(get_current_active_user),
+    # Unregistering (logout, the Me tab switch) stays open without consent.
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> PushTokenRead:
     push_token = db.scalar(

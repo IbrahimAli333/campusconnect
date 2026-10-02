@@ -6,7 +6,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, s
 from sqlalchemy import and_, case, func, or_, select, update
 from sqlalchemy.orm import Session, joinedload
 
-from app.api.deps import get_current_active_user
+from app.api.deps import get_current_active_user, require_current_terms
 from app.core.action_rate_limit import enforce_action_limit, message_rate_limiter
 from app.api.v1.network import (
     _blocked_profile_ids,
@@ -30,7 +30,11 @@ from app.schemas.messages import (
 from app.services.push import queue_push_to_users
 
 
-router = APIRouter(prefix="/network/messages", tags=["messages"])
+router = APIRouter(
+    prefix="/network/messages",
+    tags=["messages"],
+    dependencies=[Depends(require_current_terms)],
+)
 
 MESSAGE_PREVIEW_LENGTH = 140
 

@@ -40,6 +40,14 @@ class Settings(BaseSettings):
     # a wiped or recreated production database would let anyone seize admin.
     # Require an explicit opt-in outside development.
     enable_bootstrap_admin: bool = False
+    # Server-side gate: network, messaging, and push-registration endpoints
+    # answer 428 until the user has accepted the current Terms/Privacy
+    # version. Off by default because app builds older than 1.1.0 have no
+    # acceptance screen; switch it on once 1.1.0 is the minimum live version.
+    enforce_terms_acceptance: bool = False
+    # Retired academic-portal API (attendance, grades, schedules). On for
+    # development/tests; render.yaml turns it off in production.
+    enable_legacy_academic_api: bool = True
 
     @model_validator(mode="after")
     def normalize_database_url(self) -> "Settings":

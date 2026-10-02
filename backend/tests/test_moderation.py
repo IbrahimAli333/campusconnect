@@ -400,6 +400,27 @@ class TestDeactivatedAccountsAreHidden:
         ]
         assert teacher_posts, "seed data should give the teacher at least one post"
 
+        # The member has history with the teacher: a connection request and
+        # an application to one of the teacher's open posts.
+        client.post(
+            f"/api/v1/network/connections/{teacher_profile_id}/request",
+            headers=_auth_headers(member_token),
+        )
+        open_posts = [
+            post["id"]
+            for post in response.json()
+            if post["owner_profile"]["id"] == teacher_profile_id and post["status"] == "open"
+        ]
+        assert open_posts
+        assert (
+            client.post(
+                f"/api/v1/network/opportunities/{open_posts[0]}/apply",
+                headers=_auth_headers(member_token),
+                json={},
+            ).status_code
+            == 201
+        )
+
         # Moderation action: an admin deactivates the teacher.
         with session_local() as db:
             teacher = db.scalar(select(User).where(User.email == teacher_email))
@@ -430,3 +451,15 @@ class TestDeactivatedAccountsAreHidden:
             json={"body": "hello"},
         )
         assert response.status_code in (403, 404)
+
+        # The deactivated account also leaves the member's own lists.
+        connections = client.get(
+            "/api/v1/network/connections/me", headers=_auth_headers(member_token)
+        ).json()
+        assert all(
+            item["receiver_profile"]["id"] != teacher_profile_id for item in connections["sent"]
+        )
+        applications = client.get(
+            "/api/v1/network/applications/me", headers=_auth_headers(member_token)
+        ).json()
+        assert all(item["opportunity"]["id"] not in teacher_posts for item in applications)

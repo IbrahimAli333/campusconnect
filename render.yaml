@@ -37,6 +37,14 @@ services:
       # app hides the panel while this is unset.
       - key: UNIVERSITY_PORTAL_ANTHROPIC_API_KEY
         sync: false
+      # The retired attendance/grades/schedule API is not used by the app.
+      - key: UNIVERSITY_PORTAL_ENABLE_LEGACY_ACADEMIC_API
+        value: "false"
+      # Server-side Terms gate (HTTP 428 until the current terms are
+      # accepted). Turn on only once app 1.1.0+ is the oldest build in use;
+      # older builds have no acceptance screen.
+      - key: UNIVERSITY_PORTAL_ENFORCE_TERMS_ACCEPTANCE
+        value: "false"
       # Crash/error reporting. Unset = reporting stays off entirely.
       - key: UNIVERSITY_PORTAL_SENTRY_DSN
         sync: false
