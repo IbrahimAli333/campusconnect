@@ -6,7 +6,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, s
 from sqlalchemy import and_, case, func, or_, select, update
 from sqlalchemy.orm import Session, joinedload
 
-from app.api.deps import get_current_active_user, require_current_terms
+from app.api.deps import require_current_terms, require_ugc_consent
 from app.core.action_rate_limit import enforce_action_limit, message_rate_limiter
 from app.api.v1.network import (
     _blocked_profile_ids,
@@ -33,7 +33,6 @@ from app.services.push import queue_push_to_users
 router = APIRouter(
     prefix="/network/messages",
     tags=["messages"],
-    dependencies=[Depends(require_current_terms)],
 )
 
 MESSAGE_PREVIEW_LENGTH = 140
@@ -113,7 +112,7 @@ def _message_response(message: Message) -> MessageRead:
 
 @router.get("/threads", response_model=list[MessageThreadRead])
 def list_my_threads(
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> list[MessageThreadRead]:
     profile = _get_or_create_profile(db, current_user)
@@ -190,7 +189,7 @@ def list_my_threads(
 
 @router.get("/unread", response_model=UnreadMessagesRead)
 def count_my_unread_messages(
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> UnreadMessagesRead:
     profile = _get_or_create_profile(db, current_user)
@@ -211,7 +210,7 @@ def list_thread_messages(
     profile_id: int,
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> list[MessageRead]:
     profile = _get_or_create_profile(db, current_user)
@@ -268,7 +267,7 @@ def send_message(
     profile_id: int,
     request: MessageCreate,
     background_tasks: BackgroundTasks,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_ugc_consent),
     db: Session = Depends(get_db),
 ) -> MessageRead:
     enforce_action_limit(message_rate_limiter, current_user.id)

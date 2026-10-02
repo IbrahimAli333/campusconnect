@@ -17,7 +17,7 @@ from sqlalchemy import and_, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.api.deps import get_current_active_user, require_current_terms
+from app.api.deps import get_current_active_user, require_current_terms, require_ugc_consent
 from app.core.action_rate_limit import (
     application_rate_limiter,
     assistant_rate_limiter,
@@ -80,7 +80,6 @@ from app.services.push import queue_push_to_users
 router = APIRouter(
     prefix="/network",
     tags=["network"],
-    dependencies=[Depends(require_current_terms)],
 )
 
 OWNER_REVIEWABLE_APPLICATION_STATUSES = {"submitted", "reviewing"}
@@ -799,7 +798,7 @@ def _connection_load_options():
 
 @router.get("/me", response_model=ProfileRead)
 def read_my_network_profile(
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> ProfileRead:
     profile = _get_or_create_profile(db, current_user)
@@ -809,7 +808,7 @@ def read_my_network_profile(
 @router.patch("/me", response_model=ProfileRead)
 def update_my_network_profile(
     request: ProfileUpdate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_ugc_consent),
     db: Session = Depends(get_db),
 ) -> ProfileRead:
     profile = _get_or_create_profile(db, current_user)
@@ -822,7 +821,7 @@ def update_my_network_profile(
 
 @router.get("/me/skills", response_model=list[UserSkillRead])
 def list_my_skills(
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> list[UserSkillRead]:
     profile = _get_or_create_profile(db, current_user)
@@ -839,7 +838,7 @@ def list_my_skills(
 )
 def add_my_skill(
     request: UserSkillCreate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_ugc_consent),
     db: Session = Depends(get_db),
 ) -> UserSkillRead:
     profile = _get_or_create_profile(db, current_user)
@@ -871,7 +870,7 @@ def add_my_skill(
 def update_my_skill(
     user_skill_id: int,
     request: UserSkillUpdate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_ugc_consent),
     db: Session = Depends(get_db),
 ) -> UserSkillRead:
     profile = _get_or_create_profile(db, current_user)
@@ -886,7 +885,7 @@ def update_my_skill(
 @router.delete("/me/skills/{user_skill_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_my_skill(
     user_skill_id: int,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> Response:
     profile = _get_or_create_profile(db, current_user)
@@ -898,7 +897,7 @@ def delete_my_skill(
 
 @router.get("/me/resume", response_model=list[ResumeEntryRead])
 def list_my_resume_entries(
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> list[ResumeEntryRead]:
     profile = _get_or_create_profile(db, current_user)
@@ -915,7 +914,7 @@ def list_my_resume_entries(
 )
 def add_my_resume_entry(
     request: ResumeEntryCreate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_ugc_consent),
     db: Session = Depends(get_db),
 ) -> ResumeEntryRead:
     profile = _get_or_create_profile(db, current_user)
@@ -930,7 +929,7 @@ def add_my_resume_entry(
 def update_my_resume_entry(
     resume_entry_id: int,
     request: ResumeEntryUpdate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_ugc_consent),
     db: Session = Depends(get_db),
 ) -> ResumeEntryRead:
     profile = _get_or_create_profile(db, current_user)
@@ -949,7 +948,7 @@ def update_my_resume_entry(
 )
 def delete_my_resume_entry(
     resume_entry_id: int,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> Response:
     profile = _get_or_create_profile(db, current_user)
@@ -963,7 +962,7 @@ def delete_my_resume_entry(
 def list_network_profiles(
     limit: int = Query(default=100, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> list[ProfileRead]:
     viewer_profile = _get_or_create_profile(db, current_user)
@@ -998,7 +997,7 @@ def list_network_profiles(
 
 @router.get("/recommendations/profiles", response_model=list[ProfileRecommendationRead])
 def recommend_profiles(
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> list[ProfileRecommendationRead]:
     viewer_profile = _get_or_create_profile(db, current_user)
@@ -1072,7 +1071,7 @@ def recommend_profiles(
 @router.get("/profiles/{profile_id}", response_model=ProfileRead)
 def read_network_profile(
     profile_id: int,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> ProfileRead:
     viewer_profile = _get_or_create_profile(db, current_user)
@@ -1091,7 +1090,7 @@ def read_network_profile(
 def list_my_applications(
     limit: int = Query(default=100, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> list[MyOpportunityApplicationRead]:
     profile = _get_or_create_profile(db, current_user)
@@ -1123,7 +1122,7 @@ def list_my_applications(
     response_model=list[OpportunityRecommendationRead],
 )
 def recommend_opportunities(
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> list[OpportunityRecommendationRead]:
     profile = _get_or_create_profile(db, current_user)
@@ -1196,7 +1195,7 @@ def update_application_status(
     application_id: int,
     request: OpportunityApplicationStatusUpdate,
     background_tasks: BackgroundTasks,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> OwnerOpportunityApplicationRead:
     profile = _get_or_create_profile(db, current_user)
@@ -1230,7 +1229,7 @@ def update_application_status(
 @router.delete("/applications/{application_id}", status_code=status.HTTP_204_NO_CONTENT)
 def withdraw_my_application(
     application_id: int,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> Response:
     profile = _get_or_create_profile(db, current_user)
@@ -1260,7 +1259,7 @@ def withdraw_my_application(
 def list_opportunities(
     limit: int = Query(default=100, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> list[OpportunityRead]:
     profile = _get_or_create_profile(db, current_user)
@@ -1287,7 +1286,7 @@ def list_opportunities(
 
 @router.get("/assistant", response_model=AssistantStatusRead)
 def read_assistant_status(
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
 ) -> AssistantStatusRead:
     """Cheap availability probe so clients can hide the assistant panel
     without spending a model call or the user's rate-limit budget."""
@@ -1304,7 +1303,7 @@ def read_assistant_status(
 @router.post("/assistant", response_model=AssistantResponse)
 def ask_assistant(
     payload: AssistantRequest,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_ugc_consent),
     db: Session = Depends(get_db),
 ) -> AssistantResponse:
     from app.services import assistant
@@ -1361,7 +1360,7 @@ def ask_assistant(
 def list_my_owned_opportunities(
     limit: int = Query(default=100, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> list[OpportunityRead]:
     profile = _get_or_create_profile(db, current_user)
@@ -1379,7 +1378,7 @@ def list_my_owned_opportunities(
 @router.get("/opportunities/{opportunity_id}", response_model=OpportunityDetailRead)
 def read_opportunity(
     opportunity_id: int,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> OpportunityDetailRead:
     profile = _get_or_create_profile(db, current_user)
@@ -1400,7 +1399,7 @@ def read_opportunity(
 )
 def list_opportunity_applications(
     opportunity_id: int,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> list[OwnerOpportunityApplicationRead]:
     profile = _get_or_create_profile(db, current_user)
@@ -1435,7 +1434,7 @@ def list_opportunity_applications(
 )
 def create_opportunity(
     request: OpportunityCreate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_ugc_consent),
     db: Session = Depends(get_db),
 ) -> OpportunityRead:
     enforce_action_limit(opportunity_rate_limiter, current_user.id)
@@ -1463,7 +1462,7 @@ def create_opportunity(
 def update_opportunity(
     opportunity_id: int,
     request: OpportunityUpdate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_ugc_consent),
     db: Session = Depends(get_db),
 ) -> OpportunityRead:
     profile = _get_or_create_profile(db, current_user)
@@ -1499,7 +1498,7 @@ def update_opportunity(
 def apply_to_opportunity(
     opportunity_id: int,
     request: Optional[OpportunityApplicationCreate] = None,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_ugc_consent),
     db: Session = Depends(get_db),
 ) -> OpportunityApplicationRead:
     enforce_action_limit(application_rate_limiter, current_user.id)
@@ -1555,7 +1554,7 @@ def apply_to_opportunity(
 
 @router.get("/connections/me", response_model=MyConnectionsRead)
 def list_my_connections(
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> MyConnectionsRead:
     profile = _get_or_create_profile(db, current_user)
@@ -1596,7 +1595,7 @@ def request_connection(
     profile_id: int,
     background_tasks: BackgroundTasks,
     request: Optional[ConnectionRequestCreate] = None,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_ugc_consent),
     db: Session = Depends(get_db),
 ) -> ConnectionRequestRead:
     enforce_action_limit(connection_rate_limiter, current_user.id)
@@ -1673,7 +1672,7 @@ def update_connection_status(
     connection_id: int,
     request: ConnectionRequestStatusUpdate,
     background_tasks: BackgroundTasks,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> ConnectionRequestRead:
     profile = _get_or_create_profile(db, current_user)
@@ -1729,7 +1728,7 @@ def update_connection_status(
 )
 def save_opportunity(
     opportunity_id: int,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> SavedOpportunityRead:
     profile = _get_or_create_profile(db, current_user)
@@ -1762,7 +1761,7 @@ def save_opportunity(
 )
 def unsave_opportunity(
     opportunity_id: int,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_current_terms),
     db: Session = Depends(get_db),
 ) -> Response:
     profile = _get_or_create_profile(db, current_user)

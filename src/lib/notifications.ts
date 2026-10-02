@@ -28,15 +28,21 @@ export async function getPushPreference(): Promise<boolean> {
 }
 
 async function storePushPreference(enabled: boolean): Promise<void> {
-  try {
-    await SecureStore.setItemAsync(PUSH_PREFERENCE_KEY, enabled ? "1" : "0");
-  } catch {
-    // Best-effort; the backend token state below is what stops delivery.
-  }
+  await SecureStore.setItemAsync(PUSH_PREFERENCE_KEY, enabled ? "1" : "0");
 }
 
 let registeredPushToken: string | null = null;
 let handlerConfigured = false;
+let automaticRegistrationBlocked = false;
+let pushOperation: Promise<unknown> = Promise.resolve();
+
+// Startup/language registration must finish before opt-out unregisters its
+// token. Otherwise a delayed registration could turn delivery back on.
+function serializePushOperation<T>(operation: () => Promise<T>): Promise<T> {
+  const result = pushOperation.then(operation);
+  pushOperation = result.catch(() => undefined);
+  return result;
+}
 
 function configureNotificationHandling(): void {
   if (handlerConfigured || !isPushSupported) {
@@ -85,8 +91,21 @@ export async function registerForPushNotifications(
   language?: Language,
   requestPermission = false,
 ): Promise<void> {
-  if (!isPushSupported || !(await getPushPreference())) {
-    return;
+  return serializePushOperation(async () => {
+    if (!isPushSupported || automaticRegistrationBlocked || !(await getPushPreference())) {
+      return;
+    }
+    await registerDevicePushToken(apiToken, language, requestPermission);
+  });
+}
+
+async function registerDevicePushToken(
+  apiToken: string,
+  language?: Language,
+  requestPermission = false,
+): Promise<PushToggleResult> {
+  if (!isPushSupported) {
+    return "failed";
   }
 
   try {
@@ -98,32 +117,38 @@ export async function registerForPushNotifications(
       permissions = await Notifications.requestPermissionsAsync();
     }
     if (!permissions.granted && permissions.ios?.status !== Notifications.IosAuthorizationStatus.PROVISIONAL) {
-      return;
+      return "permission-denied";
     }
 
     const projectId = expoProjectId();
     const pushToken = (await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined)).data;
-    await registerPushToken(apiToken, pushToken, Platform.OS === "ios" ? "ios" : "android", language);
+    // Keep the token even if the request fails: the server may have accepted
+    // registration before its response was lost, and opt-out must retry it.
     registeredPushToken = pushToken;
+    await registerPushToken(apiToken, pushToken, Platform.OS === "ios" ? "ios" : "android", language);
+    return "enabled";
   } catch (error) {
     // Push registration is best-effort (e.g. Expo Go, simulators, offline).
     console.warn("Push notification registration skipped:", error);
+    return "failed";
   }
 }
 
 /** Remove this device's push token from the backend; used on logout. */
 export async function unregisterPushNotifications(apiToken: string): Promise<void> {
-  const pushToken = registeredPushToken;
-  if (!isPushSupported || !pushToken) {
-    return;
-  }
+  return serializePushOperation(async () => {
+    const pushToken = registeredPushToken;
+    if (!isPushSupported || !pushToken) {
+      return;
+    }
 
-  registeredPushToken = null;
-  try {
-    await unregisterPushToken(apiToken, pushToken);
-  } catch (error) {
-    console.warn("Push token unregistration failed:", error);
-  }
+    try {
+      await unregisterPushToken(apiToken, pushToken);
+      registeredPushToken = null;
+    } catch (error) {
+      console.warn("Push token unregistration failed:", error);
+    }
+  });
 }
 
 // The app's own "turn on notifications?" sheet is shown once per device,
@@ -170,39 +195,58 @@ export async function setPushNotificationsEnabled(
     return "failed";
   }
 
-  await storePushPreference(enabled);
-
+  // Block background registrations immediately, including ones already queued.
+  // A failed opt-out remains retryable; only an explicit successful opt-in
+  // permits background registration again during this session.
   if (!enabled) {
-    try {
-      let pushToken = registeredPushToken;
-      if (!pushToken) {
-        const permissions = await Notifications.getPermissionsAsync();
-        if (permissions.granted) {
-          const projectId = expoProjectId();
-          pushToken = (await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined)).data;
+    automaticRegistrationBlocked = true;
+  }
+
+  return serializePushOperation(async () => {
+    if (!enabled) {
+      automaticRegistrationBlocked = true;
+      try {
+        let pushToken = registeredPushToken;
+        if (!pushToken) {
+          const permissions = await Notifications.getPermissionsAsync();
+          if (permissions.granted || permissions.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL) {
+            const projectId = expoProjectId();
+            pushToken = (await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined)).data;
+            registeredPushToken = pushToken;
+          }
         }
+        if (pushToken) {
+          await unregisterPushToken(apiToken, pushToken);
+        }
+        // Do not report/store off or discard the retry token until the server
+        // confirms removal and the device preference is durably saved.
+        await storePushPreference(false);
+        registeredPushToken = null;
+        return "disabled";
+      } catch (error) {
+        console.warn("Push opt-out failed:", error);
+        return "failed";
       }
-      registeredPushToken = null;
-      if (pushToken) {
-        await unregisterPushToken(apiToken, pushToken);
+    }
+
+    const previousPreference = await getPushPreference();
+    try {
+      await storePushPreference(true);
+      const result = await registerDevicePushToken(apiToken, language, true);
+      if (result === "enabled") {
+        automaticRegistrationBlocked = false;
+        return result;
       }
-      return "disabled";
+      // A failed opt-in must not silently opt the device in on next launch.
+      automaticRegistrationBlocked = true;
+      await storePushPreference(result === "permission-denied" ? false : previousPreference);
+      return result;
     } catch (error) {
-      console.warn("Push opt-out failed:", error);
+      automaticRegistrationBlocked = true;
+      console.warn("Push opt-in failed:", error);
       return "failed";
     }
-  }
-
-  await registerForPushNotifications(apiToken, language, true);
-  if (registeredPushToken) {
-    return "enabled";
-  }
-  const permissions = await Notifications.getPermissionsAsync().catch(() => null);
-  if (permissions && !permissions.granted) {
-    await storePushPreference(false);
-    return "permission-denied";
-  }
-  return "failed";
+  });
 }
 
 function tabFromResponse(response: Notifications.NotificationResponse | null): NetworkTab | null {

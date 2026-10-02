@@ -467,3 +467,104 @@ class TestServerSideTermsEnforcement:
             db.commit()
         headers = _headers(_login(client, "legacy@example.edu"))
         assert client.get("/api/v1/network/me", headers=headers).status_code == 200
+
+
+class TestContentConsentBeforeGlobalRollout:
+    @pytest.mark.parametrize(
+        ("method", "path", "payload"),
+        [
+            ("patch", "/me", {"bio": "New biography"}),
+            ("post", "/me/skills", {"name": "Python", "level": "advanced"}),
+            ("patch", "/me/skills/1", {"level": "expert"}),
+            ("post", "/me/resume", {"entry_type": "project", "title": "Project"}),
+            ("patch", "/me/resume/1", {"title": "Changed project"}),
+            ("post", "/opportunities", {"type": "project", "title": "Project", "description": "Description"}),
+            ("patch", "/opportunities/1", {"description": "Changed description"}),
+            ("post", "/opportunities/1/apply", {"note": "Application note"}),
+            ("post", "/connections/2/request", {"message": "Connection note"}),
+            ("post", "/messages/threads/2", {"body": "Message"}),
+            ("post", "/assistant", {"query": "Research project"}),
+        ],
+    )
+    @pytest.mark.parametrize("consent_state", ["missing", "outdated", "missing_timestamp", "missing_age"])
+    def test_unaccepted_content_is_rejected_before_processing(
+        self, client_and_sessionmaker, monkeypatch, method, path, payload, consent_state
+    ) -> None:
+        from datetime import datetime, timezone
+        from app.core.config import get_settings
+        from app.services import assistant
+
+        monkeypatch.setattr(get_settings(), "enforce_terms_acceptance", False)
+        client, session_local = client_and_sessionmaker
+        with session_local() as db:
+            user, _ = _make_user(db, "legacy@example.edu", "Legacy User")
+            if consent_state != "missing":
+                user.terms_version = "2000-01-01" if consent_state == "outdated" else CURRENT_TERMS_VERSION
+                if consent_state != "missing_age":
+                    user.age_confirmed_at = datetime.now(timezone.utc)
+                if consent_state != "missing_timestamp":
+                    user.terms_accepted_at = datetime.now(timezone.utc)
+            db.commit()
+
+        def unexpected_assistant_call(*args, **kwargs):
+            pytest.fail("Unaccepted content must not reach the external assistant")
+
+        monkeypatch.setattr(assistant, "find_matching_posts", unexpected_assistant_call)
+        headers = _headers(_login(client, "legacy@example.edu"))
+        assert client.get("/api/v1/auth/me", headers=headers).json()["terms_acceptance_required"] is True
+        response = client.request(method, f"/api/v1/network{path}", headers=headers, json=payload)
+        assert response.status_code == 428, response.text
+        # Consent is checked before role/object/provider checks or content writes.
+        with session_local() as db:
+            for model in (Opportunity, Message, ResumeEntry, UserSkill, ConnectionRequest, OpportunityApplication):
+                assert db.scalar(select(func.count(model.id))) == 0
+            assert db.scalar(select(UserProfile.bio)) is None
+
+    def test_legacy_reads_and_account_controls_then_acceptance_restore_writes(
+        self, client_and_sessionmaker, monkeypatch
+    ) -> None:
+        from app.core.config import get_settings
+
+        monkeypatch.setattr(get_settings(), "enforce_terms_acceptance", False)
+        client, _ = client_and_sessionmaker
+        response = _register(client, "old-build@example.edu")
+        assert response.status_code == 201
+        headers = _headers(response.json()["access_token"])
+        for path in ("/auth/me", "/auth/me/export", "/network/me", "/network/opportunities", "/network/messages/threads"):
+            assert client.get(f"/api/v1{path}", headers=headers).status_code == 200
+        assert client.patch("/api/v1/network/me", headers=headers, json={"bio": "Before"}).status_code == 428
+        accepted = client.post(
+            "/api/v1/auth/accept-terms", headers=headers,
+            json={"terms_version": CURRENT_TERMS_VERSION, "accept_terms": True, "confirm_age": True},
+        )
+        assert accepted.status_code == 200
+        changed = client.patch("/api/v1/network/me", headers=headers, json={"bio": "After"})
+        assert changed.status_code == 200
+        assert changed.json()["bio"] == "After"
+
+    @pytest.mark.parametrize("enforce_all", [False, True])
+    def test_safety_and_exit_controls_do_not_require_acceptance(
+        self, client_and_sessionmaker, monkeypatch, enforce_all
+    ) -> None:
+        from app.core.config import get_settings
+
+        monkeypatch.setattr(get_settings(), "enforce_terms_acceptance", enforce_all)
+        client, session_local = client_and_sessionmaker
+        with session_local() as db:
+            _make_user(db, "legacy@example.edu", "Legacy User")
+            _, other = _make_user(db, "other@example.edu", "Other User")
+            other_id = other.id
+            db.commit()
+        headers = _headers(_login(client, "legacy@example.edu"))
+        assert client.post(
+            "/api/v1/network/reports", headers=headers,
+            json={"target_type": "profile", "target_id": other_id},
+        ).status_code == 201
+        block_path = f"/api/v1/network/blocks/{other_id}"
+        assert client.post(block_path, headers=headers).status_code == 201
+        assert client.get("/api/v1/network/blocks/me", headers=headers).json()[0]["id"] == other_id
+        assert client.delete(block_path, headers=headers).status_code == 204
+        assert client.get("/api/v1/auth/me/export", headers=headers).status_code == 200
+        assert client.post(
+            "/api/v1/auth/delete-account", headers=headers, json={"password": PASSWORD}
+        ).status_code == 204

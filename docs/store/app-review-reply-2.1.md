@@ -1,3 +1,11 @@
+> **Historical archive — do not paste or resubmit this text for 1.1.0.**
+> The 2026-10-02 EAS Apple check reported app 6799017393 / 1.0.0 (2)
+> READY_FOR_DISTRIBUTION. Use a new 1.1.0 version and the verified draft in
+> release-1.1.0.md. Historical claims below (including physical-iPhone
+> recording, provider count and absence of diagnostics/AI) are not new QA
+> evidence. Never retrieve or paste reviewer passwords into chat; the owner
+> enters them directly in the store console using a secure handoff.
+
 # Reply to App Review — Guideline 2.1 "Information Needed" (2026-09-08)
 
 > **Update 2026-10-02 — read before reusing this text for any build after
