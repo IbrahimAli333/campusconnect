@@ -180,9 +180,10 @@ speaker's review**, especially the legal wording.
 3. **Fill in retention values** from real plans: Render Postgres backup
    retention, Render log retention, Sentry event retention, and the
    data-request response time.
-4. **Commit to a report-response time** (Apple expects action within
-   24 hours for UGC apps) and an appeal process. Replace the TODOs in
-   Terms §4–5 and the child-safety page.
+4. **Report response time is set to 8 hours** (Terms §4 and the
+   child-safety page; Apple expects action within 24 hours). Keep it
+   realistic: check reports (admin `/api/v1/admin/reports`) at least that
+   often. The appeal process in Terms §5 is still a TODO.
 5. **Publish the docs.** GitHub Pages serves `docs/` only from the branch
    configured in repo settings. The new `terms.html` is live only after
    this branch is merged there.
