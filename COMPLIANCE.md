@@ -181,9 +181,14 @@ speaker's review**, especially the legal wording.
    retention, Render log retention, Sentry event retention, and the
    data-request response time.
 4. **Report response time is set to 8 hours** (Terms §4 and the
-   child-safety page; Apple expects action within 24 hours). Keep it
-   realistic: check reports (admin `/api/v1/admin/reports`) at least that
-   often. The appeal process in Terms §5 is still a TODO.
+   child-safety page; Apple expects action within 24 hours). To get the
+   alerts:
+   - sign in to the app on your phone with the admin account and allow
+     notifications;
+   - optionally set the SMTP settings in Render for email alerts (see
+     `docs/store/release-1.1.0.md`).
+
+   The appeal process in Terms §5 is still a TODO.
 5. **Publish the docs.** GitHub Pages serves `docs/` only from the branch
    configured in repo settings. The new `terms.html` is live only after
    this branch is merged there.
@@ -245,6 +250,15 @@ speaker's review**, especially the legal wording.
   one-time OS dialog. Shown once per device; the Me-tab switch remains.
 - **SectionHeader chevron** and the unused header bell were removed in the
   redesign.
+- **Moderation alerts and queue:** every new report pushes an alert to all
+  active admin accounts (in their app language, never naming the
+  reporter). It also sends an email when
+  `UNIVERSITY_PORTAL_MODERATION_ALERT_EMAIL` and the SMTP settings are set.
+  Admins get a Moderation section at the top of the Me tab: open reports,
+  Resolve, Dismiss, Close post, and Deactivate account (with confirmation;
+  deactivation hides the account everywhere). This backs the 8-hour
+  response time in the Terms. Tested in `test_notifications.py` and in the
+  browser.
 
 ### Environment notes
 - docs.expo.dev was blocked by this environment's network policy (AGENTS.md

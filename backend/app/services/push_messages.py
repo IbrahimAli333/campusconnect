@@ -36,6 +36,17 @@ PUSH_TEMPLATES: dict[str, dict[str, tuple[str, str]]] = {
         "en": ("Application update", "Your application to \"{title}\" was rejected."),
         "ru": ("Обновление отклика", "Ваш отклик на «{title}» отклонён."),
     },
+    # Moderation alerts to admins. Never name the reporter.
+    "content_report_profile": {
+        "az": ("Yeni şikayət", "Profil şikayət edildi: {label}. 8 saat ərzində baxın."),
+        "en": ("New report to review", "Profile reported: {label}. Review within 8 hours."),
+        "ru": ("Новая жалоба", "Жалоба на профиль: {label}. Рассмотрите в течение 8 часов."),
+    },
+    "content_report_opportunity": {
+        "az": ("Yeni şikayət", "Elan şikayət edildi: {label}. 8 saat ərzində baxın."),
+        "en": ("New report to review", "Post reported: {label}. Review within 8 hours."),
+        "ru": ("Новая жалоба", "Жалоба на публикацию: {label}. Рассмотрите в течение 8 часов."),
+    },
     "message": {
         "az": ("{name} sizə yazdı", "{preview}"),
         "en": ("Message from {name}", "{preview}"),

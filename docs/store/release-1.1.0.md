@@ -33,6 +33,30 @@ account owner. See COMPLIANCE.md for the legal background.
 6. Later: once 1.1.0 is the oldest version in use, set
    `UNIVERSITY_PORTAL_ENFORCE_TERMS_ACCEPTANCE=true` in Render.
 
+## Moderation alerts (do this before launch)
+
+The Terms promise action on reports within 8 hours. To be told
+immediately:
+
+1. **Push:** install the 1.1.0 build on your phone, sign in with the admin
+   account (`UNIVERSITY_PORTAL_ADMIN_EMAIL`, i.e.
+   ibrahimaliworkacc@gmail.com, with the password from the Render
+   dashboard), and allow notifications. Every new report then arrives as
+   "New report to review"; tapping it opens Me → Moderation.
+2. **Email (optional, recommended as a backup):**
+   - In your Google account, turn on 2-step verification and create an
+     **app password** (Google Account → Security → App passwords).
+   - In Render, set `UNIVERSITY_PORTAL_SMTP_HOST=smtp.gmail.com`,
+     `UNIVERSITY_PORTAL_SMTP_USERNAME` and `UNIVERSITY_PORTAL_SMTP_FROM` to
+     the Gmail address, and `UNIVERSITY_PORTAL_SMTP_PASSWORD` to the app
+     password.
+   - `UNIVERSITY_PORTAL_MODERATION_ALERT_EMAIL` is already set to
+     ibrahimaliworkacc@gmail.com in render.yaml.
+   - Then replace the TODO in the privacy policy's provider table with
+     "Google LLC (Gmail)".
+3. Test it: file a report from another account and check that both the
+   push and the email arrive.
+
 ## What's New
 
 **Azerbaijani (Play primary listing):**

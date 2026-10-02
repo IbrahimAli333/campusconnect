@@ -421,3 +421,44 @@ export function updateConnectionStatus(
     ...jsonRequest({ status }),
   });
 }
+
+// --- Moderation (admin accounts only; the server enforces the role) ---
+
+export interface AdminReport {
+  id: number;
+  target_type: "profile" | "opportunity";
+  target_profile_id: number | null;
+  target_opportunity_id: number | null;
+  target_label: string;
+  target_user_id: number | null;
+  reporter_profile_id: number;
+  reporter_name: string;
+  reason: string | null;
+  status: "open" | "resolved" | "dismissed";
+  created_at: string;
+}
+
+export function listOpenReports(token: string): Promise<AdminReport[]> {
+  return requestNetworkJson<AdminReport[]>("/api/v1/admin/reports?status=open", token);
+}
+
+export function setReportStatus(token: string, reportId: number, status: "resolved" | "dismissed"): Promise<AdminReport> {
+  return requestNetworkJson<AdminReport>(`/api/v1/admin/reports/${reportId}`, token, {
+    method: "PATCH",
+    ...jsonRequest({ status }),
+  });
+}
+
+export function deactivateUser(token: string, userId: number): Promise<unknown> {
+  return requestNetworkJson<unknown>(`/api/v1/admin/users/${userId}`, token, {
+    method: "PATCH",
+    ...jsonRequest({ is_active: false }),
+  });
+}
+
+export function closeOpportunityAsAdmin(token: string, opportunityId: number): Promise<unknown> {
+  return requestNetworkJson<unknown>(`/api/v1/admin/opportunities/${opportunityId}`, token, {
+    method: "PATCH",
+    ...jsonRequest({ status: "closed" }),
+  });
+}

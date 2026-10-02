@@ -487,3 +487,143 @@ def test_message_push_uses_the_recipient_language(
     assert title == "Сообщение от Aydın"
     # Unknown or missing language falls back to Azerbaijani.
     assert render_push("application_accepted", None, {"title": "X"})[0] == "Müraciət yeniliyi"
+
+
+def _make_admin_with_device(
+    testing_session_local: sessionmaker[Session], push_token: str, language: str | None = "en"
+) -> None:
+    from app.core.security import hash_password
+    from app.models.push_token import PushToken
+    from app.models.user import User
+
+    with testing_session_local() as db:
+        admin = User(
+            email="moderator@example.edu",
+            hashed_password=hash_password("moderator-password"),
+            full_name="Moderator",
+            role="admin",
+            is_active=True,
+        )
+        db.add(admin)
+        db.flush()
+        db.add(PushToken(user_id=admin.id, token=push_token, platform="ios", language=language))
+        db.commit()
+
+
+def test_new_report_alerts_admins_without_naming_the_reporter(
+    seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+    captured_pushes: list[list[dict[str, Any]]],
+) -> None:
+    client, testing_session_local = seeded_client_and_sessionmaker
+    _make_admin_with_device(testing_session_local, "ExponentPushToken[admin]")
+    member_token = _login(client, "member")
+    teacher_profile_id = _profile_id_for_email(
+        testing_session_local, DEV_CREDENTIALS["teacher"]["email"]
+    )
+
+    response = client.post(
+        "/api/v1/network/reports",
+        headers=_auth_headers(member_token),
+        json={"target_type": "profile", "target_id": teacher_profile_id, "reason": "Spam"},
+    )
+
+    assert response.status_code == 201
+    pushes = _all_pushes(captured_pushes)
+    assert len(pushes) == 1
+    assert pushes[0]["to"] == "ExponentPushToken[admin]"
+    assert pushes[0]["title"] == "New report to review"
+    assert pushes[0]["body"].startswith("Profile reported: ")
+    assert pushes[0]["data"] == {"tab": "profile"}
+    # The reporter's identity never appears in the alert.
+    with testing_session_local() as db:
+        from app.models.user import User
+
+        member_name = db.scalar(
+            select(User.full_name).where(User.email == DEV_CREDENTIALS["member"]["email"])
+        )
+    assert member_name not in pushes[0]["body"]
+
+
+def test_report_alert_email_is_sent_when_configured(
+    seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+    captured_pushes: list[list[dict[str, Any]]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import app.services.email_alerts as email_alerts
+    from app.core.config import Settings
+
+    sent: list[Any] = []
+
+    class FakeSMTP:
+        def __init__(self, host: str, port: int, timeout: float) -> None:
+            sent.append(("connect", host, port))
+
+        def __enter__(self) -> "FakeSMTP":
+            return self
+
+        def __exit__(self, *args: Any) -> None:
+            return None
+
+        def starttls(self) -> None:
+            sent.append(("starttls",))
+
+        def login(self, username: str, password: str) -> None:
+            sent.append(("login", username))
+
+        def send_message(self, message: Any) -> None:
+            sent.append(("send", message["To"], message["Subject"], message.get_content()))
+
+    monkeypatch.setattr(
+        email_alerts,
+        "get_settings",
+        lambda: Settings(
+            moderation_alert_email="owner@example.com",
+            smtp_host="smtp.example.com",
+            smtp_username="owner@example.com",
+            smtp_password="app-password",
+            smtp_from="owner@example.com",
+        ),
+    )
+    monkeypatch.setattr(email_alerts.smtplib, "SMTP", FakeSMTP)
+
+    client, testing_session_local = seeded_client_and_sessionmaker
+    member_token = _login(client, "member")
+    opportunity_id = _opportunity_id_by_type(testing_session_local, "research")
+    response = client.post(
+        "/api/v1/network/reports",
+        headers=_auth_headers(member_token),
+        json={"target_type": "opportunity", "target_id": opportunity_id, "reason": "Scam"},
+    )
+
+    assert response.status_code == 201
+    assert ("connect", "smtp.example.com", 587) in sent
+    assert ("login", "owner@example.com") in sent
+    message = next(item for item in sent if item[0] == "send")
+    assert message[1] == "owner@example.com"
+    assert "New report" in message[2]
+    assert "Reason: Scam" in message[3]
+    assert "within 8 hours" in message[3]
+
+
+def test_report_alert_email_is_skipped_when_not_configured(
+    seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]],
+    captured_pushes: list[list[dict[str, Any]]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import app.services.email_alerts as email_alerts
+
+    def fail(*args: Any, **kwargs: Any) -> None:
+        raise AssertionError("SMTP must not be used without configuration")
+
+    monkeypatch.setattr(email_alerts.smtplib, "SMTP", fail)
+    client, testing_session_local = seeded_client_and_sessionmaker
+    member_token = _login(client, "member")
+    teacher_profile_id = _profile_id_for_email(
+        testing_session_local, DEV_CREDENTIALS["teacher"]["email"]
+    )
+    response = client.post(
+        "/api/v1/network/reports",
+        headers=_auth_headers(member_token),
+        json={"target_type": "profile", "target_id": teacher_profile_id},
+    )
+    assert response.status_code == 201

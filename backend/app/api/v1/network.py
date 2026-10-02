@@ -73,6 +73,7 @@ from app.schemas.network import (
     UserSkillRead,
     UserSkillUpdate,
 )
+from app.services.email_alerts import queue_moderation_email
 from app.services.push import queue_push_to_users
 
 
@@ -1782,9 +1783,48 @@ def unsave_opportunity(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+def _alert_moderators(
+    db: Session,
+    background_tasks: BackgroundTasks,
+    target_type: str,
+    target_label: str,
+    report: ContentReport,
+) -> None:
+    """Tell every active admin about a new report straight away (push, plus
+    email when configured), so reports can be acted on within the 8 hours
+    the Terms promise. The reporter's identity is never included."""
+    admin_ids = list(
+        db.scalars(
+            select(User.id).where(User.role == "admin", User.is_active.is_(True))
+        ).all()
+    )
+    label = target_label if len(target_label) <= 80 else f"{target_label[:79]}…"
+    queue_push_to_users(
+        db,
+        background_tasks,
+        admin_ids,
+        template=f"content_report_{target_type}",
+        values={"label": label},
+        data={"tab": "profile"},
+    )
+    kind = "Profile" if target_type == "profile" else "Post"
+    queue_moderation_email(
+        background_tasks,
+        subject=f"[Unibridge] New report #{report.id}: {kind.lower()} \"{label}\"",
+        body=(
+            f"{kind} reported: {target_label}\n"
+            f"Reason: {report.reason or '(none given)'}\n"
+            f"Report #{report.id}, filed {report.created_at:%Y-%m-%d %H:%M} UTC.\n\n"
+            "Review it within 8 hours in the Unibridge app (Me tab, Moderation) "
+            "with the admin account.\n"
+        ),
+    )
+
+
 @router.post("/reports", response_model=ContentReportRead, status_code=status.HTTP_201_CREATED)
 def report_content(
     request: ContentReportCreate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ) -> ContentReportRead:
@@ -1801,6 +1841,7 @@ def report_content(
                 detail="You cannot report your own profile",
             )
         target_profile_id = target.id
+        target_label = target.user.full_name
     else:
         opportunity = _get_opportunity(db, request.target_id)
         if opportunity.owner_profile_id == reporter_profile.id:
@@ -1809,6 +1850,7 @@ def report_content(
                 detail="You cannot report your own post",
             )
         target_opportunity_id = opportunity.id
+        target_label = opportunity.title
 
     existing = db.scalar(
         select(ContentReport).where(
@@ -1834,6 +1876,7 @@ def report_content(
     db.add(report)
     db.commit()
     db.refresh(report)
+    _alert_moderators(db, background_tasks, request.target_type, target_label, report)
     return ContentReportRead(
         id=report.id,
         target_type=request.target_type,

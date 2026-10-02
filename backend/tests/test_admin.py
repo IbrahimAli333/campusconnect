@@ -148,6 +148,8 @@ def test_admin_lists_and_resolves_reports(
     assert report["status"] == "open"
     assert report["reporter_name"]
     assert report["target_label"]
+    # The reported account is identified so it can be deactivated.
+    assert isinstance(report["target_user_id"], int)
 
     resolved = client.patch(
         f"/api/v1/admin/reports/{report_id}",

@@ -13,6 +13,8 @@ class AdminReportRead(BaseModel):
     target_profile_id: Optional[int]
     target_opportunity_id: Optional[int]
     target_label: str
+    # Account behind the reported profile or post, for deactivation.
+    target_user_id: Optional[int] = None
     reporter_profile_id: int
     reporter_name: str
     reason: Optional[str]

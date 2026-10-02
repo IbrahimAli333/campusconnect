@@ -148,6 +148,7 @@ import type {
 } from "./shared";
 import { networkStyles } from "./styles";
 import { AccountPrivacySection } from "./AccountPrivacySection";
+import { ModerationSection } from "./ModerationSection";
 import { translateApiError } from "../../lib/i18n/apiErrors";
 
 export function ProfileScreen({
@@ -496,6 +497,8 @@ export function ProfileScreen({
 
   return (
     <View style={styles.stack}>
+      {account?.role === "admin" ? <ModerationSection token={token} /> : null}
+
       {profileState.error ? (
         <ErrorState
           message={translateApiError(t, profileState.error.message)}
