@@ -146,18 +146,16 @@ and account deletion are available in-app.
   App content → Target audience and content).
 - Not appealing to children. Signup requires confirming age 18 or older.
 
-## Contact and business details
+## Contact details
 
-Never invent these; fill them in from real records.
+Unibridge is run by an individual, not a company.
 
-- **Developer name shown on Play:** TODO (must match the verified Play
-  developer account)
-- **Developer address:** TODO (Play shows it publicly for organisation
-  accounts and some personal accounts)
-- **Phone:** TODO (required by Play account verification; can be hidden
-  for personal accounts)
+- **Developer name:** Ibrahim Ali Khudiyev (personal Play developer account). Google
+  verifies your address and phone privately; for a free app on a personal
+  account they are not shown on the listing.
 - **Contact email:** ibrahimaliworkacc@gmail.com
-- **EU DSA trader status:** TODO — declare in Play Console; lawyer to advise
+- **EU DSA trader status:** YOU declare it in Play Console. A free app with
+  no income, run by an individual, is normally declared **non-trader**.
 
 ## Checklist before submitting
 

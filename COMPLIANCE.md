@@ -172,10 +172,11 @@ speaker's review**, especially the legal wording.
 1. **Lawyer review** of all four pages and this file. Then remove the
    DRAFT banners and fill in every `TODO`. Search for `class="todo"` in
    `docs/` and `TODO` in `docs/store/`.
-2. **Fill in business details** (never invented): operator legal name,
-   address, company registration number, phone (store accounts), governing
-   law and venue, liability cap, DPO / EU representative if required, and
-   EU DSA trader status.
+2. **Remaining Terms details:** the operator is now filled in
+   (Ibrahim Ali Khudiyev, an individual; no company, so no address, registration
+   number, or business phone is published). Still open: governing law
+   and venue, liability cap, and declaring EU DSA trader status
+   (normally "non-trader" for a free app run by an individual).
 3. **Fill in retention values** from real plans: Render Postgres backup
    retention, Render log retention, Sentry event retention, and the
    data-request response time.

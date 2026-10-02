@@ -43,7 +43,7 @@ campus,university,research,startup,internship,networking,students,faculty,mentor
 - **Privacy policy URL:** https://ibrahimali333.github.io/campusconnect/privacy-policy.html
 - **Terms of Service URL:** https://ibrahimali333.github.io/campusconnect/terms.html
 - **Contact email:** ibrahimaliworkacc@gmail.com
-- **Copyright:** 2026 Ibrahim Ali (user's preferred public name; "2026 Unibridge" is the no-personal-name alternative)
+- **Copyright:** `2026 Ibrahim Ali Khudiyev`
 
 ## App Review Information (sign-in required)
 
@@ -95,22 +95,18 @@ the native iPhone 17 Pro Max capture (1320x2868); it accepts 1284x2778.
 - **UGC moderation (1.2):** report + block + in-app contact are already
   implemented; mention them in Review Notes if asked.
 
-## Contact and business details
+## Contact details
 
-Never invent these; fill them in from real records.
+Unibridge is run by an individual, not a company, so there is no business
+address, phone, or registration number to publish.
 
-- **Seller / developer legal name:** TODO (must match the Apple Developer
-  account; individual name or registered company)
-- **Business address:** TODO (Apple may display it, e.g. for EU Digital
-  Services Act trader status)
-- **EU DSA trader status:** TODO — declare in App Store Connect
-  (Business → Trader status). A trader must publish address, phone, and
-  email; lawyer to advise whether a free app from this operator is a
-  trader.
-- **Phone number:** TODO (required if declared a trader)
+- **Seller / developer name:** Ibrahim Ali Khudiyev (personal Apple Developer account;
+  Apple shows the account holder's name)
 - **Support / contact email:** ibrahimaliworkacc@gmail.com
-- **Company registration number (D-U-N-S for organisations):** TODO if
-  the account is an organisation
+- **EU DSA trader status:** YOU declare it in App Store Connect
+  (Business → Trader status). A free app with no income, run by an
+  individual, is normally declared **non-trader**, so no address or phone
+  is published. Choose "trader" only if you start earning from the app.
 
 ## Release 1.1.0
 
