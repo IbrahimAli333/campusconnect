@@ -26,6 +26,17 @@ class ConsentFields(BaseModel):
     def has_consent(self) -> bool:
         return self.accept_terms and self.confirm_age
 
+    def is_pre_consent_client(self) -> bool:
+        """True for app builds older than 1.1.0, which never send the consent
+        fields at all (newer builds always send both, ticked or not)."""
+        return not ({"accept_terms", "confirm_age"} & self.model_fields_set)
+
+    def may_skip_consent(self, enforce_terms_acceptance: bool) -> bool:
+        """Old builds have no consent boxes, so while the server-side terms
+        gate is off their signups are still allowed; those accounts start with
+        no recorded acceptance and must accept in 1.1.0+ before using it."""
+        return self.is_pre_consent_client() and not enforce_terms_acceptance
+
 
 class RegisterRequest(ConsentFields):
     email: str = Field(min_length=3, max_length=255)

@@ -141,7 +141,9 @@ export function loginWithGoogle(idToken: string, consent?: SignupConsent): Promi
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ id_token: idToken, ...consent }),
+    // Always send both consent fields: the server treats a request without
+    // them as a pre-1.1.0 build and would skip the consent step.
+    body: JSON.stringify({ id_token: idToken, accept_terms: false, confirm_age: false, ...consent }),
   });
 }
 

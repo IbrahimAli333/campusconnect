@@ -179,7 +179,10 @@ def register(
     # Every attempt counts against the window, not just rejected ones.
     registration_rate_limiter.record_failure(client_ip)
 
-    if not request.has_consent():
+    consented = request.has_consent()
+    if not consented and not request.may_skip_consent(
+        get_settings().enforce_terms_acceptance
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=CONSENT_REQUIRED_DETAIL,
@@ -199,7 +202,8 @@ def register(
         role=UserRole.member.value,
         is_active=True,
     )
-    _record_consent(user)
+    if consented:
+        _record_consent(user)
     db.add(user)
     db.flush()
     db.add(
@@ -333,8 +337,11 @@ def login_with_google(
     user = db.scalar(select(User).where(User.email == identity.email))
     if user is None:
         # A new account is never created without explicit consent. 428 tells
-        # the app to show the signup consent boxes and retry.
-        if not request.has_consent():
+        # the app to show the signup consent boxes and retry. Builds older
+        # than 1.1.0 cannot show them; see may_skip_consent.
+        if not request.has_consent() and not request.may_skip_consent(
+            get_settings().enforce_terms_acceptance
+        ):
             raise HTTPException(
                 status_code=status.HTTP_428_PRECONDITION_REQUIRED,
                 detail=CONSENT_REQUIRED_DETAIL,
