@@ -8,9 +8,12 @@ account owner. See COMPLIANCE.md for the legal background.
 1. YOU: merge the release branch into `main`.
 2. Render deploys the backend; its pre-deploy step runs migrations
    `202610020010` (consent fields) and `202610020011` (push language).
-   Confirm `UNIVERSITY_PORTAL_ENABLE_LEGACY_ACADEMIC_API=false` and
-   `UNIVERSITY_PORTAL_ENFORCE_TERMS_ACCEPTANCE=false` in the dashboard
-   (render.yaml sets both).
+   In the dashboard, check the deploy's pre-deploy log shows both
+   migrations and `Provisioned admin:...`. If the service is not managed by
+   the Blueprint, render.yaml's new env vars were not applied: the code
+   defaults are safe (legacy API off in production, terms enforcement off),
+   but `UNIVERSITY_PORTAL_MODERATION_ALERT_EMAIL` and the SMTP settings
+   must then be added by hand.
 3. Build and submit (EAS increments the build number automatically):
    ```
    EXPO_PUBLIC_API_URL=https://campusconnect-api-u7tq.onrender.com npm run build:ios:production
