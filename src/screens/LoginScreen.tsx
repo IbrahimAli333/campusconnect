@@ -879,8 +879,14 @@ export function LoginScreen({
                   <ConsentCheckboxes
                     acceptTerms={acceptTerms}
                     confirmAge={confirmAge}
-                    onAcceptTermsChange={setAcceptTerms}
-                    onConfirmAgeChange={setConfirmAge}
+                    onAcceptTermsChange={(next) => {
+                      setAcceptTerms(next);
+                      setError(null);
+                    }}
+                    onConfirmAgeChange={(next) => {
+                      setConfirmAge(next);
+                      setError(null);
+                    }}
                   />
 
                   {error ? (
@@ -936,7 +942,7 @@ export function LoginScreen({
                 </>
               )}
 
-              <LegalLinks align="center" />
+              {authMode === "login" ? <LegalLinks align="center" /> : null}
 
               {DEMO_LOGINS_ENABLED ? (
                 <View style={loginStyles.apiHint}>

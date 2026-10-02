@@ -839,7 +839,7 @@ export function ProfileScreen({
 
       <AccountPrivacySection account={account} token={token} />
 
-      <View style={[styles.card, styles.compactCard]}>
+      <View style={[styles.card, styles.compactCard, networkStyles.contentSizedCard]}>
         <SectionHeader action={t("Irreversible")} icon={Trash2} title={t("Delete Account")} />
         <Text style={styles.smallText}>
           {t("Permanently removes your account, profile, skills, portfolio, posts, applications, saved posts, connections, messages, and push notification registrations. This cannot be undone. You can download your data first.")}

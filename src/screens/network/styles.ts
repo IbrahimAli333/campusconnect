@@ -3,6 +3,13 @@ import { StyleSheet } from "react-native";
 import { palette, paperShadow, paperTexture, webSafeTextShadow } from "../../styles/theme";
 
 export const networkStyles = StyleSheet.create({
+  // styles.card is flex: 1, which makes stacked cards split the available
+  // height equally and clips longer ones; this sizes a card to its content.
+  contentSizedCard: {
+    flexBasis: "auto",
+    flexGrow: 0,
+    flexShrink: 0,
+  },
   actionMessage: {
     color: palette.green,
     fontSize: 12,

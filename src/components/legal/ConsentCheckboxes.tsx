@@ -1,4 +1,4 @@
-import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Check, ExternalLink } from "lucide-react-native";
 
 import { useI18n } from "../../lib/i18n";
@@ -18,8 +18,23 @@ function Checkbox({
   label: string;
   onChange: (next: boolean) => void;
 }) {
+  // react-native-web activates non-"button" roles only with Enter, but a
+  // checkbox must also toggle with Space for keyboard users (WCAG 2.1.1).
+  const webKeyboardProps =
+    Platform.OS === "web"
+      ? {
+          onKeyDown: (event: { key: string; preventDefault: () => void }) => {
+            if (event.key === " " || event.key === "Spacebar") {
+              event.preventDefault();
+              onChange(!checked);
+            }
+          },
+        }
+      : {};
+
   return (
     <Pressable
+      {...webKeyboardProps}
       accessibilityLabel={label}
       accessibilityRole="checkbox"
       accessibilityState={{ checked }}

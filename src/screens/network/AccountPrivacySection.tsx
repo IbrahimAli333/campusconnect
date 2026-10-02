@@ -113,7 +113,7 @@ export function AccountPrivacySection({ account, token }: { account?: AuthUser |
 
   return (
     <>
-      <View style={[styles.card, styles.compactCard]}>
+      <View style={[styles.card, styles.compactCard, networkStyles.contentSizedCard]}>
         <SectionHeader action={t("This device")} icon={Bell} title={t("Notifications")} />
         {isPushSupported ? (
           <>
@@ -149,7 +149,7 @@ export function AccountPrivacySection({ account, token }: { account?: AuthUser |
         )}
       </View>
 
-      <View style={[styles.card, styles.compactCard]}>
+      <View style={[styles.card, styles.compactCard, networkStyles.contentSizedCard]}>
         <SectionHeader action={t("JSON")} icon={Download} title={t("Your Data")} />
         <Text style={styles.smallText}>
           {t("Download a copy of your account, profile, skills, portfolio, posts, applications, connections, and messages.")}
@@ -164,7 +164,7 @@ export function AccountPrivacySection({ account, token }: { account?: AuthUser |
         <ActionMessage error={exportState === "error"}>{exportMessage}</ActionMessage>
       </View>
 
-      <View style={[styles.card, styles.compactCard]}>
+      <View style={[styles.card, styles.compactCard, networkStyles.contentSizedCard]}>
         <SectionHeader action={t("Documents")} icon={Scale} title={t("Legal")} />
         {account?.terms_accepted_at && account.terms_version ? (
           <Text style={styles.smallText}>
