@@ -492,4 +492,15 @@ export const az: Record<string, string> = {
   "Delete {name}": "{name}: sil",
   "Your request is sent to Anthropic's Claude AI to rank posts. Do not include personal information.": "Sorğunuz elanları sıralamaq üçün Anthropic şirkətinin Claude süni intellektinə göndərilir. Şəxsi məlumat daxil etməyin.",
   "Applicant has not listed portfolio skills.": "Namizəd portfolio bacarıqlarını qeyd etməyib.",
+
+  // Redesigned app shell
+  "Hello, {name}": "Salam, {name}",
+  "Find students, mentors, and teams across your university.": "Universitetinizdəki tələbələri, mentorları və komandaları tapın.",
+  "Research, startups, internships, jobs, and projects.": "Tədqiqat, startaplar, təcrübə, iş və layihələr.",
+  "My applications": "Müraciətlərim",
+  "Track every application from submission to decision.": "Hər müraciəti göndərişdən qərara qədər izləyin.",
+  "My profile": "Profilim",
+  "Your portfolio, privacy, and account settings.": "Portfoliunuz, məxfilik və hesab parametrləri.",
+  "My network": "Şəbəkəm",
+  "Connections, requests, and messages.": "Əlaqələr, sorğular və mesajlar.",
 };

@@ -314,8 +314,10 @@ it is needed for the feature named.
 | `docs/store/assets/app-icon-512.png`, `feature-graphic.png` | Store listing | Derived from the same logo | Same as above |
 | `docs/store/assets/screenshot-*.png`, `ios/`, `ios-6.5/`, `ipad-13/` | Store screenshots | Captures of this app with fictional seed data (e.g. "Aydin Mammadli", "Prof. Leyla") | Own work. Real university names appear as labels; see the lawyer questions. |
 | Icons in the app | `lucide-react-native` | Open source | **ISC** (keep the notice; see "open-source notices") |
-| Login illustration ("paper scene") | `LoginScreen.tsx` | Drawn with plain Views/CSS | Own work |
-| Fonts | App and docs pages | System fonts only (San Francisco / Roboto / Segoe UI via the platform). No font files are bundled and no web fonts are loaded | No licence needed |
+| Azerbaijani ornaments (8-point star, buta/paisley, flag stripe, Flame Towers skyline) | `src/components/brand/Ornaments.tsx` | Drawn from scratch as SVG paths for Unibridge (2026-10-02 redesign); no third-party artwork or tracing | Own work. The flag colours and star are a national symbol used decoratively; see the lawyer questions. |
+| App font: **Inter** (Regular–ExtraBold) | Bundled via `@expo-google-fonts/inter` | Rasmus Andersson / Google Fonts | **SIL Open Font License 1.1** — free to embed in apps; keep `node_modules/@expo-google-fonts/inter/LICENSE_FONT` with the open-source notices. Covers Azerbaijani (Ə ə, Ğ ğ, ı, İ, Ş ş, Ç ç, Ö ö, Ü ü), Cyrillic, and ₼ (checked against the font's glyph table). |
+| Docs pages fonts | `docs/*.html` | System font stack, no web fonts | No licence needed |
+| UI libraries added in the redesign | React Navigation (native, bottom-tabs), react-native-screens, react-native-safe-area-context, react-native-reanimated, react-native-worklets, react-native-gesture-handler, @gorhom/bottom-sheet, expo-haptics, expo-linear-gradient, expo-font | All **MIT**; versions pinned to the Expo SDK 54 bundle | Add to the open-source notices page |
 | JS dependencies (shipped) | `package-lock.json` | MIT 682, ISC 52, BSD 41, Apache-2.0 13, MPL-2.0 12 (build tools), others | No copyleft in the app bundle. `node-forge` is BSD/GPL dual-licensed (use BSD). `qrcode-terminal`/`requireg` have unknown licences but are Expo CLI dev tools, not shipped. |
 | Python dependencies (server) | `backend/requirements.txt` | MIT/BSD/Apache; `psycopg` is LGPL-3.0 | Used unmodified on our own server, not distributed. Fine, but confirm with the lawyer. |
 
@@ -416,6 +418,10 @@ it is needed for the feature named.
     with any university" statement?
 18. **Brand:** clearance for the name "Unibridge" and ownership of the
     UB logo.
+    Also: the redesign uses Azerbaijani national motifs decoratively
+    (flag colours, the 8-point star, a stylised Flame Towers skyline). Is
+    that permitted under Azerbaijan's rules on state symbols, and is the
+    Flame Towers silhouette free of building-design or trademark claims?
 19. **EU DSA trader status** for the App Store and Play: is the operator
     a "trader"? If so, its address and phone become public.
 20. **Open-source licences:** confirm the plan for notices (ISC/MIT/BSD)

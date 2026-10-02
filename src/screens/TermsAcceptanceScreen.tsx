@@ -7,7 +7,7 @@ import { ConsentCheckboxes, openLegalPage } from "../components/legal/ConsentChe
 import { DELETE_ACCOUNT_URL } from "../lib/legal";
 import type { AuthUser } from "../lib/api/auth";
 import { useI18n } from "../lib/i18n";
-import { palette, styles } from "../styles/theme";
+import { fonts, palette, styles } from "../styles/theme";
 
 /**
  * Shown instead of the app whenever the signed-in user has not accepted the
@@ -145,9 +145,10 @@ const termsStyles = StyleSheet.create({
   title: {
     color: palette.text,
     fontSize: 22,
-    fontWeight: "800",
+    fontFamily: fonts.extrabold,
   },
   body: {
+    fontFamily: fonts.regular,
     color: palette.muted,
     fontSize: 15,
     lineHeight: 22,
@@ -155,7 +156,7 @@ const termsStyles = StyleSheet.create({
   error: {
     color: palette.red,
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
   },
   primary: {
     alignItems: "center",
@@ -170,12 +171,13 @@ const termsStyles = StyleSheet.create({
   primaryText: {
     color: palette.surface,
     fontSize: 16,
-    fontWeight: "800",
+    fontFamily: fonts.extrabold,
   },
   disabled: {
     opacity: 0.6,
   },
   note: {
+    fontFamily: fonts.regular,
     color: palette.muted,
     fontSize: 13,
     lineHeight: 19,
@@ -189,7 +191,7 @@ const termsStyles = StyleSheet.create({
   linkText: {
     color: palette.blue,
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     textDecorationLine: "underline",
   },
   secondary: {
@@ -206,6 +208,6 @@ const termsStyles = StyleSheet.create({
   secondaryText: {
     color: palette.text,
     fontSize: 15,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
   },
 });

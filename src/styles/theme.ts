@@ -1,38 +1,82 @@
 import { Platform, StyleSheet, type TextStyle, type ViewStyle } from "react-native";
 
+/**
+ * Unibridge design tokens — "Caspian" theme.
+ *
+ * Inspired by Azerbaijan: the flag (sky blue, red, green, and the white
+ * 8-point star), the Caspian Sea, Baku nights, pomegranate (nar), and
+ * saffron. Every text/background pair below is checked to WCAG AA
+ * (4.5:1 text, 3:1 UI boundaries); see COMPLIANCE.md.
+ */
 export const palette = {
-  page: "#F6F8FC",
+  // Surfaces: warm ivory like silk carpet wool, with white cards.
+  page: "#F6F3ED",
   surface: "#FFFFFF",
-  surfaceAlt: "#F0F3F7",
+  surfaceAlt: "#F1ECE3",
   paper: "#FFFFFF",
-  paperMuted: "#E4EAF1",
+  paperMuted: "#EAE4D9",
   bond: "#FFFFFF",
-  buff: "#FBEBC8",
-  buffBorder: "#E4B75F",
-  charcoal: "#1E293B",
-  navy: "#0B2350",
-  navySoft: "#E7EEF4",
-  border: "#DCE3EC",
-  text: "#0F172A",
-  muted: "#5A6679",
-  // Darkened from #8C9AAC (2.86:1 on white) so placeholder and helper text
-  // reach WCAG AA 4.5:1 on every light surface it sits on.
-  faint: "#617085",
+  // Saffron highlight (strong match scores).
+  buff: "#FBF0D9",
+  buffBorder: "#EBC77A",
+  // Ink and Baku-night navy.
+  charcoal: "#13233F",
+  navy: "#0E2440",
+  navySoft: "#E6ECF3",
+  border: "#E6E0D5",
+  hairline: "#EEE8DD",
+  text: "#13233F",
+  muted: "#576071", // 5.7:1 on page
+  faint: "#5E6676", // >=4.5:1 on page, white, and surfaceAlt
   // Text-field boundary: 3:1 against white and page (WCAG 1.4.11).
-  fieldBorder: "#8390A3",
-  blue: "#2563EB",
-  blueSoft: "#EAF1FD",
-  teal: "#2563EB",
-  tealSoft: "#E8F0FE",
-  amber: "#AE5009", // was #B45309: 4.26:1 on buff / 4.49:1 on amberSoft
-  amberSoft: "#FDF1DC",
-  red: "#D52222", // was #DC2626: 4.23:1 on redSoft
-  redSoft: "#FDECEC",
-  green: "#157F3C", // was #15803D: 4.46:1 on greenSoft
-  greenSoft: "#E7F5EC",
-  violet: "#7C3AED",
-  violetSoft: "#F1EBFE",
+  fieldBorder: "#8B8578",
+  // Caspian blue is the primary/action colour (6.5:1 with white text).
+  blue: "#0B6585",
+  blueSoft: "#E3F1F5",
+  teal: "#0B6585",
+  tealSoft: "#E3F1F5",
+  amber: "#8A5300",
+  amberSoft: "#FBF0D9",
+  red: "#B3261E", // pomegranate
+  redSoft: "#FBE9E7",
+  green: "#2F7A2A",
+  greenSoft: "#E7F3E3",
+  violet: "#6B3FA0",
+  violetSoft: "#F1EAF9",
+  // Azerbaijani accents (decorative; not used for small text).
+  caspian: "#0B6585",
+  caspianDeep: "#084E68",
+  caspianSoft: "#E3F1F5",
+  flagBlue: "#00B5E2",
+  flagRed: "#EF3340",
+  flagGreen: "#509E2F",
+  saffron: "#F2B233",
+  sky: "#8FD3F0",
+  pomegranate: "#B3261E",
 };
+
+/** Header gradient: Baku night fading into the Caspian. */
+export const heroGradient = ["#0E2440", "#0B4A66", "#0B6585"] as const;
+
+/**
+ * Inter (SIL Open Font License 1.1) — covers every Azerbaijani letter
+ * (Ə ə, Ğ ğ, I ı, İ, Ş ş, Ç ç, Ö ö, Ü ü), Cyrillic for Russian, and ₼.
+ * Each weight is its own family so Android never fakes bold.
+ */
+export const fonts = {
+  regular: "Inter_400Regular",
+  medium: "Inter_500Medium",
+  semibold: "Inter_600SemiBold",
+  bold: "Inter_700Bold",
+  extrabold: "Inter_800ExtraBold",
+} as const;
+
+export const radii = {
+  sm: 10,
+  md: 14,
+  lg: 20,
+  pill: 999,
+} as const;
 
 interface ShadowStyleOptions {
   color: string;
@@ -42,6 +86,7 @@ interface ShadowStyleOptions {
   };
   opacity: number;
   radius: number;
+  elevation?: number;
 }
 
 interface TextShadowStyleOptions {
@@ -53,7 +98,7 @@ interface TextShadowStyleOptions {
   radius: number;
 }
 
-export function platformShadow({ color, offset, opacity, radius }: ShadowStyleOptions): ViewStyle {
+export function platformShadow({ color, elevation = 2, offset, opacity, radius }: ShadowStyleOptions): ViewStyle {
   if (Platform.OS === "web") {
     return {
       boxShadow: `${offset.width}px ${offset.height}px ${radius}px ${color}${Math.round(opacity * 255)
@@ -63,6 +108,7 @@ export function platformShadow({ color, offset, opacity, radius }: ShadowStyleOp
   }
 
   return {
+    elevation,
     shadowColor: color,
     shadowOffset: offset,
     shadowOpacity: opacity,
@@ -71,9 +117,6 @@ export function platformShadow({ color, offset, opacity, radius }: ShadowStyleOp
 }
 
 type WebPaperStyle = ViewStyle & {
-  backgroundBlendMode?: string;
-  backgroundImage?: string;
-  backgroundSize?: string;
   boxShadow?: string;
   outlineColor?: string;
   outlineStyle?: string;
@@ -85,32 +128,31 @@ type WebTextStyle = TextStyle & {
 };
 
 export function paperTexture(_kind: "page" | "sheet" = "sheet"): ViewStyle {
-  // Flat surfaces: the old paper-grain texture is retired with the parchment theme.
+  // Flat surfaces; kept so existing call sites stay valid.
   return {};
 }
 
+/** Soft, warm elevation. "cutout" is the coloured glow under primary buttons. */
 export function paperShadow(kind: "sheet" | "strip" | "pressed" | "cutout" | "sunken" = "sheet"): ViewStyle {
-  if (Platform.OS === "web") {
-    const shadows: Record<typeof kind, string> = {
-      cutout: "0 2px 6px rgba(37, 99, 235, 0.26), 0 10px 22px rgba(37, 99, 235, 0.15)",
-      pressed: "inset 0 1px 2px rgba(15, 23, 42, 0.1)",
-      sheet: "0 1px 2px rgba(15, 23, 42, 0.05), 0 10px 28px rgba(15, 23, 42, 0.07)",
-      strip: "0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 18px rgba(15, 23, 42, 0.06)",
-      sunken: "inset 0 1px 2px rgba(15, 23, 42, 0.07)",
-    };
-
-    return { boxShadow: shadows[kind] } as WebPaperStyle;
-  }
-
   if (kind === "pressed" || kind === "sunken") {
     return {};
   }
 
+  if (Platform.OS === "web") {
+    const shadows: Record<"sheet" | "strip" | "cutout", string> = {
+      cutout: "0 6px 16px rgba(11, 101, 133, 0.28)",
+      sheet: "0 1px 2px rgba(19, 35, 63, 0.04), 0 10px 28px rgba(19, 35, 63, 0.07)",
+      strip: "0 1px 2px rgba(19, 35, 63, 0.04), 0 4px 14px rgba(19, 35, 63, 0.05)",
+    };
+    return { boxShadow: shadows[kind] } as WebPaperStyle;
+  }
+
   return platformShadow({
-    color: kind === "cutout" ? "#2563EB" : "#0F172A",
-    offset: { height: kind === "strip" ? 4 : 8, width: 0 },
-    opacity: kind === "cutout" ? 0.22 : 0.07,
-    radius: kind === "strip" ? 10 : 18,
+    color: kind === "cutout" ? palette.caspian : "#13233F",
+    elevation: kind === "sheet" ? 3 : 2,
+    offset: { height: kind === "strip" ? 3 : 8, width: 0 },
+    opacity: kind === "cutout" ? 0.25 : 0.07,
+    radius: kind === "strip" ? 8 : 18,
   });
 }
 
@@ -144,13 +186,11 @@ export const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: palette.page,
-    ...paperTexture("page"),
   },
   shell: {
     alignSelf: "center",
     flex: 1,
     maxWidth: 1120,
-    paddingTop: Platform.OS === "android" ? 16 : 0,
     width: "100%",
   },
   shellCompact: {
@@ -158,30 +198,12 @@ export const styles = StyleSheet.create({
   },
   topbar: {
     alignItems: "center",
-    backgroundColor: palette.bond,
-    borderBottomColor: "#DCE3EC",
-    borderBottomWidth: 1,
-    borderColor: "#E3E9F0",
-    borderRadius: 12,
-    borderWidth: 1,
     flexDirection: "row",
     gap: 12,
     justifyContent: "space-between",
-    marginHorizontal: 20,
-    marginTop: 14,
-    paddingBottom: 10,
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    ...paperTexture("sheet"),
-    ...paperShadow("strip"),
   },
   topbarCompact: {
     gap: 8,
-    marginHorizontal: 12,
-    marginTop: 10,
-    paddingBottom: 8,
-    paddingHorizontal: 10,
-    paddingTop: 8,
   },
   brandBlock: {
     alignItems: "center",
@@ -194,38 +216,42 @@ export const styles = StyleSheet.create({
   },
   brandIcon: {
     alignItems: "center",
-    backgroundColor: palette.navy,
-    borderRadius: 12,
-    height: 36,
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    borderColor: "rgba(255, 255, 255, 0.22)",
+    borderRadius: radii.md,
+    borderWidth: 1,
+    height: 40,
     justifyContent: "center",
-    width: 36,
-    ...paperShadow("cutout"),
+    width: 40,
   },
   brandIconCompact: {
-    height: 30,
-    width: 30,
+    height: 36,
+    width: 36,
   },
   brandTextBlock: {
     flexShrink: 1,
   },
   brandTitle: {
-    color: palette.text,
+    color: palette.surface,
     fontSize: 18,
-    fontWeight: "700",
+    fontFamily: fonts.extrabold,
+    letterSpacing: -0.2,
   },
   brandTitleCompact: {
-    fontSize: 16,
-    lineHeight: 20,
+    fontFamily: fonts.regular,
+    fontSize: 17,
+    lineHeight: 21,
   },
   brandSubtitle: {
-    color: palette.muted,
+    color: "#C9D6E3",
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: fonts.medium,
     marginTop: 1,
   },
   brandSubtitleCompact: {
-    fontSize: 10,
-    lineHeight: 13,
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    lineHeight: 14,
     marginTop: 0,
   },
   topbarActions: {
@@ -237,32 +263,26 @@ export const styles = StyleSheet.create({
   },
   iconButton: {
     alignItems: "center",
-    backgroundColor: "#F6F8FB",
-    borderColor: "#DCE3EC",
-    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    borderColor: "rgba(255, 255, 255, 0.24)",
+    borderRadius: radii.md,
     borderWidth: 1,
     // 44x44 minimum touch target (Apple HIG / WCAG 2.5.5).
     height: 44,
     justifyContent: "center",
     width: 44,
-    ...paperShadow("sunken"),
   },
   iconButtonCompact: {
     height: 44,
     width: 44,
   },
   rolePanel: {
-    backgroundColor: palette.bond,
-    borderBottomColor: "#DCE3EC",
-    borderBottomWidth: 1,
-    borderColor: "#E3E9F0",
-    borderRadius: 12,
-    borderWidth: 1,
-    marginHorizontal: 20,
+    backgroundColor: palette.surface,
+    borderRadius: radii.lg,
+    marginHorizontal: 16,
     marginTop: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    ...paperTexture("sheet"),
     ...paperShadow("strip"),
   },
   rolePanelCompact: {
@@ -280,36 +300,35 @@ export const styles = StyleSheet.create({
   roleName: {
     color: palette.text,
     fontSize: 15,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
   },
   roleNameCompact: {
+    fontFamily: fonts.regular,
     fontSize: 14,
     lineHeight: 18,
   },
   roleMeta: {
     color: palette.muted,
     fontSize: 12,
-    fontWeight: "700",
+    fontFamily: fonts.semibold,
     marginTop: 1,
   },
   roleMetaCompact: {
+    fontFamily: fonts.regular,
     fontSize: 11,
     lineHeight: 14,
     marginTop: 0,
   },
   roleSwitcher: {
-    backgroundColor: "#EEF2F7",
-    borderColor: "#DCE3EC",
-    borderRadius: 12,
-    borderWidth: 1,
+    backgroundColor: palette.surfaceAlt,
+    borderRadius: radii.md,
     flexDirection: "row",
     gap: 6,
     padding: 4,
-    ...paperShadow("sunken"),
   },
   roleButton: {
     alignItems: "center",
-    borderRadius: 10,
+    borderRadius: radii.sm,
     flex: 1,
     flexDirection: "row",
     gap: 7,
@@ -318,13 +337,12 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   roleButtonActive: {
-    backgroundColor: palette.charcoal,
-    ...paperShadow("pressed"),
+    backgroundColor: palette.navy,
   },
   roleButtonText: {
     color: palette.muted,
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
   },
   roleButtonTextActive: {
     color: palette.surface,
@@ -333,7 +351,7 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     paddingBottom: 8,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 12,
   },
   segmentedWrapCompact: {
@@ -343,18 +361,13 @@ export const styles = StyleSheet.create({
   },
   segmentedGrid: {
     alignSelf: "center",
-    backgroundColor: palette.bond,
-    borderBottomColor: "#DCE3EC",
-    borderBottomWidth: 1,
-    borderColor: "#E3E9F0",
-    borderRadius: 12,
-    borderWidth: 1,
+    backgroundColor: palette.surface,
+    borderRadius: radii.lg,
     flexDirection: "row",
     gap: 6,
     maxWidth: 720,
     padding: 4,
     width: "100%",
-    ...paperTexture("sheet"),
     ...paperShadow("strip"),
   },
   segmentedGridCompact: {
@@ -363,15 +376,12 @@ export const styles = StyleSheet.create({
   },
   segmentedItem: {
     alignItems: "center",
-    backgroundColor: "#F8FAFC",
-    borderColor: "#E6EBF2",
-    borderRadius: 12,
-    borderWidth: 1,
+    backgroundColor: palette.surfaceAlt,
+    borderRadius: radii.md,
     justifyContent: "center",
     minHeight: 44,
     minWidth: 104,
     paddingHorizontal: 14,
-    ...paperShadow("sunken"),
   },
   segmentedItemCompact: {
     flex: 1,
@@ -386,19 +396,19 @@ export const styles = StyleSheet.create({
   },
   segmentedItemActive: {
     backgroundColor: palette.navy,
-    borderColor: palette.navy,
-    ...paperShadow("pressed"),
   },
   segmentedText: {
     color: palette.muted,
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
   },
   segmentedTextCompact: {
+    fontFamily: fonts.regular,
     fontSize: 11,
     lineHeight: 14,
   },
   segmentedTextPhone: {
+    fontFamily: fonts.regular,
     fontSize: 10,
     lineHeight: 12,
   },
@@ -407,10 +417,10 @@ export const styles = StyleSheet.create({
   },
   segmentedBadge: {
     alignItems: "center",
-    backgroundColor: palette.teal,
+    backgroundColor: palette.pomegranate,
     borderColor: "#FFFFFF",
     borderRadius: 9,
-    borderWidth: 1,
+    borderWidth: 1.5,
     height: 18,
     justifyContent: "center",
     minWidth: 18,
@@ -422,19 +432,21 @@ export const styles = StyleSheet.create({
   segmentedBadgeText: {
     color: palette.surface,
     fontSize: 10,
-    fontWeight: "600",
+    fontFamily: fonts.bold,
     lineHeight: 13,
   },
   content: {
     alignSelf: "center",
     maxWidth: 1040,
-    padding: 20,
-    paddingBottom: 32,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+    paddingTop: 18,
     width: "100%",
   },
   contentCompact: {
-    padding: 12,
-    paddingBottom: 24,
+    paddingBottom: 32,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   stack: {
     gap: 16,
@@ -448,7 +460,7 @@ export const styles = StyleSheet.create({
     alignItems: "stretch",
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "center",
+    justifyContent: "flex-start",
   },
   split: {
     gap: 14,
@@ -464,19 +476,15 @@ export const styles = StyleSheet.create({
   },
   statCard: {
     backgroundColor: palette.surface,
-    borderColor: palette.border,
-    borderBottomColor: "#DCE3EC",
-    borderBottomWidth: 1,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: radii.lg,
     flex: 1,
     minWidth: 150,
     padding: 14,
-    ...paperTexture("sheet"),
+    ...paperShadow("strip"),
   },
   statIcon: {
     alignItems: "center",
-    borderRadius: 12,
+    borderRadius: radii.md,
     height: 38,
     justifyContent: "center",
     marginBottom: 12,
@@ -485,53 +493,54 @@ export const styles = StyleSheet.create({
   statValue: {
     color: palette.text,
     fontSize: 24,
-    fontWeight: "700",
+    fontFamily: fonts.extrabold,
   },
   statLabel: {
     color: palette.muted,
     fontSize: 13,
-    fontWeight: "700",
+    fontFamily: fonts.semibold,
     marginTop: 2,
   },
   sectionHeader: {
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 2,
+    marginTop: 6,
   },
   sectionTitleRow: {
     alignItems: "center",
     flexDirection: "row",
     flexShrink: 1,
-    gap: 7,
+    gap: 8,
   },
   sectionTitle: {
     color: palette.text,
-    fontSize: 16,
-    fontWeight: "700",
+    fontSize: 18,
+    fontFamily: fonts.extrabold,
+    letterSpacing: -0.2,
   },
   sectionAction: {
     alignItems: "center",
+    backgroundColor: palette.surfaceAlt,
+    borderRadius: radii.pill,
     flexDirection: "row",
-    gap: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
   sectionActionText: {
     color: palette.muted,
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
   },
   card: {
     backgroundColor: palette.surface,
-    borderBottomColor: "#DCE3EC",
-    borderBottomWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 12,
+    borderColor: palette.hairline,
+    borderRadius: radii.lg,
     borderWidth: 1,
     flex: 1,
-    gap: 13,
+    gap: 14,
     minWidth: 232,
-    padding: 16,
-    ...paperTexture("sheet"),
+    padding: 18,
     ...paperShadow("sheet"),
   },
   compactCard: {
@@ -544,23 +553,25 @@ export const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   eyebrow: {
-    color: palette.teal,
+    color: palette.caspian,
     fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0,
+    fontFamily: fonts.bold,
+    letterSpacing: 0.8,
     textTransform: "uppercase",
   },
   cardTitle: {
     color: palette.text,
     flexShrink: 1,
-    fontSize: 16,
-    fontWeight: "700",
-    lineHeight: 21,
+    fontSize: 17,
+    fontFamily: fonts.bold,
+    letterSpacing: -0.2,
+    lineHeight: 22,
   },
   cardMeta: {
+    fontFamily: fonts.regular,
     color: palette.muted,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 14,
+    lineHeight: 20,
   },
   metricRow: {
     flexDirection: "row",
@@ -568,47 +579,43 @@ export const styles = StyleSheet.create({
   },
   metric: {
     backgroundColor: palette.surfaceAlt,
-    borderRadius: 12,
+    borderRadius: radii.md,
     flex: 1,
-    padding: 9,
+    padding: 10,
   },
   metricValue: {
     color: palette.text,
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 15,
+    fontFamily: fonts.bold,
   },
   metricLabel: {
     color: palette.muted,
     fontSize: 11,
-    fontWeight: "700",
+    fontFamily: fonts.semibold,
     marginTop: 2,
   },
   chip: {
     alignItems: "center",
-    borderRadius: 8,
+    borderRadius: radii.pill,
     borderWidth: 1,
-    minHeight: 28,
     justifyContent: "center",
-    paddingHorizontal: 9,
-    ...paperTexture("sheet"),
+    minHeight: 26,
+    paddingHorizontal: 10,
   },
   chipText: {
     fontSize: 11,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     textTransform: "capitalize",
   },
   listRow: {
     alignItems: "center",
     backgroundColor: palette.surface,
-    borderBottomColor: "#DCE3EC",
-    borderBottomWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 12,
+    borderColor: palette.hairline,
+    borderRadius: radii.lg,
     borderWidth: 1,
     flexDirection: "row",
     gap: 12,
     padding: 14,
-    ...paperTexture("sheet"),
     ...paperShadow("strip"),
   },
   listRowCompact: {
@@ -617,7 +624,7 @@ export const styles = StyleSheet.create({
   timeBox: {
     alignItems: "center",
     backgroundColor: palette.blueSoft,
-    borderRadius: 12,
+    borderRadius: radii.md,
     justifyContent: "center",
     minHeight: 48,
     width: 58,
@@ -625,18 +632,18 @@ export const styles = StyleSheet.create({
   timeText: {
     color: palette.blue,
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
   },
   timeDay: {
     color: palette.muted,
     fontSize: 10,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
     marginTop: 2,
   },
   documentIcon: {
     alignItems: "center",
     backgroundColor: palette.blueSoft,
-    borderRadius: 12,
+    borderRadius: radii.md,
     height: 42,
     justifyContent: "center",
     width: 42,
@@ -647,15 +654,15 @@ export const styles = StyleSheet.create({
   },
   rowTitle: {
     color: palette.text,
-    fontSize: 14,
-    fontWeight: "700",
-    lineHeight: 19,
+    fontSize: 15,
+    fontFamily: fonts.bold,
+    lineHeight: 20,
   },
   rowMeta: {
     color: palette.muted,
-    fontSize: 12,
-    fontWeight: "600",
-    lineHeight: 17,
+    fontSize: 13,
+    fontFamily: fonts.medium,
+    lineHeight: 18,
     marginTop: 2,
   },
   footerRow: {
@@ -665,23 +672,22 @@ export const styles = StyleSheet.create({
   },
   smallText: {
     color: palette.faint,
-    fontSize: 12,
-    fontWeight: "700",
+    fontSize: 13,
+    fontFamily: fonts.medium,
+    lineHeight: 18,
   },
   alertPanel: {
     alignItems: "center",
     backgroundColor: palette.amberSoft,
-    borderColor: "#F1D492",
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: radii.lg,
     flexDirection: "row",
     gap: 12,
-    padding: 12,
+    padding: 14,
   },
   alertIcon: {
     alignItems: "center",
     backgroundColor: palette.surface,
-    borderRadius: 12,
+    borderRadius: radii.md,
     height: 40,
     justifyContent: "center",
     width: 40,
@@ -689,43 +695,40 @@ export const styles = StyleSheet.create({
   composer: {
     backgroundColor: palette.surface,
     borderColor: palette.border,
-    borderRadius: 12,
+    borderRadius: radii.lg,
     borderWidth: 1,
     gap: 10,
     padding: 12,
   },
   searchRow: {
     alignItems: "center",
-    backgroundColor: palette.bond,
-    borderBottomColor: palette.fieldBorder,
-    borderBottomWidth: 1,
+    backgroundColor: palette.surface,
     borderColor: palette.fieldBorder,
-    borderRadius: 12,
+    borderRadius: radii.pill,
     borderWidth: 1,
     flexDirection: "row",
     gap: 10,
     minHeight: 52,
-    paddingHorizontal: 14,
-    ...paperTexture("sheet"),
+    paddingHorizontal: 18,
     ...paperShadow("strip"),
   },
   textInput: {
     color: palette.text,
     flex: 1,
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 15,
+    fontFamily: fonts.medium,
     minHeight: 44,
     ...webInputReset(),
   },
   primaryAction: {
     alignItems: "center",
-    backgroundColor: palette.teal,
-    borderRadius: 12,
+    backgroundColor: palette.caspian,
+    borderRadius: radii.md,
     flexDirection: "row",
     gap: 8,
     justifyContent: "center",
-    minHeight: 46,
-    paddingHorizontal: 16,
+    minHeight: 48,
+    paddingHorizontal: 18,
     ...paperShadow("cutout"),
   },
   primaryActionDisabled: {
@@ -733,36 +736,33 @@ export const styles = StyleSheet.create({
   },
   primaryActionText: {
     color: palette.surface,
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 15,
+    fontFamily: fonts.bold,
   },
   statePanel: {
     alignItems: "center",
     backgroundColor: palette.surface,
-    borderBottomColor: "#DCE3EC",
-    borderBottomWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 12,
+    borderColor: palette.hairline,
+    borderRadius: radii.lg,
     borderWidth: 1,
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 14,
     minHeight: 88,
-    padding: 16,
-    ...paperTexture("sheet"),
+    padding: 18,
     ...paperShadow("strip"),
   },
   errorPanel: {
     backgroundColor: palette.redSoft,
-    borderColor: "#F6C4C2",
+    borderColor: "#F2C9C4",
   },
   stateIcon: {
     alignItems: "center",
     backgroundColor: palette.surfaceAlt,
-    borderRadius: 12,
-    height: 42,
+    borderRadius: radii.pill,
+    height: 46,
     justifyContent: "center",
-    width: 42,
+    width: 46,
   },
   errorIcon: {
     backgroundColor: palette.surface,
@@ -774,31 +774,31 @@ export const styles = StyleSheet.create({
   stateTitle: {
     color: palette.text,
     flexShrink: 1,
-    fontSize: 15,
-    fontWeight: "700",
-    lineHeight: 20,
+    fontSize: 16,
+    fontFamily: fonts.bold,
+    lineHeight: 21,
   },
   stateText: {
+    fontFamily: fonts.regular,
     color: palette.muted,
-    fontSize: 13,
-    fontWeight: "600",
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 20,
     marginTop: 4,
   },
   retryButton: {
     alignItems: "center",
     backgroundColor: palette.red,
-    borderRadius: 12,
+    borderRadius: radii.md,
     flexDirection: "row",
     gap: 6,
     justifyContent: "center",
     minHeight: 44,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
   },
   retryButtonText: {
     color: palette.surface,
-    fontSize: 13,
-    fontWeight: "700",
+    fontSize: 14,
+    fontFamily: fonts.bold,
   },
   gradeItemSelector: {
     flexDirection: "row",
@@ -808,7 +808,7 @@ export const styles = StyleSheet.create({
   gradeItemOption: {
     backgroundColor: palette.surface,
     borderColor: palette.border,
-    borderRadius: 12,
+    borderRadius: radii.md,
     borderWidth: 1,
     maxWidth: 260,
     minHeight: 44,
@@ -822,7 +822,7 @@ export const styles = StyleSheet.create({
   gradeItemOptionText: {
     color: palette.muted,
     fontSize: 12,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
   },
   gradeItemOptionTextActive: {
     color: palette.surface,
@@ -831,7 +831,7 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: palette.surface,
     borderColor: palette.border,
-    borderRadius: 12,
+    borderRadius: radii.md,
     borderWidth: 1,
     flexDirection: "row",
     gap: 10,
@@ -846,7 +846,7 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: palette.surfaceAlt,
     borderColor: palette.border,
-    borderRadius: 12,
+    borderRadius: radii.md,
     borderWidth: 1,
     height: 44,
     justifyContent: "center",
@@ -871,7 +871,7 @@ export const styles = StyleSheet.create({
   attendanceButtonText: {
     color: palette.muted,
     fontSize: 13,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
   },
   attendanceButtonTextActive: {
     color: palette.surface,
@@ -885,7 +885,7 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: palette.surfaceAlt,
     borderColor: palette.border,
-    borderRadius: 12,
+    borderRadius: radii.md,
     borderWidth: 1,
     height: 44,
     justifyContent: "center",
@@ -894,24 +894,25 @@ export const styles = StyleSheet.create({
   scoreValue: {
     color: palette.text,
     fontSize: 18,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     minWidth: 34,
     textAlign: "center",
   },
   scoreInput: {
     backgroundColor: palette.surface,
     borderColor: palette.fieldBorder,
-    borderRadius: 12,
+    borderRadius: radii.md,
     borderWidth: 1,
     color: palette.text,
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     height: 44,
     minWidth: 58,
     paddingHorizontal: 8,
     textAlign: "center",
   },
   pressed: {
-    opacity: 0.72,
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
   },
 });

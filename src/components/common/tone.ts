@@ -20,15 +20,15 @@ export function getTone(tone: StatTone) {
 export function chipTone(tone: ChipTone) {
   switch (tone) {
     case "green":
-      return { soft: palette.greenSoft, strong: palette.green, border: "#B5E0C6" };
+      return { soft: palette.greenSoft, strong: palette.green, border: "#CDE6C6" };
     case "blue":
-      return { soft: palette.blueSoft, strong: palette.blue, border: "#C9DAF5" };
+      return { soft: palette.blueSoft, strong: palette.blue, border: "#C4E1EA" };
     case "amber":
-      return { soft: palette.amberSoft, strong: palette.amber, border: "#F1D492" };
+      return { soft: palette.amberSoft, strong: palette.amber, border: palette.buffBorder };
     case "red":
-      return { soft: palette.redSoft, strong: palette.red, border: "#F6C4C2" };
+      return { soft: palette.redSoft, strong: palette.red, border: "#F2C9C4" };
     case "violet":
-      return { soft: palette.violetSoft, strong: palette.violet, border: "#D9CAFB" };
+      return { soft: palette.violetSoft, strong: palette.violet, border: "#DCCDEE" };
     case "slate":
     default:
       return { soft: palette.surfaceAlt, strong: palette.muted, border: palette.border };

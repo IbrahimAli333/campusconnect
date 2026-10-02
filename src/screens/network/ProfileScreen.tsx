@@ -89,6 +89,7 @@ import {
   DiscoverDashboard,
   FilterChip,
   FormField,
+  InitialsAvatar,
   InlineAction,
   LabeledInput,
   MatchPreview,
@@ -503,6 +504,7 @@ export function ProfileScreen({
 
       <View style={styles.card}>
         <View style={styles.cardTop}>
+          <InitialsAvatar name={profile.user.full_name} size={64} />
           <View style={networkStyles.cardTitleBlock}>
             <Text style={styles.eyebrow}>{t(titleCase(profile.role))}</Text>
             <Text style={networkStyles.profileName} numberOfLines={2}>

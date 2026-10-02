@@ -493,4 +493,15 @@ export const ru: Record<string, string> = {
   "Delete {name}": "Удалить: {name}",
   "Your request is sent to Anthropic's Claude AI to rank posts. Do not include personal information.": "Ваш запрос отправляется в ИИ Claude компании Anthropic для подбора публикаций. Не указывайте персональные данные.",
   "Applicant has not listed portfolio skills.": "Кандидат не указал навыки в портфолио.",
+
+  // Redesigned app shell
+  "Hello, {name}": "Привет, {name}",
+  "Find students, mentors, and teams across your university.": "Находите студентов, менторов и команды в своём университете.",
+  "Research, startups, internships, jobs, and projects.": "Исследования, стартапы, стажировки, вакансии и проекты.",
+  "My applications": "Мои отклики",
+  "Track every application from submission to decision.": "Следите за каждым откликом от отправки до решения.",
+  "My profile": "Мой профиль",
+  "Your portfolio, privacy, and account settings.": "Ваше портфолио, конфиденциальность и настройки аккаунта.",
+  "My network": "Моя сеть",
+  "Connections, requests, and messages.": "Контакты, запросы и сообщения.",
 };

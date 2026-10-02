@@ -3,7 +3,7 @@ import { Check, ExternalLink } from "lucide-react-native";
 
 import { useI18n } from "../../lib/i18n";
 import { MINIMUM_AGE, PRIVACY_POLICY_URL, TERMS_URL } from "../../lib/legal";
-import { palette, styles } from "../../styles/theme";
+import { fonts, palette, styles } from "../../styles/theme";
 
 export function openLegalPage(url: string): void {
   void Linking.openURL(url).catch(() => undefined);
@@ -139,7 +139,7 @@ const consentStyles = StyleSheet.create({
     color: palette.text,
     flex: 1,
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
     lineHeight: 20,
   },
   links: {
@@ -160,7 +160,7 @@ const consentStyles = StyleSheet.create({
   linkText: {
     color: palette.blue,
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     textDecorationLine: "underline",
   },
 });

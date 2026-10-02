@@ -17,7 +17,7 @@ import {
   isPushSupported,
   setPushNotificationsEnabled,
 } from "../../lib/notifications";
-import { palette, styles } from "../../styles/theme";
+import { fonts, palette, styles } from "../../styles/theme";
 import { ActionMessage, InlineAction, formatFullDate } from "./shared";
 import { networkStyles } from "./styles";
 
@@ -206,7 +206,7 @@ const localStyles = StyleSheet.create({
     color: palette.text,
     flex: 1,
     fontSize: 15,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
   },
   legalLinkList: {
     gap: 2,
@@ -220,7 +220,7 @@ const localStyles = StyleSheet.create({
   legalLinkText: {
     color: palette.blue,
     fontSize: 15,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     textDecorationLine: "underline",
   },
 });
