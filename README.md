@@ -21,6 +21,14 @@ Project coordination, stack decisions, and milestone ownership live in
 [`docs/PROJECT_COORDINATION.md`](docs/PROJECT_COORDINATION.md).
 Publishing and deployment steps live in
 [`docs/PUBLISHING.md`](docs/PUBLISHING.md).
+Legal and compliance status (Terms of Service, privacy, consent, data
+inventory, third parties, and open questions for the lawyer) lives in
+[`COMPLIANCE.md`](COMPLIANCE.md). The public legal pages are
+[`docs/terms.html`](docs/terms.html),
+[`docs/privacy-policy.html`](docs/privacy-policy.html),
+[`docs/child-safety.html`](docs/child-safety.html), and
+[`docs/delete-account.html`](docs/delete-account.html) — all DRAFTS pending
+lawyer review.
 
 ## Current MVP
 

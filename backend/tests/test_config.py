@@ -143,3 +143,4 @@ def test_error_reporting_initialises_when_dsn_is_set(
     assert captured[0]["environment"] == "production"
     # Request bodies carry credentials and profile content; PII must stay off.
     assert captured[0]["send_default_pii"] is False
+    assert captured[0]["include_local_variables"] is False

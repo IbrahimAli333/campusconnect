@@ -31,6 +31,9 @@ def init_error_reporting() -> bool:
         # Request bodies can carry passwords and profile content, so no PII
         # is attached to events.
         send_default_pii=False,
+        # Stack-frame locals can hold names, emails, and message bodies; keep
+        # them out of error reports (data minimisation).
+        include_local_variables=False,
     )
     logger.info("Sentry error reporting enabled for %s", settings.environment)
     return True

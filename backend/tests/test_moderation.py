@@ -379,3 +379,54 @@ class TestProfileBlocks:
             headers=_auth_headers(member_token),
         )
         assert response.status_code == 404
+
+
+class TestDeactivatedAccountsAreHidden:
+    def test_deactivated_users_profile_posts_and_messages_disappear(
+        self, seeded_client_and_sessionmaker: tuple[TestClient, sessionmaker[Session]]
+    ) -> None:
+        client, session_local = seeded_client_and_sessionmaker
+        member_token = _login(client, "member")
+        teacher_email = DEV_CREDENTIALS["teacher"]["email"]
+        teacher_profile_id = _profile_id_by_email(client, member_token, teacher_email)
+
+        response = client.get(
+            "/api/v1/network/opportunities", headers=_auth_headers(member_token)
+        )
+        teacher_posts = [
+            post["id"]
+            for post in response.json()
+            if post["owner_profile"]["id"] == teacher_profile_id
+        ]
+        assert teacher_posts, "seed data should give the teacher at least one post"
+
+        # Moderation action: an admin deactivates the teacher.
+        with session_local() as db:
+            teacher = db.scalar(select(User).where(User.email == teacher_email))
+            assert teacher is not None
+            teacher.is_active = False
+            db.commit()
+
+        profiles = client.get(
+            "/api/v1/network/profiles", headers=_auth_headers(member_token)
+        ).json()
+        assert teacher_profile_id not in [profile["id"] for profile in profiles]
+        assert (
+            client.get(
+                f"/api/v1/network/profiles/{teacher_profile_id}",
+                headers=_auth_headers(member_token),
+            ).status_code
+            == 404
+        )
+
+        posts = client.get(
+            "/api/v1/network/opportunities", headers=_auth_headers(member_token)
+        ).json()
+        assert not set(teacher_posts) & {post["id"] for post in posts}
+
+        response = client.post(
+            f"/api/v1/network/messages/threads/{teacher_profile_id}",
+            headers=_auth_headers(member_token),
+            json={"body": "hello"},
+        )
+        assert response.status_code in (403, 404)

@@ -267,7 +267,13 @@ def _can_view_profile(viewer_profile: UserProfile, profile: UserProfile) -> bool
 
 
 def _blocked_profile_ids(db: Session, profile_id: int) -> set[int]:
-    """Profiles hidden from this viewer: anyone they blocked or who blocked them."""
+    """Profiles hidden from this viewer: anyone they blocked or who blocked
+    them, plus every deactivated account.
+
+    Deactivation is the moderation action for abusive users, so their
+    profile, posts, and messages disappear wherever blocked users do
+    (discovery, recommendations, post lists, applying, connecting, messaging).
+    """
     pairs = db.execute(
         select(ProfileBlock.blocker_profile_id, ProfileBlock.blocked_profile_id).where(
             or_(
@@ -276,9 +282,18 @@ def _blocked_profile_ids(db: Session, profile_id: int) -> set[int]:
             )
         )
     ).all()
-    return {
+    hidden = {
         blocked if blocker == profile_id else blocker for blocker, blocked in pairs
     }
+    hidden.update(
+        db.scalars(
+            select(UserProfile.id)
+            .join(User, User.id == UserProfile.user_id)
+            .where(User.is_active.is_(False))
+        ).all()
+    )
+    hidden.discard(profile_id)
+    return hidden
 
 
 def _normalized_text(value: str | None) -> str:

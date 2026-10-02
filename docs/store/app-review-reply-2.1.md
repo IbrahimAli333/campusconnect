@@ -1,5 +1,14 @@
 # Reply to App Review — Guideline 2.1 "Information Needed" (2026-09-08)
 
+> **Update 2026-10-02 — read before reusing this text for any build after
+> 1.0.0 (2).** The audience is now strictly 18+ (age confirmation at
+> signup; App Store age rating 18+), and later builds add a Terms/Privacy
+> acceptance screen, in-app data download, and a push-notification switch.
+> Item 4 must also list Sentry (crash reporting, once
+> EXPO_PUBLIC_SENTRY_DSN is set) and Anthropic (only if the Opportunity
+> Assistant is enabled on the server); Google sign-in stays disabled on
+> iOS. See COMPLIANCE.md for the full third-party list.
+
 Submission be53387d-c975-4f66-a282-4ae3f80814dc, build 1.0.0 (2).
 Standard new-developer-account questionnaire, not a defect. Paste the
 **Reply** into the submission's Messages thread with the screen recording
@@ -24,8 +33,8 @@ portfolio entries, discover one another, and post or apply to research
 projects, startups, internships, jobs, and student projects. It solves a
 concrete problem: campus collaboration opportunities are scattered across
 notice boards and group chats and are invisible outside a person's immediate
-circle. The target audience is university students and staff (18+; the app
-is rated 13+). It is intended for the general public and is not a demo,
+circle. The target audience is university students and staff, 18 and
+older. It is intended for the general public and is not a demo,
 trial, or internal/enterprise app.
 
 3. Setup and access — No setup or sample files are required. Anyone can
