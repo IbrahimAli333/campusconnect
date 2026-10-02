@@ -79,7 +79,18 @@ def _login_with(client: TestClient, email: str, password: str) -> str:
         json={"email": email, "password": password},
     )
     assert response.status_code == 200
-    return response.json()["access_token"]
+    token = response.json()["access_token"]
+    accepted = client.post(
+        "/api/v1/auth/accept-terms",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "terms_version": response.json()["user"]["current_terms_version"],
+            "accept_terms": True,
+            "confirm_age": True,
+        },
+    )
+    assert accepted.status_code == 200
+    return token
 
 
 def _login(client: TestClient, role: str) -> str:

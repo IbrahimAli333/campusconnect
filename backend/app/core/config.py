@@ -44,6 +44,8 @@ class Settings(BaseSettings):
     # answer 428 until the user has accepted the current Terms/Privacy
     # version. Off by default because app builds older than 1.1.0 have no
     # acceptance screen; switch it on once 1.1.0 is the minimum live version.
+    # Content creation/updates require consent independently of this flag;
+    # report/block and account controls remain available.
     enforce_terms_acceptance: bool = False
     # Retired academic-portal API (attendance, grades, schedules). Unset means
     # on for development/tests and off in production, so production stays

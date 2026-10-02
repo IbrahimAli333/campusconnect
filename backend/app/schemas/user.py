@@ -31,5 +31,6 @@ class UserRead(ReadSchema):
         their age; the app blocks use behind an acceptance screen meanwhile."""
         return (
             self.terms_version != CURRENT_TERMS_VERSION
+            or self.terms_accepted_at is None
             or self.age_confirmed_at is None
         )

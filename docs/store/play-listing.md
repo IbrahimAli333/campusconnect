@@ -1,7 +1,8 @@
 # Google Play listing - Unibridge
 
-Everything below is ready to paste into the Play Console. Items marked YOU
-require actions only the account owner can do.
+Listing draft for 1.1.0. Verify the final build, reviewer access, current
+console state and the unresolved items in release-1.1.0.md before pasting.
+AZ/RU text still needs native-speaker review. Items marked YOU need the owner.
 
 ## App details
 
@@ -24,7 +25,7 @@ Built for members, students, and faculty:
 Safety and control:
 - Report any profile or post for review.
 - Block users to hide their content from you and yours from them.
-- Download a copy of your data, turn off push notifications, or delete your account (and the data linked to it) at any time from the Me tab.
+- Export a copy of your data through the share sheet, turn off push notifications, or delete your account (and the data linked to it) at any time from the Me tab.
 
 Unibridge is for adults (18+) in university communities.
 
@@ -46,7 +47,7 @@ listing → Manage translations, and paste this. Have a native speaker
 proof-read it before publishing.
 
 - **App name:** Unibridge
-- **Short description (max 80 chars, 75):**
+- **Short description (max 80 chars):**
   `Universitet şəbəkəsi: tədqiqat, startap, təcrübə, müraciətlər və mentorluq.`
 - **Full description:**
 
@@ -64,7 +65,7 @@ Unibridge Azərbaycan universitet icmaları üçün akademik və peşəkar şəb
 Təhlükəsizlik və nəzarət:
 - İstənilən profil və ya elan barədə şikayət edin.
 - İstifadəçiləri bloklayın: onların məzmunu sizə, sizinki onlara görünməz.
-- Məlumatlarınızın surətini endirin, push bildirişlərini söndürün və ya hesabınızı (ona bağlı məlumatlarla birlikdə) istənilən vaxt "Mən" bölməsindən silin.
+- Məlumatlarınızın surətini paylaşın, push bildirişlərini söndürün və ya hesabınızı (ona bağlı məlumatlarla birlikdə) istənilən vaxt "Mən" bölməsindən silin.
 
 Unibridge universitet icmalarındakı yetkinlər (18+) üçündür. Tətbiq Azərbaycan, ingilis və rus dillərindədir.
 
@@ -73,7 +74,7 @@ Tətbiqdə üzv hesabı yaradın və ya universitet proqramınızın verdiyi mə
 
 ## Russian listing (Play Console language ru-RU)
 
-- **Short description (max 80 chars, 71):**
+- **Short description (max 80 chars):**
   `Сеть университета: исследования, стартапы, стажировки и наставничество.`
 - **Full description:**
 
@@ -91,7 +92,7 @@ Unibridge — академическая и профессиональная с�
 Безопасность и контроль:
 - Пожалуйтесь на любой профиль или публикацию.
 - Блокируйте пользователей: их контент скрыт от вас, а ваш — от них.
-- Скачайте копию своих данных, отключите push-уведомления или удалите аккаунт (вместе со связанными данными) в любое время на вкладке «Я».
+- Экспортируйте копию своих данных через меню «Поделиться», отключите push-уведомления или удалите аккаунт (вместе со связанными данными) в любое время на вкладке «Я».
 
 Unibridge предназначен для взрослых (18+) в университетских сообществах. Приложение доступно на азербайджанском, английском и русском языках.
 
@@ -100,11 +101,11 @@ Unibridge предназначен для взрослых (18+) в универ
 
 ## App Store localisations
 
-The app itself is Azerbaijani-first. Check App Store Connect's list of
-listing languages when you add localisations; as far as I know it does not
-include Azerbaijani. If so, keep English as the primary listing, add Russian
-(paste the Russian text above into the App Store fields), and mention in the
-description that the app is in Azerbaijani, English, and Russian.
+The app itself is Azerbaijani-first. Apple's supported metadata localizations
+include English and Russian, but not Azerbaijani as of the 2026-10-02 check.
+Keep a supported English primary listing and add Russian if desired; AZ app
+UI and Google Play listing language are separate. See [Apple supported
+localizations](https://developer.apple.com/help/app-store-connect/reference/app-information/app-store-localizations/).
 
 ## Access instructions for Google reviewers (App access form)
 
@@ -112,14 +113,17 @@ Anyone can create a Member account in-app, but posting requires a
 student/teacher role granted by administrators, so declare "All or some
 functionality is restricted" and provide a demo credential set. The reviewer account (reviewer@example.edu,
 student role) is provisioned automatically on deploy once
-UNIVERSITY_PORTAL_REVIEWER_PASSWORD is set in the Render dashboard — read the
-password from there (do NOT hand out the shared demo accounts):
+UNIVERSITY_PORTAL_REVIEWER_PASSWORD is configured. Verify the account exists
+and works; the owner must enter its password directly into the console using
+a secure handoff. Do not retrieve or paste passwords into chat, or use shared
+demo accounts:
 
 ```
 Email: reviewer@example.edu
-Password: <UNIVERSITY_PORTAL_REVIEWER_PASSWORD from the Render dashboard>
-Notes: Log in with the credentials above to review the full app. On first
-login, accept the Terms of Service and Privacy Policy and confirm you are
+Password: <owner enters directly in the console; never in chat>
+Notes: Log in with the credentials above to review the full app. If the
+account has not accepted the current legal version, accept the Terms of
+Service and Privacy Policy and confirm you are
 18 or older (tick both boxes, then "Agree and continue"). Anyone
 can also create a Member account with "Create account"; Member accounts can
 browse, save, apply, connect, and message. Posting requires a student or
@@ -134,7 +138,9 @@ and account deletion are available in-app.
   - Users can report objectionable UGC: YES
   - Users can block other users: YES
 - Violence / sexuality / drugs / gambling: NO
-- Shares user location: NO
+- User location: the optional free-text Location field is displayed on
+  visible profiles. Answer the exact IARC location question against this
+  behavior; do not select NO solely because the app does not request GPS.
 - Allows purchases: NO
 - IARC rates content, not audience: expect a low content rating with the
   "Users Interact" interactive element. The 18+ restriction is set in
@@ -150,21 +156,28 @@ and account deletion are available in-app.
 
 Unibridge is run by an individual, not a company.
 
-- **Developer name:** Ibrahim Ali Khudiyev (personal Play developer account). Google
-  verifies your address and phone privately; for a free app on a personal
-  account they are not shown on the listing.
+- **Developer name:** Ibrahim Ali Khudiyev. Verify the actual developer
+  account type and required public contact fields in Play Console; do not
+  promise address or phone confidentiality from free-app status alone.
 - **Contact email:** ibrahimaliworkacc@gmail.com
-- **EU DSA trader status:** YOU declare it in Play Console. A free app with
-  no income, run by an individual, is normally declared **non-trader**.
+- **EU DSA trader status:** the owner must determine and attest the correct
+  status with legal guidance as needed. Free pricing alone does not establish
+  non-trader status; do not make this legal declaration automatically.
 
 ## Checklist before submitting
 
-- [ ] YOU: Play Console developer account ($25 one-time), identity verified.
-- [ ] YOU: 14-day closed test with 12 testers (required for new personal accounts before production).
-- [ ] Production AAB uploaded (see docs/store/release-build.md notes in repo).
-- [ ] Store listing assets: app icon 512x512 (have: assets/icon.png - export at 512), feature graphic 1024x500 (make one), 4-8 phone screenshots (capture from emulator in production mode).
+- [ ] Verify existing Play developer account and identity status. New charges,
+      accounts or permissions require separate approval.
+- [ ] Check production access and any account-specific closed-testing
+      requirement in Console. Internal testing is not a substitute for a
+      required closed test.
+- [ ] Upload verified production AAB to internal testing first; record build
+      ID/versionCode and complete real-phone QA before production review.
+- [ ] Store listing assets: app icon 512x512 (have: assets/icon.png - export at 512), feature graphic 1024x500 (make one), 4-8 matching native phone screenshots. Simulator captures must be labeled
+      as such in QA records and do not prove physical-device tests.
 - [ ] Data safety form (see data-safety.md) — re-check it: messages,
-      device IDs (push token), and crash logs changed on 2026-10-02.
+      profile location, personalization, device IDs (push token), consent records,
+      and conditional crash/performance data were audited on 2026-10-02.
 - [ ] Lawyer has approved terms.html and privacy-policy.html and the DRAFT
       banners have been removed (COMPLIANCE.md).
 - [ ] Privacy policy URL live (GitHub Pages).

@@ -60,7 +60,18 @@ def _login(client: TestClient, role: str) -> str:
         json={"email": credentials["email"], "password": credentials["password"]},
     )
     assert response.status_code == 200
-    return response.json()["access_token"]
+    token = response.json()["access_token"]
+    accepted = client.post(
+        "/api/v1/auth/accept-terms",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "terms_version": response.json()["user"]["current_terms_version"],
+            "accept_terms": True,
+            "confirm_age": True,
+        },
+    )
+    assert accepted.status_code == 200
+    return token
 
 
 def test_enforce_action_limit_blocks_after_budget_is_spent() -> None:

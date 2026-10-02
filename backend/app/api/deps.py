@@ -59,16 +59,26 @@ def get_current_active_user(
 def require_current_terms(
     current_user: User = Depends(get_current_active_user),
 ) -> User:
-    """Refuse feature endpoints until the current terms are accepted.
+    """Optionally gate browsing and other features during the global rollout.
 
     Only active when UNIVERSITY_PORTAL_ENFORCE_TERMS_ACCEPTANCE is on. Account
     endpoints (me, accept-terms, data export, delete-account) never use this,
-    so people can always read, accept, export, or leave.
+    so people can always read their account, accept, export, or leave.
+    Content writes use require_ugc_consent directly, and safety actions stay
+    available regardless of either consent gate.
     """
     if not get_settings().enforce_terms_acceptance:
         return current_user
+    return require_ugc_consent(current_user)
+
+
+def require_ugc_consent(
+    current_user: User = Depends(get_current_active_user),
+) -> User:
+    """Require consent before publishing content, independent of the rollout gate."""
     if (
         current_user.terms_version != CURRENT_TERMS_VERSION
+        or current_user.terms_accepted_at is None
         or current_user.age_confirmed_at is None
     ):
         raise HTTPException(
