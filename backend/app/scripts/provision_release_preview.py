@@ -78,6 +78,12 @@ def ensure_release_preview_safeguards(
     environ: Mapping[str, str] | None = None,
 ) -> None:
     values = os.environ if environ is None else environ
+    # Its accounts have passwords written in this repo; production deletes
+    # them on every deploy (remove_demo_accounts), so never create them there.
+    if values.get("UNIVERSITY_PORTAL_ENVIRONMENT", "").lower() in {"prod", "production"}:
+        raise ReleasePreviewProvisioningRefused(
+            "demo accounts must never be created in production"
+        )
     if not confirm_render_preview:
         raise ReleasePreviewProvisioningRefused(
             f"missing required confirmation flag {CONFIRM_FLAG}"

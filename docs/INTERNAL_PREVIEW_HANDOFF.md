@@ -131,10 +131,11 @@ Publish check passed: https://campusconnect-api-u7tq.onrender.com
 
 Before hosted role smoke, open Render Shell for `campusconnect-api` and run:
 
-```bash
-UNIVERSITY_PORTAL_ALLOW_RELEASE_TEST_PROVISIONING=true \
-python -m app.scripts.provision_release_preview --confirm-render-preview
-```
+> **Retired (2026-10-03):** demo accounts must not exist in production.
+> The script now refuses to run when `UNIVERSITY_PORTAL_ENVIRONMENT` is
+> production, and every production deploy deletes the demo accounts
+> (`app/scripts/remove_demo_accounts.py`). Store reviewers use the
+> private `reviewer@example.edu` account from `provision_admin_accounts`.
 
 Do not run `python3 -m app.scripts.seed_dev` against Render production.
 

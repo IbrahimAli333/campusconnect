@@ -262,28 +262,24 @@ export function profileMeta(profile: ProfileSummary, t: Translate = englishT): s
 // Month names and date order come from the dictionaries (not the device
 // locale), so dates follow the app language on every platform:
 // "2 okt 2026" in Azerbaijani, "2 окт. 2026" in Russian, "Oct 2, 2026" in English.
-// Short names follow a day ("2 okt", "2 мая"); full names stand alone in
-// month-year ranges ("Oktyabr 2026", "май 2026"), which Russian inflects
-// differently.
+// Short names follow a day ("2 okt", "2 мая"). Month-year labels are whole
+// strings ("oktyabr 2026", "май 2026") because Russian inflects the
+// standalone month differently, and "May" is the same word in both forms.
 const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const MONTHS_FULL = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+const MONTH_YEAR = [
+  "January {year}",
+  "February {year}",
+  "March {year}",
+  "April {year}",
+  "May {year}",
+  "June {year}",
+  "July {year}",
+  "August {year}",
+  "September {year}",
+  "October {year}",
+  "November {year}",
+  "December {year}",
 ];
-
-function monthLabel(date: Date, t: Translate, names: string[] = MONTHS_SHORT): string {
-  return t(names[date.getMonth()] ?? "");
-}
 
 export function formatDate(value: string | null, t: Translate = englishT): string {
   if (!value) {
@@ -295,7 +291,7 @@ export function formatDate(value: string | null, t: Translate = englishT): strin
     return value;
   }
 
-  return t("{month} {year}", { month: monthLabel(date, t, MONTHS_FULL), year: date.getFullYear() });
+  return t(MONTH_YEAR[date.getMonth()] ?? "{year}", { year: date.getFullYear() });
 }
 
 export function formatFullDate(value: string, t: Translate = englishT): string {
@@ -304,13 +300,19 @@ export function formatFullDate(value: string, t: Translate = englishT): string {
     return value;
   }
 
-  return t("{month} {day}, {year}", { day: date.getDate(), month: monthLabel(date, t), year: date.getFullYear() });
+  return t("{month} {day}, {year}", {
+    day: date.getDate(),
+    month: t(MONTHS_SHORT[date.getMonth()] ?? ""),
+    year: date.getFullYear(),
+  });
 }
 
 export function resumeDateRange(entry: ResumeEntryRead, t: Translate = englishT): string {
-  const start = formatDate(entry.start_date, t);
-  const end = entry.is_current ? t("Present") : formatDate(entry.end_date, t);
-  return `${start} - ${end}`;
+  const start = entry.start_date ? formatDate(entry.start_date, t) : "";
+  // Only ongoing entries end in "Present"; a finished entry without an end
+  // date (an award, say) shows just its date.
+  const end = entry.is_current ? t("Present") : entry.end_date ? formatDate(entry.end_date, t) : "";
+  return [start, end].filter(Boolean).join(" - ");
 }
 
 export function emptyToNull(value: string): string | null {

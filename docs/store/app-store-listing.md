@@ -85,6 +85,21 @@ the native iPhone 17 Pro Max capture (1320x2868); it accepts 1284x2778.
   for the iOS Keychain "Save Password?" prompt before saving — it ruined
   the first Discover capture.
 
+## Screenshots for 1.1.0 (redesign, Azerbaijani)
+
+The 2026-09-07 set above shows the old design. The 1.1.0 set is in
+docs/store/assets/1.1.0/, six screens each (Discover, Posts, Network,
+Applications, Me, profile panel):
+
+- ios-6.5/ (1284x2778) — upload to the App Store 6.5" slot.
+- ios-6.9/ (1320x2868) — native size, for reference.
+- android/ (1080x1920) — Play Console phone screenshots.
+- ipad-13/ (2064x2752) — App Store iPad slot.
+
+They are captured from the web build (no iOS status bar) with demo data
+translated into Azerbaijani; no real users appear. Retake on the
+simulator if Apple asks for device captures.
+
 ## Guideline traps specific to this app
 
 - **Sign in with Apple (Guideline 4.8):** only triggered if a third-party
