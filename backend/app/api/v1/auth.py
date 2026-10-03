@@ -45,6 +45,7 @@ from app.schemas.auth import (
     TokenResponse,
 )
 from app.schemas.user import UserRead
+from app.services.account_deletion import delete_user_account
 from app.services.data_export import build_user_data_export
 from app.services.google_sso import GoogleSsoError, verify_google_id_token
 
@@ -418,7 +419,7 @@ def delete_account(
             detail="Password is incorrect",
         )
 
-    db.delete(current_user)
+    delete_user_account(db, current_user)
     db.commit()
 
 
