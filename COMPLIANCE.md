@@ -235,6 +235,11 @@ speaker's review**, especially the legal wording.
   people on old builds can sign up without confirming they are 18+.
 
 ### Fixed in 1.1.0 (previously open)
+- **Demo accounts removed from production:** the old release-preview
+  script had created demo accounts (member/student/teacher@example.edu,
+  passwords in the repo) and demo posts on Render. Every production deploy
+  now deletes them and their content (`remove_demo_accounts`), and the
+  script refuses to run in production.
 - **Deactivated users everywhere:** they also disappear from connection
   lists, applicant lists, and "my applications" (blocked users too).
   Tested in `TestDeactivatedAccountsAreHidden`.
